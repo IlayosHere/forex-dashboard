@@ -9,7 +9,7 @@ Account assumptions
 -------------------
 - Account equity : $50,000
 - Risk per trade : 1% = $500
-- SL buffer      : 4 pips beyond the FVG far edge
+- SL buffer      : 3 pips beyond the FVG far edge
 - RR             : 1:1 (TP = entry +/- effective_risk)
 - Slippage       : 0.2 pips (both entry and stop exits included in risk calc)
 """
@@ -20,7 +20,7 @@ from typing import Any, Dict
 from .config import EXCHANGE_TZ, get_spread_pips
 
 SLIPPAGE_PIPS: float = 0.2
-SL_BUFFER_PIPS: float = 4.0
+SL_BUFFER_PIPS: float = 3.0
 ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
 
 
@@ -97,7 +97,7 @@ def calculate_trade_params(signal: Dict[str, Any]) -> Dict[str, Any]:
     broker_hour = candle_time.astimezone(EXCHANGE_TZ).hour
     spread_pips = get_spread_pips(symbol, broker_hour)
 
-    # SL price: 4 pips beyond far edge in loss direction
+    # SL price: 3 pips beyond far edge in loss direction
     if direction == "BUY":
         sl = far_edge - SL_BUFFER_PIPS * pip
         raw_risk_pips = (close - sl) / pip
