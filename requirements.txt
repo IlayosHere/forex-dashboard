@@ -1,0 +1,25 @@
+# -----------------------------------------------------------------------
+# Consolidated Python requirements for api/ and runner/
+# Both Dockerfiles install from this single file.
+# -----------------------------------------------------------------------
+
+# Web framework (api)
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# Database (api + runner)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+
+# Validation (api)
+pydantic>=2.0.0
+
+# Config / env
+python-dotenv>=1.0.0
+
+# HTTP (discord notifier in impulse-notifier/)
+requests>=2.32.3
+
+# Market data + strategies
+pandas==2.2.3
+tvDatafeed @ git+https://github.com/rongardF/tvdatafeed.git
