@@ -21,7 +21,11 @@ export function useTrades(filters: TradeFilters = {}): UseTradesResult {
   const load = useCallback(async () => {
     try {
       const data = await fetchTrades(filters);
-      setTrades(data);
+      // Hide cancelled trades unless explicitly filtering for them
+      const filtered = filters.status
+        ? data
+        : data.filter((t) => t.status !== "cancelled");
+      setTrades(filtered);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
