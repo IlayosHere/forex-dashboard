@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en-GB" className="h-full">
       <body className="flex h-full min-h-screen antialiased" style={{ backgroundColor: "#0f0f0f", color: "#e0e0e0" }}>
         {/* Sidebar */}
         <aside

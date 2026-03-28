@@ -56,6 +56,7 @@ class TradeModel(Base):
     # Trade setup
     strategy: Mapped[str] = mapped_column(String, nullable=False)
     symbol: Mapped[str] = mapped_column(String, nullable=False)
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="forex")
     direction: Mapped[str] = mapped_column(String, nullable=False)
     entry_price: Mapped[float] = mapped_column(Float, nullable=False)
     exit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -97,4 +98,5 @@ class TradeModel(Base):
         Index("ix_trades_status", "status"),
         Index("ix_trades_open_time", "open_time"),
         Index("ix_trades_outcome", "outcome"),
+        Index("ix_trades_instrument_type", "instrument_type"),
     )

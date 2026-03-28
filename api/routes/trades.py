@@ -57,9 +57,22 @@ def _calculate_pnl(
     exit_price: float,
     lot_size: float,
     risk_pips: float,
+    instrument_type: str = "forex",
 ) -> tuple[float, float, float | None]:
-    """Return (pnl_pips, pnl_usd, rr_achieved)."""
+    """Return (pnl_pips, pnl_usd, rr_achieved).
+
+    For futures_mnq, pnl_pips stores points and lot_size stores contracts.
+    MNQ tick value is $0.50 per 0.25 point = $2.00 per point per contract.
+    """
     direction_mult = 1.0 if direction == "BUY" else -1.0
+
+    if instrument_type == "futures_mnq":
+        pnl_points = round((exit_price - entry_price) * direction_mult, 2)
+        pnl_usd = round(pnl_points * 2.0 * lot_size, 2)
+        rr_achieved = round(pnl_points / risk_pips, 2) if risk_pips > 0 else None
+        return pnl_points, pnl_usd, rr_achieved
+
+    # Default: forex
     pip_size = _pip_size(symbol)
     pnl_pips = round((exit_price - entry_price) / pip_size * direction_mult, 1)
     pip_value = _pip_value_per_lot(symbol, entry_price)
@@ -68,7 +81,7 @@ def _calculate_pnl(
     return pnl_pips, pnl_usd, rr_achieved
 
 
-def _apply_filters(stmt, strategy, symbol, status, outcome, date_from, date_to):
+def _apply_filters(stmt, strategy, symbol, status, outcome, date_from, date_to, instrument_type=None):
     """Apply optional query filters to a SELECT statement."""
     if strategy is not None:
         stmt = stmt.where(TradeModel.strategy == strategy)
@@ -78,6 +91,8 @@ def _apply_filters(stmt, strategy, symbol, status, outcome, date_from, date_to):
         stmt = stmt.where(TradeModel.status == status)
     if outcome is not None:
         stmt = stmt.where(TradeModel.outcome == outcome)
+    if instrument_type is not None:
+        stmt = stmt.where(TradeModel.instrument_type == instrument_type)
     if date_from is not None:
         stmt = stmt.where(TradeModel.open_time >= datetime.combine(date_from, datetime.min.time(), tzinfo=timezone.utc))
     if date_to is not None:
@@ -105,6 +120,7 @@ def create_trade(
         signal_id=req.signal_id,
         strategy=req.strategy,
         symbol=req.symbol,
+        instrument_type=req.instrument_type,
         direction=req.direction,
         entry_price=req.entry_price,
         exit_price=None,
@@ -141,13 +157,17 @@ def list_trades(
     symbol: str | None = Query(default=None),
     status: str | None = Query(default=None),
     outcome: str | None = Query(default=None),
+    instrument_type: str | None = Query(default=None),
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[TradeModel]:
     stmt = select(TradeModel).order_by(TradeModel.open_time.desc())
-    stmt = _apply_filters(stmt, strategy, symbol, status, outcome, date_from, date_to)
+    stmt = _apply_filters(stmt, strategy, symbol, status, outcome, date_from, date_to, instrument_type)
+    # Exclude cancelled trades unless explicitly filtering for them
+    if status is None:
+        stmt = stmt.where(TradeModel.status != "cancelled")
     stmt = stmt.offset(offset).limit(limit)
     return list(db.scalars(stmt).all())
 
@@ -157,11 +177,14 @@ def trade_stats(
     db: Annotated[Session, Depends(get_db)],
     strategy: str | None = Query(default=None),
     symbol: str | None = Query(default=None),
+    instrument_type: str | None = Query(default=None),
     date_from: date | None = Query(default=None, alias="from"),
     date_to: date | None = Query(default=None, alias="to"),
 ) -> dict:
     stmt = select(TradeModel)
-    stmt = _apply_filters(stmt, strategy, symbol, None, None, date_from, date_to)
+    stmt = _apply_filters(stmt, strategy, symbol, None, None, date_from, date_to, instrument_type)
+    # Exclude cancelled trades from stats entirely
+    stmt = stmt.where(TradeModel.status != "cancelled")
     trades = list(db.scalars(stmt).all())
 
     total = len(trades)
@@ -306,6 +329,7 @@ def update_trade(
             exit_price=trade.exit_price,
             lot_size=trade.lot_size,
             risk_pips=trade.risk_pips,
+            instrument_type=trade.instrument_type,
         )
         trade.pnl_pips = pnl_pips
         trade.pnl_usd = pnl_usd

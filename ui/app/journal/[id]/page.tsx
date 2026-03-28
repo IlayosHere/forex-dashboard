@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
 import type { Trade } from "@/lib/types";
+import { getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
 
 interface TradeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -85,6 +86,9 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const isBuy = trade.direction === "BUY";
   const dirColor = isBuy ? "#26a69a" : "#ef5350";
   const isOpen = trade.status === "open";
+  const instrumentType = trade.instrument_type ?? getInstrumentType(trade.strategy);
+  const unitLabel = getUnitLabel(instrumentType);
+  const sizeLabel = getSizeLabel(instrumentType);
 
   const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
     if (!exitPrice && outcome !== "breakeven") return;
@@ -195,12 +199,12 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
               </div>
             )}
             <div className="flex justify-between">
-              <span className="label">Lot Size</span>
+              <span className="label">{sizeLabel === "contracts" ? "Contracts" : "Lot Size"}</span>
               <span className="price text-[#e0e0e0]">{trade.lot_size}</span>
             </div>
             <div className="flex justify-between">
               <span className="label">Risk</span>
-              <span className="price text-[#e0e0e0]">{trade.risk_pips} pips</span>
+              <span className="price text-[#e0e0e0]">{trade.risk_pips} {unitLabel}</span>
             </div>
           </div>
 
@@ -213,7 +217,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
             <div className="flex justify-between">
               <span className="label">P&L</span>
               <span className="price font-bold" style={{ color: pnlColor(trade.pnl_pips) }}>
-                {trade.pnl_pips != null ? `${trade.pnl_pips > 0 ? "+" : ""}${trade.pnl_pips} pips` : "—"}
+                {trade.pnl_pips != null ? `${trade.pnl_pips > 0 ? "+" : ""}${trade.pnl_pips} ${unitLabel}` : "—"}
                 {trade.pnl_usd != null && (
                   <span className="text-xs ml-2">(${trade.pnl_usd > 0 ? "+" : ""}{trade.pnl_usd.toFixed(2)})</span>
                 )}

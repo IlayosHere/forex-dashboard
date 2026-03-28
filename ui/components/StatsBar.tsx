@@ -2,6 +2,8 @@
 
 import type { TradeStats } from "@/lib/types";
 
+const STARTING_BALANCE = 50_000;
+
 interface StatsBarProps {
   stats: TradeStats | null;
   loading: boolean;
@@ -27,6 +29,7 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
   const dim = loading || !stats ? "opacity-50" : "";
   const s = stats;
   const streak = streakText(s?.current_streak ?? 0);
+  const pnlPct = s ? (s.total_pnl_usd / STARTING_BALANCE) * 100 : null;
 
   return (
     <div className={`flex gap-3 overflow-x-auto pb-1 ${dim}`}>
@@ -41,14 +44,14 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
         secondary={s?.open_trades ? `${s.open_trades} open` : undefined}
       />
       <StatCard
-        title="Total P&L"
-        primary={s ? `${s.total_pnl_pips >= 0 ? "+" : ""}${fmt(s.total_pnl_pips)} pips` : "—"}
-        primaryColor={pnlColor(s?.total_pnl_pips)}
+        title="P&L"
+        primary={pnlPct != null ? `${pnlPct >= 0 ? "+" : ""}${fmt(pnlPct, 2)}%` : "—"}
+        primaryColor={pnlColor(pnlPct)}
         secondary={s ? `${s.total_pnl_usd >= 0 ? "+" : ""}$${fmt(s.total_pnl_usd, 2)}` : undefined}
       />
       <StatCard
         title="Avg R:R"
-        primary={s?.avg_rr != null ? `1 : ${fmt(s.avg_rr, 2)}` : "—"}
+        primary={s?.avg_rr != null ? fmt(s.avg_rr, 2) : "—"}
       />
       <StatCard
         title="Streak"

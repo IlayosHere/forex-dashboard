@@ -36,6 +36,10 @@ export default function JournalPage() {
   const { trades, loading, error } = useTrades(apiFilters);
   const { stats, loading: statsLoading } = useTradeStats(apiFilters);
 
+  const newTradeUrl = filters.strategy
+    ? `/journal/new?strategy=${encodeURIComponent(filters.strategy)}`
+    : "/journal/new";
+
   // Collect unique symbols from trades for the filter dropdown
   const symbols = useMemo(() => {
     const set = new Set(trades.map((t) => t.symbol));
@@ -47,13 +51,16 @@ export default function JournalPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Journal</h1>
-        <Button onClick={() => router.push("/journal/new")}>
+        <Button onClick={() => router.push(newTradeUrl)}>
           + New Trade
         </Button>
       </div>
 
       {/* Stats */}
-      <StatsBar stats={stats} loading={statsLoading} />
+      <StatsBar
+        stats={stats}
+        loading={statsLoading}
+      />
 
       {/* Filters */}
       <TradeFilters values={filters} onChange={setFilters} symbols={symbols} />
@@ -70,7 +77,7 @@ export default function JournalPage() {
           <p className="text-[#777777] text-sm mb-3">
             No trades logged yet. Start by logging your first trade.
           </p>
-          <Button onClick={() => router.push("/journal/new")}>
+          <Button onClick={() => router.push(newTradeUrl)}>
             + New Trade
           </Button>
         </div>
