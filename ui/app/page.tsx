@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
 import { strategies, type StrategyMeta } from "@/lib/strategies";
@@ -48,7 +48,9 @@ function formatPrice(price: number, symbol: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(strategies[0]);
+  const searchParams = useSearchParams();
+  const initialStrategy = strategies.find((s) => s.slug === searchParams.get("strategy")) ?? strategies[0];
+  const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(initialStrategy);
   const [filters, setFilters] = useState<SignalFilterValues>(emptyFilters);
   const [page, setPage] = useState(0);
 

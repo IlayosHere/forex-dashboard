@@ -68,10 +68,10 @@ export default function StrategyPage({ params }: StrategyPageProps) {
         {/* Back + Strategy header */}
         <div className="px-4 py-3 border-b border-[#2a2a2a]">
           <Link
-            href="/"
-            className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors inline-flex items-center gap-1 mb-2"
+            href={`/?strategy=${slug}`}
+            className="text-sm text-[#26a69a] hover:text-[#2bbbad] transition-colors inline-flex items-center gap-1.5 mb-2 font-medium"
           >
-            ← Dashboard
+            &larr; {strategyMeta?.label ?? slug}
           </Link>
           <div className="font-semibold text-[#e0e0e0] text-sm">
             {strategyMeta?.label ?? slug}
