@@ -1,20 +1,28 @@
 """
-scanner.py - Nova (wickless) momentum candle scanner using TradingView data.
+strategies/nova_candle/scanner.py - Nova (wickless) momentum candle scanner.
 
-Fetches 15M candles for each symbol via tvDatafeed (TradingView) and checks
+Fetches 70 M15 candles per symbol via tvDatafeed (TradingView) and checks
 for nova candles: no wick on the open side (open == low for bullish,
 open == high for bearish).
-"""
 
+Plugin interface
+----------------
+scan() -> list[Signal]   <- called by the runner every 15 minutes
+"""
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from tvDatafeed import TvDatafeed, Interval
+
+from shared.signal import Signal
+from .calculations import calculate_trade_params
+from strategies.fvg_impulse.config import EXCHANGE_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +31,12 @@ _tv: TvDatafeed | None = None
 # Already-alerted candles: set of (symbol, candle_time) to prevent duplicate alerts
 _alerted_candles: set = set()
 
+DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD"
+
+
+# ---------------------------------------------------------------------------
+# TradingView connection
+# ---------------------------------------------------------------------------
 
 def _get_tv() -> TvDatafeed:
     """Get or create the TvDatafeed connection (lazy singleton)."""
@@ -74,11 +88,12 @@ def get_candles(symbol: str, count: int = 70) -> Optional[pd.DataFrame]:
         return None
 
     df = df[["open", "high", "low", "close"]].copy()
-    # tvDatafeed uses datetime.fromtimestamp() which returns local time.
-    # Convert from local timezone to UTC for consistent comparisons.
-    local_tz = datetime.now(timezone.utc).astimezone().tzinfo
+    # tvDatafeed returns timestamps in the exchange timezone.
+    # Convert to UTC for consistent comparisons.
     if df.index.tz is None:
-        df.index = df.index.tz_localize(local_tz).tz_convert(timezone.utc)
+        df.index = df.index.tz_localize(EXCHANGE_TZ).tz_convert(timezone.utc)
+    else:
+        df.index = df.index.tz_convert(timezone.utc)
     return df
 
 
@@ -181,7 +196,7 @@ def find_nova_candle(
 
     return {
         "direction": direction,
-        "entry_price": o,
+        "entry_price": cl,
         "candle_time": c.name,
         "open": o,
         "high": h,
@@ -217,6 +232,49 @@ def scan_all_symbols(
         result = find_nova_candle(candles, symbol)
         if result is not None:
             result["symbol"] = symbol
+            result.update(calculate_trade_params(result))
             signals.append(result)
 
     return signals
+
+
+# ---------------------------------------------------------------------------
+# Plugin entry point
+# ---------------------------------------------------------------------------
+
+def _to_signal(raw: Dict[str, Any]) -> Signal:
+    """Map a raw signal dict to the shared Signal dataclass."""
+    return Signal(
+        strategy="nova-candle",
+        symbol=raw["symbol"],
+        direction=raw["direction"],
+        candle_time=raw["candle_time"],
+        entry=raw["entry_price"],
+        sl=raw["sl"],
+        tp=raw["tp"],
+        lot_size=raw["lot_size"],
+        risk_pips=raw["risk_pips"],
+        spread_pips=raw["spread_pips"],
+        metadata={
+            "open": raw["open"],
+            "high": raw["high"],
+            "low": raw["low"],
+            "close": raw["close"],
+            "ema50_used": True,
+        },
+    )
+
+
+def scan() -> list[Signal]:
+    """Strategy plugin entry point. Called by the runner every 15 minutes.
+
+    Reads NOVA_CANDLE_PAIRS env var (comma-separated) or falls back to
+    the 7 major pairs.
+    """
+    symbols = [
+        p.strip()
+        for p in os.getenv("NOVA_CANDLE_PAIRS", DEFAULT_PAIRS).split(",")
+        if p.strip()
+    ]
+    raw_signals = scan_all_symbols(symbols)
+    return [_to_signal(s) for s in raw_signals]
