@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
-import { strategies } from "@/lib/strategies";
+import { SidebarNav } from "@/components/SidebarNav";
 
 export const metadata: Metadata = {
   title: "Forex Signal Dashboard",
@@ -29,35 +28,7 @@ export default function RootLayout({
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 px-2 py-3 space-y-0.5">
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[#e0e0e0] hover:bg-[#1e1e1e] transition-colors"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/journal"
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[#e0e0e0] hover:bg-[#1e1e1e] transition-colors"
-            >
-              Journal
-            </Link>
-
-            <div className="pt-3 pb-1 px-3">
-              <span className="label">Strategies</span>
-            </div>
-
-            {strategies.map((s) => (
-              <Link
-                key={s.slug}
-                href={`/strategy/${s.slug}`}
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[#e0e0e0] hover:bg-[#1e1e1e] transition-colors"
-              >
-                {s.label}
-              </Link>
-            ))}
-          </nav>
+          <SidebarNav />
         </aside>
 
         {/* Content area — offset by sidebar width */}

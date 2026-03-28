@@ -103,9 +103,17 @@ export default function DashboardPage() {
 
       {/* Empty */}
       {!loading && !error && signals.length === 0 && (
-        <p className="text-[#777777] text-sm py-8 text-center">
-          No signals match your filters.
-        </p>
+        <div className="text-center py-12">
+          <p className="text-[#777777] text-sm mb-1">No signals match your filters.</p>
+          {(filters.strategy || filters.symbol || filters.direction || filters.dateFrom || filters.dateTo) && (
+            <button
+              onClick={() => { setFilters(emptyFilters); setPage(0); }}
+              className="text-xs text-[#26a69a] hover:underline cursor-pointer mt-2"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
       )}
 
       {/* Signal table */}

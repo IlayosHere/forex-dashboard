@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -152,12 +153,12 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   return (
     <div className="p-6 max-w-5xl">
       {/* Back link */}
-      <button
-        onClick={() => router.push("/journal")}
-        className="text-xs text-[#777777] hover:text-[#e0e0e0] mb-4 inline-block cursor-pointer transition-colors"
+      <Link
+        href="/journal"
+        className="text-xs text-[#777777] hover:text-[#e0e0e0] mb-4 inline-flex items-center gap-1 transition-colors"
       >
         ← Back to Journal
-      </button>
+      </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LEFT: Trade info (read-only) */}

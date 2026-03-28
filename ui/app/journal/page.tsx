@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTrades } from "@/lib/useTrades";
 import { useTradeStats } from "@/lib/useTradeStats";
 import { StatsBar } from "@/components/StatsBar";
@@ -44,6 +45,14 @@ export default function JournalPage() {
 
   return (
     <div className="p-6 max-w-5xl">
+      {/* Back link */}
+      <Link
+        href="/"
+        className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors inline-flex items-center gap-1 mb-3"
+      >
+        ← Dashboard
+      </Link>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Journal</h1>
