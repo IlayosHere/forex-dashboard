@@ -9,7 +9,7 @@ Account assumptions
 -------------------
 - Account equity : $50,000
 - Risk per trade : 1% = $500
-- SL buffer      : 4 pips beyond the candle extreme
+- SL buffer      : 3 pips beyond the candle extreme
 - RR             : 1:1 (TP = entry +/- effective_risk)
 - Slippage       : 0.2 pips (both entry and stop exits included in risk calc)
 """
@@ -17,44 +17,18 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+from shared.calculator import pip_size, pip_value_per_lot
+
 from strategies.fvg_impulse.config import EXCHANGE_TZ, get_spread_pips
 
 SLIPPAGE_PIPS: float = 0.2
-SL_BUFFER_PIPS: float = 4.0
+SL_BUFFER_PIPS: float = 3.0
 ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _pip_size(symbol: str) -> float:
-    """Return pip size: 0.01 for JPY pairs, 0.0001 for all others."""
-    return 0.01 if "JPY" in symbol.upper() else 0.0001
-
-
-def _pip_value_per_lot(symbol: str, price: float) -> float:
-    """Return USD pip value per standard lot (100,000 units of base currency).
-
-    Parameters
-    ----------
-    symbol : Currency pair string (e.g. "EURUSD", "USDJPY").
-    price  : Current mid price used for USD conversion on non-USD-quote pairs.
-
-    Logic
-    -----
-    - Quote = USD  (EURUSD, GBPUSD, AUDUSD, NZDUSD): pip_value = $10 flat.
-    - Base  = USD  (USDJPY, USDCHF, USDCAD):
-        pip_value = lot_size * pip_size / price  (converts quote CCY -> USD).
-    - Cross pairs: fallback $10 (not in default scan list).
-    """
-    sym = symbol.upper()
-    if sym.endswith("USD"):
-        return 10.0
-    if sym.startswith("USD"):
-        pip = 0.01 if sym.endswith("JPY") else 0.0001
-        return (100_000 * pip) / price
-    return 10.0  # cross pair fallback
 
 
 # ---------------------------------------------------------------------------
@@ -85,14 +59,14 @@ def calculate_trade_params(signal: Dict[str, Any]) -> Dict[str, Any]:
     high = signal["high"]
     candle_time = signal["candle_time"]  # UTC datetime
 
-    pip = _pip_size(symbol)
+    pip = pip_size(symbol)
 
     # Derive broker hour from UTC candle_time using the exchange timezone.
     # Handles DST automatically (UTC+2 winter / UTC+3 summer).
     broker_hour = candle_time.astimezone(EXCHANGE_TZ).hour
     spread_pips = get_spread_pips(symbol, broker_hour)
 
-    # SL price: 4 pips beyond candle extreme in loss direction
+    # SL price: 3 pips beyond candle extreme in loss direction
     if direction == "BUY":
         sl = low - SL_BUFFER_PIPS * pip
         raw_risk_pips = (close - sl) / pip
@@ -110,7 +84,7 @@ def calculate_trade_params(signal: Dict[str, Any]) -> Dict[str, Any]:
         tp = close - raw_risk_pips * pip
 
     # Lot size: risk_usd / (risk_pips * pip_value_per_lot)
-    pv = _pip_value_per_lot(symbol, close)
+    pv = pip_value_per_lot(symbol, close)
     lot_size = ACCOUNT_RISK_USD / (effective_risk_pips * pv)
     lot_size = round(max(lot_size, 0.01), 2)
 

@@ -4,12 +4,12 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
+import { strategies, type StrategyMeta } from "@/lib/strategies";
 import type { SignalFilters as ApiFilters } from "@/lib/api";
 
 const PAGE_SIZE = 50;
 
 const emptyFilters: SignalFilterValues = {
-  strategy: "",
   symbol: "",
   direction: "",
   dateFrom: "",
@@ -48,6 +48,7 @@ function formatPrice(price: number, symbol: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(strategies[0]);
   const [filters, setFilters] = useState<SignalFilterValues>(emptyFilters);
   const [page, setPage] = useState(0);
 
@@ -57,19 +58,30 @@ export default function DashboardPage() {
     setPage(0);
   };
 
+  const handleTabChange = (strategy: StrategyMeta) => {
+    setActiveStrategy(strategy);
+    setFilters(emptyFilters);
+    setPage(0);
+  };
+
   const apiFilters: ApiFilters = useMemo(() => {
-    const f: ApiFilters = { limit: PAGE_SIZE, offset: page * PAGE_SIZE };
-    if (filters.strategy) f.strategy = filters.strategy;
+    const f: ApiFilters = {
+      strategy: activeStrategy.slug,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    };
     if (filters.symbol) f.symbol = filters.symbol;
     if (filters.direction) f.direction = filters.direction;
     if (filters.dateFrom) f.from = `${filters.dateFrom}T00:00:00Z`;
     if (filters.dateTo) f.to = `${filters.dateTo}T23:59:59Z`;
     return f;
-  }, [filters, page]);
+  }, [filters, page, activeStrategy]);
 
   const { signals, total, loading, error } = useSignals(apiFilters);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const unitLabel = activeStrategy.instrumentType === "futures_mnq" ? "pts" : "pips";
 
   return (
     <div className="p-6 max-w-[1200px]">
@@ -77,8 +89,26 @@ export default function DashboardPage() {
       <div className="mb-5">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Signals</h1>
         <p className="text-xs text-[#777777] mt-0.5">
-          All opportunities across strategies
+          {activeStrategy.description}
         </p>
+      </div>
+
+      {/* Strategy Tabs */}
+      <div className="flex gap-0 mb-4 border-b border-[#2a2a2a]">
+        {strategies.map((s) => (
+          <button
+            key={s.slug}
+            type="button"
+            onClick={() => handleTabChange(s)}
+            className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer -mb-px ${
+              activeStrategy.slug === s.slug
+                ? "text-[#26a69a] border-b-2 border-[#26a69a]"
+                : "text-[#777777] hover:text-[#e0e0e0] border-b-2 border-transparent"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* Filter bar */}
@@ -88,6 +118,7 @@ export default function DashboardPage() {
           onChange={handleFilterChange}
           total={total}
           onReset={() => { setFilters(emptyFilters); setPage(0); }}
+          instrumentType={activeStrategy.instrumentType}
         />
       </div>
 
@@ -105,7 +136,7 @@ export default function DashboardPage() {
       {!loading && !error && signals.length === 0 && (
         <div className="text-center py-12">
           <p className="text-[#777777] text-sm mb-1">No signals match your filters.</p>
-          {(filters.strategy || filters.symbol || filters.direction || filters.dateFrom || filters.dateTo) && (
+          {(filters.symbol || filters.direction || filters.dateFrom || filters.dateTo) && (
             <button
               onClick={() => { setFilters(emptyFilters); setPage(0); }}
               className="text-xs text-[#26a69a] hover:underline cursor-pointer mt-2"
@@ -127,9 +158,8 @@ export default function DashboardPage() {
                 <th className="text-left px-3 py-2.5 font-medium">Entry</th>
                 <th className="text-left px-3 py-2.5 font-medium">SL</th>
                 <th className="text-left px-3 py-2.5 font-medium">TP</th>
-                <th className="text-right px-3 py-2.5 font-medium">Risk</th>
-                <th className="text-right px-3 py-2.5 font-medium">Lot</th>
-                <th className="text-left px-3 py-2.5 font-medium">Strategy</th>
+                <th className="text-right px-3 py-2.5 font-medium">Risk ({unitLabel})</th>
+                <th className="text-right px-3 py-2.5 font-medium">{activeStrategy.instrumentType === "futures_mnq" ? "Contracts" : "Lot"}</th>
                 <th className="text-right px-3 py-2.5 font-medium">Date</th>
                 <th className="text-right px-3 py-2.5 font-medium">Time</th>
               </tr>
@@ -166,13 +196,10 @@ export default function DashboardPage() {
                       {formatPrice(s.tp, s.symbol)}
                     </td>
                     <td className="px-3 py-2.5 text-right text-[#c0c0c0] text-xs">
-                      {s.risk_pips.toFixed(1)}p
+                      {s.risk_pips.toFixed(1)}
                     </td>
                     <td className="px-3 py-2.5 text-right text-[#c0c0c0] font-mono text-xs">
                       {s.lot_size.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-2.5 text-[#777777] text-xs">
-                      {s.strategy}
                     </td>
                     <td className="px-3 py-2.5 text-right text-[#777777] text-xs">
                       {formatDate(s.candle_time)}

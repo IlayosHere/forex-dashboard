@@ -1,12 +1,15 @@
 "use client";
 
-import type { Trade } from "@/lib/types";
+import type { Trade, AccountType } from "@/lib/types";
+import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
 import { StatusBadge } from "./StatusBadge";
 import { StarRating } from "./StarRating";
+import { AccountBadge } from "./AccountBadge";
 
 interface TradeCardProps {
   trade: Trade;
   onClick: () => void;
+  accountType?: AccountType;
 }
 
 function formatTime(iso: string): string {
@@ -33,8 +36,9 @@ function pnlSign(v: number | null, decimals = 1): string {
   return `${prefix}${v.toFixed(decimals)}`;
 }
 
-export function TradeCard({ trade, onClick }: TradeCardProps) {
+export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
   const isBuy = trade.direction === "BUY";
+  const unitLabel = getUnitLabel(trade.instrument_type ?? getInstrumentType(trade.strategy));
 
   return (
     <div
@@ -54,7 +58,7 @@ export function TradeCard({ trade, onClick }: TradeCardProps) {
             {trade.direction}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
-            {pnlSign(trade.pnl_pips)} pips
+            {pnlSign(trade.pnl_pips)} {unitLabel}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
             {trade.pnl_usd !== null ? `${pnlSign(trade.pnl_usd, 2)}$` : ""}
@@ -75,6 +79,12 @@ export function TradeCard({ trade, onClick }: TradeCardProps) {
           {" → "}
           {trade.close_time ? formatTime(trade.close_time) : "OPEN"}
         </span>
+        {trade.account_name && (
+          <AccountBadge
+            name={trade.account_name}
+            accountType={accountType ?? "demo"}
+          />
+        )}
         <StatusBadge status={trade.status} outcome={trade.outcome} />
         {trade.tags.map((tag) => (
           <span

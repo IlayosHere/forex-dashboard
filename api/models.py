@@ -1,7 +1,12 @@
 """
 api/models.py
 -------------
-SQLAlchemy 2.0 ORM model for the signals table.
+SQLAlchemy 2.0 ORM models for the Forex Signal Dashboard.
+
+Models:
+  - SignalModel: strategy signals
+  - TradeModel: trade journal entries
+  - AccountModel: trading accounts (demo, live, funded)
 
 Fields mirror shared.signal.Signal exactly. The `metadata` dict is stored as
 a JSON column named `signal_metadata` — "metadata" is a reserved attribute name
@@ -44,6 +49,25 @@ class SignalModel(Base):
     )
 
 
+class AccountModel(Base):
+    __tablename__ = "accounts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    account_type: Mapped[str] = mapped_column(String, nullable=False)  # demo, live, funded
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # forex, futures_mnq
+    status: Mapped[str] = mapped_column(String, nullable=False, default="active")  # active, passed, failed, closed
+    prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
+    phase: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_accounts_account_type", "account_type"),
+        Index("ix_accounts_instrument_type", "instrument_type"),
+        Index("ix_accounts_status", "status"),
+    )
+
+
 class TradeModel(Base):
     __tablename__ = "trades"
 
@@ -52,10 +76,14 @@ class TradeModel(Base):
     signal_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("signals.id"), nullable=True
     )
+    account_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("accounts.id"), nullable=True
+    )
 
     # Trade setup
     strategy: Mapped[str] = mapped_column(String, nullable=False)
     symbol: Mapped[str] = mapped_column(String, nullable=False)
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="forex")
     direction: Mapped[str] = mapped_column(String, nullable=False)
     entry_price: Mapped[float] = mapped_column(Float, nullable=False)
     exit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -97,4 +125,6 @@ class TradeModel(Base):
         Index("ix_trades_status", "status"),
         Index("ix_trades_open_time", "open_time"),
         Index("ix_trades_outcome", "outcome"),
+        Index("ix_trades_instrument_type", "instrument_type"),
+        Index("ix_trades_account_id", "account_id"),
     )

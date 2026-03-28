@@ -44,6 +44,83 @@ class SignalListResponse(BaseModel):
     total: int
 
 
+# ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+_VALID_ACCOUNT_TYPES = ("demo", "live", "funded")
+_VALID_INSTRUMENT_TYPES = ("forex", "futures_mnq")
+_VALID_ACCOUNT_STATUSES = ("active", "passed", "failed", "closed")
+
+
+class AccountCreateRequest(BaseModel):
+    name: str
+    account_type: str
+    instrument_type: str
+    status: str = "active"
+    prop_firm: str | None = None
+    phase: str | None = None
+
+    @field_validator("account_type")
+    @classmethod
+    def validate_account_type(cls, v: str) -> str:
+        if v not in _VALID_ACCOUNT_TYPES:
+            raise ValueError(f"account_type must be one of {_VALID_ACCOUNT_TYPES}")
+        return v
+
+    @field_validator("instrument_type")
+    @classmethod
+    def validate_instrument_type(cls, v: str) -> str:
+        if v not in _VALID_INSTRUMENT_TYPES:
+            raise ValueError(f"instrument_type must be one of {_VALID_INSTRUMENT_TYPES}")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        if v not in _VALID_ACCOUNT_STATUSES:
+            raise ValueError(f"status must be one of {_VALID_ACCOUNT_STATUSES}")
+        return v
+
+
+class AccountUpdateRequest(BaseModel):
+    name: str | None = None
+    status: str | None = None
+    prop_firm: str | None = None
+    phase: str | None = None
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str | None) -> str | None:
+        if v is not None and v not in _VALID_ACCOUNT_STATUSES:
+            raise ValueError(f"status must be one of {_VALID_ACCOUNT_STATUSES}")
+        return v
+
+
+class AccountResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    account_type: str
+    instrument_type: str
+    status: str
+    prop_firm: str | None
+    phase: str | None
+    created_at: datetime
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def assume_utc(cls, v: object) -> object:
+        if isinstance(v, datetime) and v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Calculator
+# ---------------------------------------------------------------------------
+
 class CalculateRequest(BaseModel):
     symbol: str
     entry: float
@@ -51,6 +128,7 @@ class CalculateRequest(BaseModel):
     account_balance: float
     risk_percent: float
     tp_pips: float | None = None
+    instrument_type: str = "forex"
 
 
 class CalculateResponse(BaseModel):
@@ -58,6 +136,7 @@ class CalculateResponse(BaseModel):
     risk_usd: float
     sl_pips: float
     rr: float | None
+    instrument_type: str = "forex"
 
 
 # ---------------------------------------------------------------------------
@@ -67,8 +146,10 @@ class CalculateResponse(BaseModel):
 
 class TradeCreateRequest(BaseModel):
     signal_id: str | None = None
+    account_id: str | None = None
     strategy: str
     symbol: str
+    instrument_type: str = "forex"
     direction: str
     entry_price: float
     sl_price: float
@@ -92,6 +173,7 @@ class TradeCreateRequest(BaseModel):
 
 
 class TradeUpdateRequest(BaseModel):
+    instrument_type: str | None = None
     exit_price: float | None = None
     sl_price: float | None = None
     tp_price: float | None = None
@@ -126,8 +208,11 @@ class TradeResponse(BaseModel):
 
     id: str
     signal_id: str | None
+    account_id: str | None = None
+    account_name: str | None = None
     strategy: str
     symbol: str
+    instrument_type: str
     direction: str
     entry_price: float
     exit_price: float | None
@@ -177,3 +262,4 @@ class TradeStatsResponse(BaseModel):
     avg_hold_time_hours: float | None
     by_strategy: dict[str, dict]
     by_symbol: dict[str, dict]
+    by_account: dict[str, dict]

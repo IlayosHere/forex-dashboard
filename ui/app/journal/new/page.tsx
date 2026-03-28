@@ -7,6 +7,7 @@ import { fetchSignal } from "@/lib/api";
 import { createTrade } from "@/lib/api";
 import { TradeForm, type TradeFormData } from "@/components/TradeForm";
 import type { Signal } from "@/lib/types";
+import { getInstrumentType, strategies } from "@/lib/strategies";
 
 function pipSize(symbol: string): number {
   return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
@@ -23,6 +24,7 @@ function toLocalDatetime(iso: string): string {
 }
 
 const emptyForm: TradeFormData = {
+  account_id: "",
   signal_id: null,
   strategy: "",
   symbol: "",
@@ -44,11 +46,23 @@ function NewTradeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signalId = searchParams.get("signal");
+  const strategyParam = searchParams.get("strategy");
   const slOverride = searchParams.get("sl");
   const tpOverride = searchParams.get("tp");
   const lotOverride = searchParams.get("lot_size");
 
-  const [initial, setInitial] = useState<TradeFormData>(emptyForm);
+  const [initial, setInitial] = useState<TradeFormData>(() => {
+    if (strategyParam && !signalId) {
+      const meta = strategies.find((s) => s.slug === strategyParam);
+      return {
+        ...emptyForm,
+        account_id: "",
+        strategy: strategyParam,
+        symbol: meta?.defaultSymbol ?? "",
+      };
+    }
+    return emptyForm;
+  });
   const [signalLabel, setSignalLabel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,6 +78,7 @@ function NewTradeContent() {
         const lotSize = lotOverride ? parseFloat(lotOverride) : signal.lot_size;
         const riskPips = Math.round(Math.abs(signal.entry - sl) / pipSize(signal.symbol) * 10) / 10;
         setInitial({
+          account_id: "",
           signal_id: signal.id,
           strategy: signal.strategy,
           symbol: signal.symbol,
@@ -90,6 +105,7 @@ function NewTradeContent() {
     setLoading(true);
     try {
       const body: Record<string, unknown> = {
+        account_id: data.account_id || null,
         signal_id: data.signal_id || null,
         strategy: data.strategy,
         symbol: data.symbol,
@@ -105,6 +121,7 @@ function NewTradeContent() {
         rating: data.rating,
         confidence: data.confidence,
         screenshot_url: data.screenshot_url || null,
+        instrument_type: data.instrument_type ?? getInstrumentType(data.strategy),
         metadata: {},
       };
       const trade = await createTrade(body);

@@ -3,6 +3,11 @@
 This file is read by all agents automatically. It contains the decisions already made,
 the patterns to follow, and the context behind the work. Do not re-debate these decisions.
 
+**MANDATORY**: Before writing or modifying any code, read `docs/coding-standards.md`.
+All code must comply with the file size limits, function size limits, naming conventions,
+import organization, type safety, and style rules defined there. Non-compliant code
+must be refactored before submission.
+
 ---
 
 ## What We Are Building
@@ -196,6 +201,7 @@ All major decisions are already made and written down. Do not re-debate them.
 
 | Document | What it contains |
 |----------|-----------------|
+| `docs/coding-standards.md` | **Coding standards — ALL agents must follow these rules** |
 | `docs/prd.md` | Problem, user stories, feature scope, success metrics |
 | `docs/adr/001-database.md` | Why SQLite now, Postgres path |
 | `docs/adr/002-backend-framework.md` | Why FastAPI |
