@@ -1,4 +1,17 @@
 export type InstrumentType = "forex" | "futures_mnq";
+export type AccountType = "demo" | "live" | "funded";
+export type AccountStatus = "active" | "passed" | "failed" | "closed";
+
+export interface Account {
+  id: string;
+  name: string;
+  account_type: AccountType;
+  instrument_type: InstrumentType;
+  status: AccountStatus;
+  prop_firm: string | null;
+  phase: string | null;
+  created_at: string;
+}
 
 export interface Signal {
   id: string;
@@ -53,6 +66,8 @@ export interface Trade {
   confidence: number | null;
   screenshot_url: string | null;
   instrument_type: InstrumentType | null;
+  account_id: string | null;
+  account_name: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -76,4 +91,15 @@ export interface TradeStats {
   avg_hold_time_hours: number | null;
   by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number }>;
   by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number }>;
+  by_account: Record<string, {
+    account_name: string;
+    account_type: string;
+    instrument_type: string;
+    total: number;
+    wins: number;
+    losses: number;
+    win_rate: number | null;
+    total_pnl_pips: number;
+    total_pnl_usd: number;
+  }>;
 }

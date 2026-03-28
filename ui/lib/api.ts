@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -70,6 +70,8 @@ export interface TradeFilters {
   outcome?: string;
   from?: string;
   to?: string;
+  account_id?: string;
+  instrument_type?: string;
   limit?: number;
   offset?: number;
 }
@@ -82,6 +84,8 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.outcome) params.set("outcome", filters.outcome);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
+  if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset) params.set("offset", String(filters.offset));
   const res = await fetch(`${BASE_URL}/api/trades?${params.toString()}`, { cache: "no-store" });
@@ -126,7 +130,59 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   if (filters.symbol) params.set("symbol", filters.symbol);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
+  if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   const res = await fetch(`${BASE_URL}/api/trades/stats?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade stats: ${res.status}`);
   return res.json() as Promise<TradeStats>;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts
+// ---------------------------------------------------------------------------
+
+export async function fetchAccounts(params?: { instrument_type?: string; status?: string }): Promise<Account[]> {
+  const qs = new URLSearchParams();
+  if (params?.instrument_type) qs.set("instrument_type", params.instrument_type);
+  if (params?.status) qs.set("status", params.status);
+  const res = await fetch(`${BASE_URL}/api/accounts?${qs.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
+  return res.json() as Promise<Account[]>;
+}
+
+export async function createAccount(data: {
+  name: string;
+  account_type: string;
+  instrument_type: string;
+  status?: string;
+  prop_firm?: string | null;
+  phase?: string | null;
+}): Promise<Account> {
+  const res = await fetch(`${BASE_URL}/api/accounts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to create account: ${res.status}`);
+  return res.json() as Promise<Account>;
+}
+
+export async function updateAccount(id: string, data: {
+  name?: string;
+  status?: string;
+  prop_firm?: string | null;
+  phase?: string | null;
+}): Promise<Account> {
+  const res = await fetch(`${BASE_URL}/api/accounts/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to update account: ${res.status}`);
+  return res.json() as Promise<Account>;
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`);
 }

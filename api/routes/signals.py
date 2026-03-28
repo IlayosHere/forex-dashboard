@@ -6,6 +6,7 @@ GET /api/signals/{id} — single signal by primary key
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Annotated
 
@@ -15,7 +16,9 @@ from sqlalchemy.orm import Session
 
 from api.db import get_db
 from api.models import SignalModel
-from api.schemas import SignalResponse, SignalListResponse
+from api.schemas import SignalListResponse, SignalResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,9 +31,10 @@ def list_signals(
     direction: str | None = Query(default=None, description="Filter by BUY or SELL"),
     date_from: datetime | None = Query(default=None, alias="from", description="Start date (inclusive)"),
     date_to: datetime | None = Query(default=None, alias="to", description="End date (inclusive)"),
-    limit: int = Query(default=50, ge=1, le=200, description="Max results (1–200)"),
+    limit: int = Query(default=50, ge=1, le=200, description="Max results (1-200)"),
     offset: int = Query(default=0, ge=0, description="Offset for pagination"),
 ) -> dict:
+    """List signals with optional filters, newest first."""
     base = select(SignalModel)
     if strategy is not None:
         base = base.where(SignalModel.strategy == strategy)
@@ -57,7 +61,9 @@ def get_signal(
     signal_id: str,
     db: Annotated[Session, Depends(get_db)],
 ) -> SignalModel:
+    """Fetch a single signal by ID, return 404 if not found."""
     signal = db.get(SignalModel, signal_id)
     if signal is None:
+        logger.warning("Signal not found: %s", signal_id)
         raise HTTPException(status_code=404, detail="Signal not found")
     return signal

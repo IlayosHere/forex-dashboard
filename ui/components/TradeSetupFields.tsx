@@ -1,0 +1,217 @@
+"use client";
+
+import { useState } from "react";
+
+import { Input } from "@/components/ui/input";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
+import { AccountSheet } from "@/components/AccountSheet";
+
+import type { Account } from "@/lib/types";
+import type { StrategyMeta } from "@/lib/strategies";
+
+import type { TradeFormData } from "./TradeForm";
+
+interface TradeSetupFieldsProps {
+  form: TradeFormData;
+  errors: Record<string, boolean>;
+  activeAccounts: Account[];
+  filteredStrategies: StrategyMeta[];
+  isFutures: boolean;
+  unitLabel: string;
+  signalLabel?: string | null;
+  onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
+  onAccountChange: (accountId: string) => void;
+  onAccountCreated: (account: Account) => void;
+}
+
+const INPUT_CLASS =
+  "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull price";
+const SELECT_CLASS =
+  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
+
+function errBorder(errors: Record<string, boolean>, field: string): string {
+  return errors[field] ? "border-bear" : "";
+}
+
+export function TradeSetupFields({
+  form,
+  errors,
+  activeAccounts,
+  filteredStrategies,
+  isFutures,
+  unitLabel,
+  signalLabel,
+  onChange,
+  onAccountChange,
+  onAccountCreated,
+}: TradeSetupFieldsProps) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  return (
+    <>
+      {signalLabel && (
+        <div className="text-xs text-text-muted bg-surface-input border border-border rounded px-3 py-2">
+          From signal: <span className="text-text-primary">{signalLabel}</span>
+        </div>
+      )}
+
+      <fieldset className="space-y-3">
+        <legend className="label mb-2">Trade Setup</legend>
+
+        <div className="space-y-1">
+          <label className="label">Account</label>
+          <select
+            className={`${SELECT_CLASS} ${errBorder(errors, "account_id")}`}
+            value={form.account_id}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "__manage__") {
+                setSheetOpen(true);
+                return;
+              }
+              onAccountChange(val);
+            }}
+          >
+            <option value="">Select account...</option>
+            {activeAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.account_type})
+              </option>
+            ))}
+            <option value="__manage__">Manage accounts...</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="label">Strategy</label>
+            <select
+              className={`${SELECT_CLASS} ${errBorder(errors, "strategy")}`}
+              value={form.strategy}
+              onChange={(e) => {
+                const slug = e.target.value;
+                onChange("strategy", slug);
+                const meta = filteredStrategies.find((s) => s.slug === slug);
+                if (meta?.defaultSymbol) onChange("symbol", meta.defaultSymbol);
+              }}
+            >
+              <option value="">Select...</option>
+              {filteredStrategies.map((s) => (
+                <option key={s.slug} value={s.slug}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="label">Symbol</label>
+            <Input
+              value={form.symbol}
+              onChange={(e) => onChange("symbol", e.target.value.toUpperCase())}
+              placeholder="EURUSD"
+              className={`${INPUT_CLASS} ${errBorder(errors, "symbol")}`}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="label">Direction</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className={`px-4 py-1.5 rounded text-sm font-semibold border cursor-pointer transition-colors ${
+                form.direction === "BUY"
+                  ? "bg-bull/10 text-bull border-bull"
+                  : "bg-surface-input text-text-muted border-border hover:border-bull/40 hover:text-text-primary"
+              }`}
+              onClick={() => onChange("direction", "BUY")}
+            >
+              &#9650; BUY
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-1.5 rounded text-sm font-semibold border cursor-pointer transition-colors ${
+                form.direction === "SELL"
+                  ? "bg-bear/10 text-bear border-bear"
+                  : "bg-surface-input text-text-muted border-border hover:border-bear/40 hover:text-text-primary"
+              }`}
+              onClick={() => onChange("direction", "SELL")}
+            >
+              &#9660; SELL
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="label">Entry Price</label>
+            <Input
+              type="number"
+              step="any"
+              value={form.entry_price}
+              onChange={(e) => onChange("entry_price", e.target.value)}
+              className={`${INPUT_CLASS} ${errBorder(errors, "entry_price")}`}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="label">{isFutures ? "Contracts" : "Lot Size"}</label>
+            <Input
+              type="number"
+              step={isFutures ? "1" : "0.01"}
+              value={form.lot_size}
+              onChange={(e) => onChange("lot_size", e.target.value)}
+              className={`${INPUT_CLASS} ${errBorder(errors, "lot_size")}`}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="label">SL Price</label>
+            <Input
+              type="number"
+              step="any"
+              value={form.sl_price}
+              onChange={(e) => onChange("sl_price", e.target.value)}
+              className={`${INPUT_CLASS} ${errBorder(errors, "sl_price")}`}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="label">TP Price</label>
+            <Input
+              type="number"
+              step="any"
+              value={form.tp_price}
+              onChange={(e) => onChange("tp_price", e.target.value)}
+              placeholder="Optional"
+              className={INPUT_CLASS}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="label">Risk ({unitLabel})</label>
+            <Input
+              type="number"
+              step="0.1"
+              value={form.risk_pips}
+              onChange={(e) => onChange("risk_pips", e.target.value)}
+              className={`${INPUT_CLASS} ${errBorder(errors, "risk_pips")}`}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="label">Open Time (UTC)</label>
+          <DateTimePicker
+            value={form.open_time}
+            onChange={(v) => onChange("open_time", v)}
+            hasError={!!errors.open_time}
+          />
+        </div>
+      </fieldset>
+
+      <AccountSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onAccountCreated={onAccountCreated}
+      />
+    </>
+  );
+}
