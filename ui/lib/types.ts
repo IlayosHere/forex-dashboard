@@ -1,3 +1,5 @@
+export type InstrumentType = "forex" | "futures_mnq";
+
 export interface Signal {
   id: string;
   strategy: string;
@@ -50,6 +52,7 @@ export interface Trade {
   rating: number | null;
   confidence: number | null;
   screenshot_url: string | null;
+  instrument_type: InstrumentType | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;

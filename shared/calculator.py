@@ -12,6 +12,8 @@ produce consistent numbers.
 """
 from __future__ import annotations
 
+import math
+
 
 def _pip_size(symbol: str) -> float:
     """0.01 for JPY pairs, 0.0001 for everything else."""
@@ -41,47 +43,65 @@ def calculate_lot_size(
     account_balance: float,
     risk_percent: float,
     tp_pips: float | None = None,
+    instrument_type: str = "forex",
 ) -> dict:
     """Calculate lot size and risk metrics for a trade.
 
     Parameters
     ----------
-    symbol          : Currency pair, e.g. "EURUSD" or "USDJPY"
+    symbol          : Currency pair or instrument, e.g. "EURUSD" or "MNQ"
     entry           : Entry price (needed for pip value on USD-base pairs)
-    sl_pips         : Stop-loss distance from entry in pips
+    sl_pips         : Stop-loss distance in pips (forex) or points (futures)
     account_balance : Account equity in USD
     risk_percent    : Fraction of balance to risk, e.g. 1.0 for 1%
-    tp_pips         : Take-profit distance from entry in pips (optional — enables rr)
+    tp_pips         : Take-profit distance in pips/points (optional — enables rr)
+    instrument_type : "forex" (default) or "futures_mnq"
 
     Returns
     -------
     dict with keys:
-        lot_size  : float  — rounded to 0.01, minimum 0.01
-        risk_usd  : float  — dollar amount at risk
-        sl_pips   : float  — distance from entry to SL in pips
-        rr        : float | None — reward:risk ratio (None when tp_pips not given)
+        lot_size        : float  — lots (forex) or contracts (futures), min 1 for futures
+        risk_usd        : float  — dollar amount at risk
+        sl_pips         : float  — distance from entry to SL in pips/points
+        rr              : float | None — reward:risk ratio (None when tp_pips not given)
+        instrument_type : str    — echoed back for the response
     """
     if sl_pips == 0:
         return {
-            "lot_size": 0.01,
+            "lot_size": 1 if instrument_type == "futures_mnq" else 0.01,
             "risk_usd": 0.0,
             "sl_pips": 0.0,
             "rr": None,
+            "instrument_type": instrument_type,
         }
 
     risk_usd = account_balance * (risk_percent / 100.0)
-    pip_value = _pip_value_per_lot(symbol, entry)
-
-    raw_lots = risk_usd / (sl_pips * pip_value)
-    lot_size = round(max(raw_lots, 0.01), 2)
 
     rr: float | None = None
     if tp_pips is not None:
         rr = round(tp_pips / sl_pips, 2)
+
+    if instrument_type == "futures_mnq":
+        # MNQ: $2.00 per point per contract
+        raw_contracts = risk_usd / (sl_pips * 2.0)
+        contracts = max(math.floor(raw_contracts), 1)
+        return {
+            "lot_size": contracts,
+            "risk_usd": round(risk_usd, 2),
+            "sl_pips": round(sl_pips, 2),
+            "rr": rr,
+            "instrument_type": instrument_type,
+        }
+
+    # Default: forex
+    pip_value = _pip_value_per_lot(symbol, entry)
+    raw_lots = risk_usd / (sl_pips * pip_value)
+    lot_size = round(max(raw_lots, 0.01), 2)
 
     return {
         "lot_size": lot_size,
         "risk_usd": round(risk_usd, 2),
         "sl_pips": round(sl_pips, 1),
         "rr": rr,
+        "instrument_type": instrument_type,
     }

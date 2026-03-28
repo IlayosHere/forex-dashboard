@@ -24,5 +24,6 @@ def calculate(req: CalculateRequest) -> CalculateResponse:
         account_balance=req.account_balance,
         risk_percent=req.risk_percent,
         tp_pips=req.tp_pips,
+        instrument_type=req.instrument_type,
     )
     return CalculateResponse(**result)

@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { StarRating } from "./StarRating";
 import { TagInput } from "./TagInput";
-import { strategies } from "@/lib/strategies";
+import { strategies, getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
 
 export interface TradeFormData {
   signal_id: string | null;
@@ -23,6 +24,7 @@ export interface TradeFormData {
   rating: number | null;
   confidence: number | null;
   screenshot_url: string;
+  instrument_type?: string;
 }
 
 interface TradeFormProps {
@@ -41,6 +43,11 @@ const selectClass =
 export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }: TradeFormProps) {
   const [form, setForm] = useState<TradeFormData>(initial);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  const instrumentType = getInstrumentType(form.strategy);
+  const unitLabel = getUnitLabel(instrumentType);
+  const sizeLabel = getSizeLabel(instrumentType);
+  const isFutures = instrumentType === "futures_mnq";
 
   // Sync form when initial data arrives asynchronously (e.g. signal fetch)
   useEffect(() => {
@@ -65,7 +72,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) onSubmit(form);
+    if (validate()) onSubmit({ ...form, instrument_type: instrumentType });
   };
 
   const errBorder = (field: string) =>
@@ -89,7 +96,12 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
             <select
               className={`${selectClass} ${errBorder("strategy")}`}
               value={form.strategy}
-              onChange={(e) => set("strategy", e.target.value)}
+              onChange={(e) => {
+                const slug = e.target.value;
+                set("strategy", slug);
+                const meta = strategies.find((s) => s.slug === slug);
+                if (meta?.defaultSymbol) set("symbol", meta.defaultSymbol);
+              }}
             >
               <option value="">Select...</option>
               {strategies.map((s) => (
@@ -148,10 +160,10 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
             />
           </div>
           <div className="space-y-1">
-            <label className="label">Lot Size</label>
+            <label className="label">{isFutures ? "Contracts" : "Lot Size"}</label>
             <Input
               type="number"
-              step="0.01"
+              step={isFutures ? "1" : "0.01"}
               value={form.lot_size}
               onChange={(e) => set("lot_size", e.target.value)}
               className={`${inputClass} ${errBorder("lot_size")}`}
@@ -182,7 +194,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
             />
           </div>
           <div className="space-y-1">
-            <label className="label">Risk (pips)</label>
+            <label className="label">Risk ({unitLabel})</label>
             <Input
               type="number"
               step="0.1"
@@ -195,11 +207,10 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
         <div className="space-y-1">
           <label className="label">Open Time (UTC)</label>
-          <Input
-            type="datetime-local"
+          <DateTimePicker
             value={form.open_time}
-            onChange={(e) => set("open_time", e.target.value)}
-            className={`${inputClass} ${errBorder("open_time")}`}
+            onChange={(v) => set("open_time", v)}
+            hasError={!!errors.open_time}
           />
         </div>
       </fieldset>

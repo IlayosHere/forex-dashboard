@@ -1,6 +1,7 @@
 "use client";
 
 import type { Trade } from "@/lib/types";
+import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
 import { StatusBadge } from "./StatusBadge";
 import { StarRating } from "./StarRating";
 
@@ -35,6 +36,7 @@ function pnlSign(v: number | null, decimals = 1): string {
 
 export function TradeCard({ trade, onClick }: TradeCardProps) {
   const isBuy = trade.direction === "BUY";
+  const unitLabel = getUnitLabel(trade.instrument_type ?? getInstrumentType(trade.strategy));
 
   return (
     <div
@@ -54,7 +56,7 @@ export function TradeCard({ trade, onClick }: TradeCardProps) {
             {trade.direction}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
-            {pnlSign(trade.pnl_pips)} pips
+            {pnlSign(trade.pnl_pips)} {unitLabel}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
             {trade.pnl_usd !== null ? `${pnlSign(trade.pnl_usd, 2)}$` : ""}

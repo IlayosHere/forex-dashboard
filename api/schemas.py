@@ -51,6 +51,7 @@ class CalculateRequest(BaseModel):
     account_balance: float
     risk_percent: float
     tp_pips: float | None = None
+    instrument_type: str = "forex"
 
 
 class CalculateResponse(BaseModel):
@@ -58,6 +59,7 @@ class CalculateResponse(BaseModel):
     risk_usd: float
     sl_pips: float
     rr: float | None
+    instrument_type: str = "forex"
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +71,7 @@ class TradeCreateRequest(BaseModel):
     signal_id: str | None = None
     strategy: str
     symbol: str
+    instrument_type: str = "forex"
     direction: str
     entry_price: float
     sl_price: float
@@ -92,6 +95,7 @@ class TradeCreateRequest(BaseModel):
 
 
 class TradeUpdateRequest(BaseModel):
+    instrument_type: str | None = None
     exit_price: float | None = None
     sl_price: float | None = None
     tp_price: float | None = None
@@ -128,6 +132,7 @@ class TradeResponse(BaseModel):
     signal_id: str | None
     strategy: str
     symbol: str
+    instrument_type: str
     direction: str
     entry_price: float
     exit_price: float | None

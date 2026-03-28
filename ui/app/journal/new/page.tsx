@@ -6,6 +6,7 @@ import { fetchSignal } from "@/lib/api";
 import { createTrade } from "@/lib/api";
 import { TradeForm, type TradeFormData } from "@/components/TradeForm";
 import type { Signal } from "@/lib/types";
+import { getInstrumentType, strategies } from "@/lib/strategies";
 
 function pipSize(symbol: string): number {
   return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
@@ -43,11 +44,22 @@ function NewTradeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signalId = searchParams.get("signal");
+  const strategyParam = searchParams.get("strategy");
   const slOverride = searchParams.get("sl");
   const tpOverride = searchParams.get("tp");
   const lotOverride = searchParams.get("lot_size");
 
-  const [initial, setInitial] = useState<TradeFormData>(emptyForm);
+  const [initial, setInitial] = useState<TradeFormData>(() => {
+    if (strategyParam && !signalId) {
+      const meta = strategies.find((s) => s.slug === strategyParam);
+      return {
+        ...emptyForm,
+        strategy: strategyParam,
+        symbol: meta?.defaultSymbol ?? "",
+      };
+    }
+    return emptyForm;
+  });
   const [signalLabel, setSignalLabel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -104,6 +116,7 @@ function NewTradeContent() {
         rating: data.rating,
         confidence: data.confidence,
         screenshot_url: data.screenshot_url || null,
+        instrument_type: data.instrument_type ?? getInstrumentType(data.strategy),
         metadata: {},
       };
       const trade = await createTrade(body);
