@@ -1,8 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import { strategies } from "@/lib/strategies";
+import type { Account, InstrumentType } from "@/lib/types";
 
 export interface TradeFilterValues {
+  account_id: string;
   strategy: string;
   symbol: string;
   status: string;
@@ -15,6 +18,8 @@ interface TradeFiltersProps {
   values: TradeFilterValues;
   onChange: (values: TradeFilterValues) => void;
   symbols: string[];
+  accounts: Account[];
+  instrumentType: InstrumentType;
 }
 
 const selectClass =
@@ -22,21 +27,37 @@ const selectClass =
 const dateClass =
   "bg-[#1e1e1e] border border-[#2a2a2a] text-sm text-[#e0e0e0] rounded px-3 py-1.5 outline-none focus:border-[#26a69a] w-36 cursor-pointer transition-colors";
 
-export function TradeFilters({ values, onChange, symbols }: TradeFiltersProps) {
+export function TradeFilters({ values, onChange, symbols, accounts, instrumentType }: TradeFiltersProps) {
   const set = (key: keyof TradeFilterValues, v: string) =>
     onChange({ ...values, [key]: v });
 
   const hasActive = Object.values(values).some((v) => v !== "");
 
+  const scopedStrategies = useMemo(
+    () => strategies.filter((s) => s.instrumentType === instrumentType),
+    [instrumentType],
+  );
+
   return (
     <div className="flex flex-wrap items-center gap-2 py-3">
+      <select
+        className={selectClass}
+        value={values.account_id}
+        onChange={(e) => set("account_id", e.target.value)}
+      >
+        <option value="">All Accounts</option>
+        {accounts.map((a) => (
+          <option key={a.id} value={a.id}>{a.name} ({a.account_type})</option>
+        ))}
+      </select>
+
       <select
         className={selectClass}
         value={values.strategy}
         onChange={(e) => set("strategy", e.target.value)}
       >
         <option value="">All Strategies</option>
-        {strategies.map((s) => (
+        {scopedStrategies.map((s) => (
           <option key={s.slug} value={s.slug}>{s.label}</option>
         ))}
       </select>
@@ -95,7 +116,7 @@ export function TradeFilters({ values, onChange, symbols }: TradeFiltersProps) {
           type="button"
           className="text-xs text-[#777777] hover:text-[#e0e0e0] cursor-pointer transition-colors"
           onClick={() =>
-            onChange({ strategy: "", symbol: "", status: "", outcome: "", from: "", to: "" })
+            onChange({ account_id: "", strategy: "", symbol: "", status: "", outcome: "", from: "", to: "" })
           }
         >
           Clear all

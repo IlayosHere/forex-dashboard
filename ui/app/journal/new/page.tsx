@@ -23,6 +23,7 @@ function toLocalDatetime(iso: string): string {
 }
 
 const emptyForm: TradeFormData = {
+  account_id: "",
   signal_id: null,
   strategy: "",
   symbol: "",
@@ -54,6 +55,7 @@ function NewTradeContent() {
       const meta = strategies.find((s) => s.slug === strategyParam);
       return {
         ...emptyForm,
+        account_id: "",
         strategy: strategyParam,
         symbol: meta?.defaultSymbol ?? "",
       };
@@ -75,6 +77,7 @@ function NewTradeContent() {
         const lotSize = lotOverride ? parseFloat(lotOverride) : signal.lot_size;
         const riskPips = Math.round(Math.abs(signal.entry - sl) / pipSize(signal.symbol) * 10) / 10;
         setInitial({
+          account_id: "",
           signal_id: signal.id,
           strategy: signal.strategy,
           symbol: signal.symbol,
@@ -101,6 +104,7 @@ function NewTradeContent() {
     setLoading(true);
     try {
       const body: Record<string, unknown> = {
+        account_id: data.account_id || null,
         signal_id: data.signal_id || null,
         strategy: data.strategy,
         symbol: data.symbol,

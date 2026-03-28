@@ -1,8 +1,8 @@
 "use client";
 
-import { strategies } from "@/lib/strategies";
+import type { InstrumentType } from "@/lib/types";
 
-const PAIRS = [
+const FOREX_PAIRS = [
   "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD",
   "EURJPY", "EURGBP", "EURCHF", "EURAUD", "EURCAD", "EURNZD",
   "GBPJPY", "GBPAUD", "GBPCAD", "GBPCHF", "GBPNZD",
@@ -11,8 +11,9 @@ const PAIRS = [
   "CADJPY", "CADCHF", "CHFJPY",
 ];
 
+const FUTURES_SYMBOLS = ["MNQ"];
+
 export interface SignalFilterValues {
-  strategy: string;
   symbol: string;
   direction: string;
   dateFrom: string;
@@ -24,6 +25,7 @@ interface SignalFiltersProps {
   onChange: (values: SignalFilterValues) => void;
   total: number;
   onReset: () => void;
+  instrumentType: InstrumentType;
 }
 
 const selectClass =
@@ -34,35 +36,25 @@ const inputClass =
   "bg-[#1a1a1a] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
   "focus:outline-none focus:border-[#3a3a3a] min-w-[130px]";
 
-export function SignalFilters({ values, onChange, total, onReset }: SignalFiltersProps) {
+export function SignalFilters({ values, onChange, total, onReset, instrumentType }: SignalFiltersProps) {
   const update = (patch: Partial<SignalFilterValues>) =>
     onChange({ ...values, ...patch });
 
   const hasFilters =
-    values.strategy || values.symbol || values.direction || values.dateFrom || values.dateTo;
+    values.symbol || values.direction || values.dateFrom || values.dateTo;
+
+  const symbols = instrumentType === "futures_mnq" ? FUTURES_SYMBOLS : FOREX_PAIRS;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* Strategy */}
-      <select
-        className={selectClass}
-        value={values.strategy}
-        onChange={(e) => update({ strategy: e.target.value })}
-      >
-        <option value="">All Strategies</option>
-        {strategies.map((s) => (
-          <option key={s.slug} value={s.slug}>{s.label}</option>
-        ))}
-      </select>
-
       {/* Symbol */}
       <select
         className={selectClass}
         value={values.symbol}
         onChange={(e) => update({ symbol: e.target.value })}
       >
-        <option value="">All Pairs</option>
-        {PAIRS.map((p) => (
+        <option value="">{instrumentType === "futures_mnq" ? "All Symbols" : "All Pairs"}</option>
+        {symbols.map((p) => (
           <option key={p} value={p}>{p}</option>
         ))}
       </select>

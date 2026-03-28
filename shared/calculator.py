@@ -15,19 +15,19 @@ from __future__ import annotations
 import math
 
 
-def _pip_size(symbol: str) -> float:
+def pip_size(symbol: str) -> float:
     """0.01 for JPY pairs, 0.0001 for everything else."""
-    return 0.01 if "JPY" in symbol.upper() else 0.0001
+    return 0.01 if "JPY" in symbol.upper().replace("/", "") else 0.0001
 
 
-def _pip_value_per_lot(symbol: str, price: float) -> float:
+def pip_value_per_lot(symbol: str, price: float) -> float:
     """USD pip value for one standard lot (100,000 units of base currency).
 
     - Quote = USD  (EURUSD, GBPUSD, AUDUSD, NZDUSD): $10 flat
     - Base  = USD  (USDJPY, USDCHF, USDCAD):  (100_000 * pip) / price
     - Cross pairs: $10 fallback (conservative)
     """
-    sym = symbol.upper()
+    sym = symbol.upper().replace("/", "")
     if sym.endswith("USD"):
         return 10.0
     if sym.startswith("USD"):
@@ -94,7 +94,7 @@ def calculate_lot_size(
         }
 
     # Default: forex
-    pip_value = _pip_value_per_lot(symbol, entry)
+    pip_value = pip_value_per_lot(symbol, entry)
     raw_lots = risk_usd / (sl_pips * pip_value)
     lot_size = round(max(raw_lots, 0.01), 2)
 

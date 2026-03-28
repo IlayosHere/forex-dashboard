@@ -22,7 +22,9 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from tvDatafeed import TvDatafeed, Interval
 
+from shared.calculator import pip_size
 from shared.signal import Signal
+
 from .calculations import calculate_trade_params
 from .config import EXCHANGE_TZ
 
@@ -132,11 +134,6 @@ class FVG:
 # FVG detection and signal scanning
 # ---------------------------------------------------------------------------
 
-def _pip_size(symbol: str) -> float:
-    """Return pip size for a symbol."""
-    return 0.01 if "JPY" in symbol.upper().replace("/", "") else 0.0001
-
-
 def _find_last_closed_index(candles: pd.DataFrame) -> Optional[int]:
     """Find index of last closed candle (before current 15-min boundary)."""
     now = datetime.now(timezone.utc)
@@ -177,7 +174,7 @@ def scan_symbol(candles: pd.DataFrame, symbol: str) -> List[Dict[str, Any]]:
     if candle_key in _alerted_candles:
         return []
 
-    pip = _pip_size(symbol)
+    pip = pip_size(symbol)
     h = candles["high"].values
     l = candles["low"].values
     c = candles["close"].values

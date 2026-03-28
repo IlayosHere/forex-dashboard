@@ -7,16 +7,21 @@ Pure function, no database access. Delegates entirely to shared.calculator.
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter
 
 from api.schemas import CalculateRequest, CalculateResponse
 from shared.calculator import calculate_lot_size
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.post("/calculate", response_model=CalculateResponse)
 def calculate(req: CalculateRequest) -> CalculateResponse:
+    """Calculate lot size from entry, SL, balance, and risk percent."""
     result = calculate_lot_size(
         symbol=req.symbol,
         entry=req.entry,
