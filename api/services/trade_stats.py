@@ -34,7 +34,7 @@ def calculate_trade_metrics(
     breakevens = sum(1 for t in closed if t.outcome == "breakeven")
     win_rate = round(wins / (wins + losses) * 100, 1) if (wins + losses) > 0 else None
 
-    rr_values = [t.rr_achieved for t in closed if t.rr_achieved is not None]
+    rr_values = [t.rr_achieved for t in closed if t.rr_achieved is not None and t.outcome == "win"]
     avg_rr = round(sum(rr_values) / len(rr_values), 2) if rr_values else None
 
     pnl_pips_values = [t.pnl_pips for t in closed if t.pnl_pips is not None]

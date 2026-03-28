@@ -51,6 +51,12 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
 
+  // Filter accounts to match the selected strategy's instrument type
+  const filteredAccounts = useMemo(() => {
+    if (!form.strategy) return activeAccounts;
+    return activeAccounts.filter((a) => a.instrument_type === instrumentType);
+  }, [activeAccounts, form.strategy, instrumentType]);
+
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.id === form.account_id) ?? null,
     [accounts, form.account_id],
@@ -63,6 +69,13 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   useEffect(() => {
     setForm(initial);
   }, [initial]);
+
+  // Clear account if it no longer matches the filtered list (e.g. strategy changed)
+  useEffect(() => {
+    if (form.account_id && filteredAccounts.length > 0 && !filteredAccounts.some((a) => a.id === form.account_id)) {
+      set("account_id", "");
+    }
+  }, [filteredAccounts, form.account_id]);
 
   const set = <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -108,7 +121,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
       <TradeSetupFields
         form={form}
         errors={errors}
-        activeAccounts={activeAccounts}
+        activeAccounts={filteredAccounts}
         filteredStrategies={filteredStrategies}
         isFutures={isFutures}
         unitLabel={unitLabel}

@@ -67,6 +67,7 @@ def test_metrics_all_losses(db: Session) -> None:
     assert m["losses"] == 2
     assert m["win_rate"] == 0.0
     assert m["current_streak"] == -2
+    assert m["avg_rr"] is None  # no wins → no avg R:R
 
 
 def test_metrics_mixed_results(db: Session) -> None:
@@ -93,6 +94,7 @@ def test_metrics_mixed_results(db: Session) -> None:
     assert m["wins"] == 2
     assert m["losses"] == 1
     assert m["total_pnl_pips"] == 35.0
+    assert m["avg_rr"] == 1.75  # (2.0 + 1.5) / 2 — wins only
     assert m["profit_factor"] == 3.33  # 250 / 75
     assert m["current_streak"] == 1  # last trade is a win
 
