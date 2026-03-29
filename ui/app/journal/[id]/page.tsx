@@ -8,6 +8,7 @@ import { TradeInfoPanel } from "@/components/TradeInfoPanel";
 import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
+import type { TradeEditFields } from "@/components/TradeInfoPanel";
 
 import type { Trade, AccountType } from "@/lib/types";
 
@@ -60,6 +61,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const { accounts } = useAccounts();
 
@@ -94,10 +96,10 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const sizeLabel = getSizeLabel(instrumentType);
 
   const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
-    if (!editable.exitPrice && outcome !== "breakeven") return;
+    if (!editable.exitPrice) return;
     setSaving(true);
     try {
-      const ep = outcome === "breakeven" ? trade.entry_price : parseFloat(editable.exitPrice);
+      const ep = parseFloat(editable.exitPrice);
       const status = outcome === "breakeven" ? "breakeven" : "closed";
       const t = await updateTrade(id, {
         exit_price: ep,
@@ -144,6 +146,19 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     }
   };
 
+  const saveEdit = async (fields: TradeEditFields) => {
+    setSaving(true);
+    try {
+      const t = await updateTrade(id, { ...fields });
+      setTrade(t);
+      setEditing(false);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     setSaving(true);
     try {
@@ -173,6 +188,12 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
             accountType={tradeAccountType}
             unitLabel={unitLabel}
             sizeLabel={sizeLabel}
+            edit={{
+              editing,
+              saving,
+              onToggle: () => setEditing(!editing),
+              onSave: saveEdit,
+            }}
           />
           <TradeResultPanel trade={trade} unitLabel={unitLabel} />
         </div>
