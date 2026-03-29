@@ -134,7 +134,7 @@ class AccountResponse(BaseModel):
 class CalculateRequest(BaseModel):
     symbol: str
     entry: float
-    sl_pips: float
+    sl_pips: float = Field(gt=0)
     account_balance: float
     risk_percent: float
     tp_pips: float | None = None

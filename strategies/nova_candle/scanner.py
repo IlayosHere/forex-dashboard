@@ -93,7 +93,7 @@ def find_nova_candle(
         return None  # doji
 
     # No open-side wick (bullish: open == low, bearish: open == high)
-    # Tolerance: 2 pip (3rd decimal for JPY, 5th decimal for others)
+    # Tolerance: 1 point (0.1 pip) — essentially zero wick
     pip = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
     wick_tolerance = pip
 

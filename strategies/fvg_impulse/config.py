@@ -60,7 +60,7 @@ SPREADS_H0: dict[str, float] = {
     "CADCHF": 9.6, "AUDCHF": 11.0,
 }
 
-SLIPPAGE_PIPS: float = 0.3
+SLIPPAGE_PIPS: float = 0.2
 
 
 def get_spread_pips(symbol: str, broker_hour: int) -> float:
