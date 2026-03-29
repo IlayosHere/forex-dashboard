@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
 import { strategies, type StrategyMeta } from "@/lib/strategies";
@@ -48,7 +48,9 @@ function formatPrice(price: number, symbol: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(strategies[0]);
+  const searchParams = useSearchParams();
+  const initialStrategy = strategies.find((s) => s.slug === searchParams.get("strategy")) ?? strategies[0];
+  const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(initialStrategy);
   const [filters, setFilters] = useState<SignalFilterValues>(emptyFilters);
   const [page, setPage] = useState(0);
 
@@ -134,9 +136,17 @@ export default function DashboardPage() {
 
       {/* Empty */}
       {!loading && !error && signals.length === 0 && (
-        <p className="text-[#777777] text-sm py-8 text-center">
-          No signals match your filters.
-        </p>
+        <div className="text-center py-12">
+          <p className="text-[#777777] text-sm mb-1">No signals match your filters.</p>
+          {(filters.symbol || filters.direction || filters.dateFrom || filters.dateTo) && (
+            <button
+              onClick={() => { setFilters(emptyFilters); setPage(0); }}
+              className="text-xs text-[#26a69a] hover:underline cursor-pointer mt-2"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
       )}
 
       {/* Signal table */}
