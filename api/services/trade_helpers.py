@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from api.models import AccountModel, TradeModel
@@ -51,7 +51,7 @@ def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
 
 
 def apply_trade_filters(
-    stmt: select,
+    stmt: Select,
     strategy: str | None,
     symbol: str | None,
     status: str | None,
@@ -60,7 +60,7 @@ def apply_trade_filters(
     date_to: date | None,
     instrument_type: str | None = None,
     account_id: str | None = None,
-) -> select:
+) -> Select:
     """Apply optional query filters to a trade SELECT statement."""
     if strategy is not None:
         stmt = stmt.where(TradeModel.strategy == strategy)

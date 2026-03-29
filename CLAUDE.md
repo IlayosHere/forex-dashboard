@@ -245,3 +245,5 @@ See `.claude/agents/` for the full roster. Key ones by phase:
 | Docker & deployment | `engineering-devops-automator` |
 | Security review | `engineering-security-engineer` |
 | New strategy scaffold | `/add-strategy` slash command |
+| Backend tests | `/test-backend` — run, write, find gaps, fix failures |
+| Frontend tests | `/test-client` — run, write, find gaps, fix failures |

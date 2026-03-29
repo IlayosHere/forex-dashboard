@@ -76,6 +76,26 @@ class _TradeFilterParams:
         self.date_to = date_to
 
 
+class _StatsFilterParams:
+    """Dependency for stats — excludes status/outcome (stats compute their own breakdown)."""
+
+    def __init__(
+        self,
+        strategy: str | None = Query(default=None),
+        symbol: str | None = Query(default=None),
+        instrument_type: str | None = Query(default=None),
+        account_id: str | None = Query(default=None),
+        date_from: date | None = Query(default=None, alias="from"),
+        date_to: date | None = Query(default=None, alias="to"),
+    ) -> None:
+        self.strategy = strategy
+        self.symbol = symbol
+        self.instrument_type = instrument_type
+        self.account_id = account_id
+        self.date_from = date_from
+        self.date_to = date_to
+
+
 @router.post("/trades", response_model=TradeResponse, status_code=201)
 def create_trade(
     req: TradeCreateRequest,
@@ -137,7 +157,7 @@ def list_trades(
 @router.get("/trades/stats", response_model=TradeStatsResponse)
 def trade_stats(
     db: Annotated[Session, Depends(get_db)],
-    filters: Annotated[_TradeFilterParams, Depends()],
+    filters: Annotated[_StatsFilterParams, Depends()],
 ) -> dict:
     """Return aggregated performance statistics for filtered trades."""
     stmt = select(TradeModel)
@@ -202,6 +222,10 @@ def update_trade(
         trade.pnl_usd = pnl_usd
         trade.rr_achieved = rr
         logger.info("Trade closed: %s pnl_pips=%s", trade_id, pnl_pips)
+    elif trade.status == "open":
+        trade.pnl_pips = None
+        trade.pnl_usd = None
+        trade.rr_achieved = None
 
     trade.updated_at = datetime.now(timezone.utc)
     db.commit()

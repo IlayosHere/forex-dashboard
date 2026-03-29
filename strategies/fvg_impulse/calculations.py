@@ -19,9 +19,8 @@ from typing import Any
 
 from shared.calculator import pip_size, pip_value_per_lot
 
-from .config import EXCHANGE_TZ, get_spread_pips
+from .config import EXCHANGE_TZ, SLIPPAGE_PIPS, get_spread_pips
 
-SLIPPAGE_PIPS: float = 0.2
 SL_BUFFER_PIPS: float = 3.0
 ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
 

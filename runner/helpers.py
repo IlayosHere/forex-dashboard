@@ -106,6 +106,7 @@ def is_duplicate(db: Session, sig: Signal) -> bool:
         .filter(
             SignalModel.strategy == sig.strategy,
             SignalModel.symbol == sig.symbol,
+            SignalModel.direction == sig.direction,
             SignalModel.candle_time == sig.candle_time,
         )
         .first()
