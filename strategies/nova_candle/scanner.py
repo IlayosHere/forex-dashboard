@@ -196,8 +196,9 @@ def find_nova_candle(
 
     return {
         "direction": direction,
-        "entry_price": cl,
+        "entry_price": o,
         "candle_time": c.name,
+        "signal_idx": idx,
         "open": o,
         "high": h,
         "low": l,
@@ -232,7 +233,7 @@ def scan_all_symbols(
         result = find_nova_candle(candles, symbol)
         if result is not None:
             result["symbol"] = symbol
-            result.update(calculate_trade_params(result))
+            result.update(calculate_trade_params(result, candles, result["signal_idx"]))
             signals.append(result)
 
     return signals
@@ -261,6 +262,8 @@ def _to_signal(raw: Dict[str, Any]) -> Signal:
             "low": raw["low"],
             "close": raw["close"],
             "ema50_used": True,
+            "bos_candle_time": raw.get("bos_candle_time"),
+            "bos_swing_price": raw.get("bos_swing_price"),
         },
     )
 
