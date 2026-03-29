@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -29,7 +29,7 @@ function formatLastScan(signals: Signal[]): string {
   }
 }
 
-export default function StrategyPage({ params }: StrategyPageProps) {
+function StrategyContent({ params }: StrategyPageProps) {
   const { slug } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -121,5 +121,13 @@ export default function StrategyPage({ params }: StrategyPageProps) {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StrategyPage({ params }: StrategyPageProps) {
+  return (
+    <Suspense fallback={<p className="p-6 text-muted-foreground text-sm">Loading...</p>}>
+      <StrategyContent params={params} />
+    </Suspense>
   );
 }

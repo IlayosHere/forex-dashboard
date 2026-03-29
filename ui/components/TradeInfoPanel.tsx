@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,13 @@ export function TradeInfoPanel({
     setLotSize(String(trade.lot_size));
     setError(null);
   };
+
+  // Sync local state from props when the trade is updated externally,
+  // but only when NOT in edit mode so ongoing edits aren't interrupted.
+  useEffect(() => {
+    if (!editing) resetFields();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trade]);
 
   const handleCancel = () => {
     resetFields();

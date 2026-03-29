@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { SidebarNav } from "@/components/SidebarNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,21 +27,7 @@ export default function RootLayout({
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 px-2 py-3 space-y-0.5">
-            <Link
-              href="/"
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-foreground hover:bg-elevated transition-colors"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/journal"
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-foreground hover:bg-elevated transition-colors"
-            >
-              Journal
-            </Link>
-          </nav>
+          <SidebarNav />
         </aside>
 
         {/* Content area — offset by sidebar width */}

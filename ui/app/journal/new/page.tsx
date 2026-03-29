@@ -67,12 +67,14 @@ function NewTradeContent() {
     return emptyForm;
   });
   const [signalLabel, setSignalLabel] = useState<string | null>(null);
+  const [signalError, setSignalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Pre-fill from signal if query param present, with calculator overrides
   useEffect(() => {
     if (!signalId) return;
     let cancelled = false;
+    setSignalError(null);
     fetchSignal(signalId)
       .then((signal: Signal) => {
         if (cancelled) return;
@@ -100,7 +102,7 @@ function NewTradeContent() {
         });
         setSignalLabel(`${signal.symbol} ${signal.direction} — ${signal.strategy}`);
       })
-      .catch(() => {});
+      .catch(() => { if (!cancelled) setSignalError("Could not load signal"); });
     return () => { cancelled = true; };
   }, [signalId, slOverride, tpOverride, lotOverride]);
 
@@ -137,13 +139,18 @@ function NewTradeContent() {
   };
 
   return (
-    <TradeForm
-      initial={initial}
-      onSubmit={handleSubmit}
-      onCancel={() => router.back()}
-      loading={loading}
-      signalLabel={signalLabel}
-    />
+    <>
+      {signalError && (
+        <p className="text-bear text-sm mb-3">{signalError}</p>
+      )}
+      <TradeForm
+        initial={initial}
+        onSubmit={handleSubmit}
+        onCancel={() => router.back()}
+        loading={loading}
+        signalLabel={signalLabel}
+      />
+    </>
   );
 }
 

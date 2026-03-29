@@ -46,7 +46,7 @@ export function TradeResultPanel({ trade, unitLabel }: TradeResultPanelProps) {
           <span className="price font-bold" style={{ color: pnlColor(trade.pnl_pips) }}>
             {trade.pnl_pips != null ? `${trade.pnl_pips > 0 ? "+" : ""}${trade.pnl_pips} ${unitLabel}` : "\u2014"}
             {trade.pnl_usd != null && (
-              <span className="text-xs ml-2">(${trade.pnl_usd > 0 ? "+" : ""}{trade.pnl_usd.toFixed(2)})</span>
+              <span className="text-xs ml-2">({trade.pnl_usd >= 0 ? "+$" : "-$"}{Math.abs(trade.pnl_usd).toFixed(2)})</span>
             )}
           </span>
         </div>
