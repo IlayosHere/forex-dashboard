@@ -51,7 +51,7 @@ export function TradeCloseActions({
         <Button
           variant="outline"
           onClick={() => onClose("breakeven")}
-          disabled={saving}
+          disabled={saving || !exitPrice}
         >
           Breakeven
         </Button>

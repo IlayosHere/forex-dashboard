@@ -58,7 +58,6 @@ def find_nova_candle(
 
     Criteria:
     1. No open-side wick (open == low for bullish, open == high for bearish)
-    2. Trend filter: close must be above EMA 50 for BUY, below for SELL
 
     Returns dict with signal info or None.
     """
@@ -109,16 +108,6 @@ def find_nova_candle(
             c.name, open_wick,
         )
         return None
-
-    # Trend filter: price must be on the right side of EMA 50
-    if len(candles) >= 50:
-        ema50 = candles["close"].ewm(span=50, adjust=False).mean().iloc[idx]
-        if is_bullish and cl < ema50:
-            logger.debug("Nova @ %s rejected: BUY but close %.5f < EMA50 %.5f", c.name, cl, ema50)
-            return None
-        if is_bearish and cl > ema50:
-            logger.debug("Nova @ %s rejected: SELL but close %.5f > EMA50 %.5f", c.name, cl, ema50)
-            return None
 
     # --- All checks passed ---
     _alerted_candles.add(candle_key)
@@ -196,7 +185,6 @@ def _to_signal(raw: dict[str, Any]) -> Signal:
             "high": raw["high"],
             "low": raw["low"],
             "close": raw["close"],
-            "ema50_used": True,
             "bos_candle_time": raw.get("bos_candle_time"),
             "bos_swing_price": raw.get("bos_swing_price"),
         },

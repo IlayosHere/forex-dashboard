@@ -19,7 +19,7 @@ export const strategies: StrategyMeta[] = [
     slug: "nova-candle",
     label: "Nova Candle",
     instrumentType: "forex",
-    description: "Wickless momentum candle detection on M15 with EMA50 trend filter",
+    description: "Wickless momentum candle detection on M15",
   },
   {
     slug: "mnq-daily",

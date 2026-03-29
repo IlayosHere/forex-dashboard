@@ -42,10 +42,13 @@ class TradeCreateRequest(BaseModel):
 
 class TradeUpdateRequest(BaseModel):
     instrument_type: str | None = None
+    direction: str | None = None
+    entry_price: float | None = None
     exit_price: float | None = None
     sl_price: float | None = None
     tp_price: float | None = None
     lot_size: float | None = None
+    risk_pips: float | None = None
     status: str | None = None
     outcome: str | None = None
     close_time: datetime | None = None
