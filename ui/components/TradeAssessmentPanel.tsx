@@ -1,5 +1,4 @@
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
 
@@ -9,13 +8,11 @@ interface TradeAssessmentPanelProps {
   tags: string[];
   notes: string;
   screenshotUrl: string;
-  saving: boolean;
   onRatingChange: (v: number | null) => void;
   onConfidenceChange: (v: number | null) => void;
   onTagsChange: (v: string[]) => void;
   onNotesChange: (v: string) => void;
   onScreenshotUrlChange: (v: string) => void;
-  onSave: () => void;
 }
 
 const INPUT_CLASS =
@@ -27,19 +24,17 @@ export function TradeAssessmentPanel({
   tags,
   notes,
   screenshotUrl,
-  saving,
   onRatingChange,
   onConfidenceChange,
   onTagsChange,
   onNotesChange,
   onScreenshotUrlChange,
-  onSave,
 }: TradeAssessmentPanelProps) {
   return (
-    <div className="border border-border rounded p-3 space-y-3 bg-card">
+    <div className="border border-border rounded p-4 space-y-4 bg-card">
       <div className="label">Assessment</div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <label className="label">Rating</label>
           <StarRating value={rating} onChange={onRatingChange} />
@@ -75,10 +70,6 @@ export function TradeAssessmentPanel({
           className={INPUT_CLASS}
         />
       </div>
-
-      <Button onClick={onSave} disabled={saving} className="w-full">
-        {saving ? "Saving..." : "Save Changes"}
-      </Button>
     </div>
   );
 }

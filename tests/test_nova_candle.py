@@ -145,10 +145,7 @@ def test_bos_sl_min_risk_skips_tight_swing() -> None:
 
 
 def _nova_df(direction: str, n: int = 55) -> pd.DataFrame:
-    """Build a DataFrame with a nova candle as the second-to-last bar.
-
-    For EMA50 trend filter to pass, all closes trend in the signal direction.
-    """
+    """Build a DataFrame with a nova candle as the second-to-last bar."""
     idx = _utc_index(n, recent=True)
     if direction == "BUY":
         base = np.linspace(1.0800, 1.1000, n)
