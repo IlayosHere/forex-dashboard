@@ -30,6 +30,7 @@ from api.schemas import (
     TradeUpdateRequest,
 )
 from api.services.trade_helpers import (
+    PnlInput,
     apply_trade_filters,
     build_account_lookup,
     calculate_pnl,
@@ -44,6 +45,35 @@ from api.services.trade_stats import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Query filter dependency — groups filter params for list_trades / trade_stats
+# ---------------------------------------------------------------------------
+
+
+class _TradeFilterParams:
+    """Dependency that collects trade filter query parameters."""
+
+    def __init__(
+        self,
+        strategy: str | None = Query(default=None),
+        symbol: str | None = Query(default=None),
+        status: str | None = Query(default=None),
+        outcome: str | None = Query(default=None),
+        instrument_type: str | None = Query(default=None),
+        account_id: str | None = Query(default=None),
+        date_from: date | None = Query(default=None, alias="from"),
+        date_to: date | None = Query(default=None, alias="to"),
+    ) -> None:
+        self.strategy = strategy
+        self.symbol = symbol
+        self.status = status
+        self.outcome = outcome
+        self.instrument_type = instrument_type
+        self.account_id = account_id
+        self.date_from = date_from
+        self.date_to = date_to
 
 
 @router.post("/trades", response_model=TradeResponse, status_code=201)
@@ -85,24 +115,18 @@ def create_trade(
 @router.get("/trades", response_model=list[TradeResponse])
 def list_trades(
     db: Annotated[Session, Depends(get_db)],
-    strategy: str | None = Query(default=None),
-    symbol: str | None = Query(default=None),
-    status: str | None = Query(default=None),
-    outcome: str | None = Query(default=None),
-    instrument_type: str | None = Query(default=None),
-    account_id: str | None = Query(default=None),
-    date_from: date | None = Query(default=None, alias="from"),
-    date_to: date | None = Query(default=None, alias="to"),
+    filters: Annotated[_TradeFilterParams, Depends()],
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[dict]:
     """List trades with optional filters, newest first."""
     stmt = select(TradeModel).order_by(TradeModel.open_time.desc())
     stmt = apply_trade_filters(
-        stmt, strategy, symbol, status, outcome, date_from, date_to,
-        instrument_type, account_id,
+        stmt, filters.strategy, filters.symbol, filters.status,
+        filters.outcome, filters.date_from, filters.date_to,
+        filters.instrument_type, filters.account_id,
     )
-    if status is None:
+    if filters.status is None:
         stmt = stmt.where(TradeModel.status != "cancelled")
     stmt = stmt.offset(offset).limit(limit)
     trades = list(db.scalars(stmt).all())
@@ -113,18 +137,14 @@ def list_trades(
 @router.get("/trades/stats", response_model=TradeStatsResponse)
 def trade_stats(
     db: Annotated[Session, Depends(get_db)],
-    strategy: str | None = Query(default=None),
-    symbol: str | None = Query(default=None),
-    instrument_type: str | None = Query(default=None),
-    account_id: str | None = Query(default=None),
-    date_from: date | None = Query(default=None, alias="from"),
-    date_to: date | None = Query(default=None, alias="to"),
+    filters: Annotated[_TradeFilterParams, Depends()],
 ) -> dict:
     """Return aggregated performance statistics for filtered trades."""
     stmt = select(TradeModel)
     stmt = apply_trade_filters(
-        stmt, strategy, symbol, None, None, date_from, date_to,
-        instrument_type, account_id,
+        stmt, filters.strategy, filters.symbol, None, None,
+        filters.date_from, filters.date_to,
+        filters.instrument_type, filters.account_id,
     )
     stmt = stmt.where(TradeModel.status != "cancelled")
     trades = list(db.scalars(stmt).all())
@@ -172,12 +192,12 @@ def update_trade(
             setattr(trade, field, value)
 
     if trade.exit_price is not None and trade.status in ("closed", "breakeven"):
-        pnl_pips, pnl_usd, rr = calculate_pnl(
+        pnl_pips, pnl_usd, rr = calculate_pnl(PnlInput(
             symbol=trade.symbol, direction=trade.direction,
             entry_price=trade.entry_price, exit_price=trade.exit_price,
             lot_size=trade.lot_size, risk_pips=trade.risk_pips,
             instrument_type=trade.instrument_type,
-        )
+        ))
         trade.pnl_pips = pnl_pips
         trade.pnl_usd = pnl_usd
         trade.rr_achieved = rr

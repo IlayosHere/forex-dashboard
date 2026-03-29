@@ -15,7 +15,7 @@ Account assumptions
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from shared.calculator import pip_size, pip_value_per_lot
 
@@ -40,7 +40,7 @@ def _fmt_price(symbol: str, price: float) -> str:
 # Main calculation
 # ---------------------------------------------------------------------------
 
-def calculate_trade_params(signal: Dict[str, Any]) -> Dict[str, Any]:
+def calculate_trade_params(signal: dict[str, Any]) -> dict[str, Any]:
     """Compute SL, TP, lot size and risk pips for a scanner signal.
 
     Parameters

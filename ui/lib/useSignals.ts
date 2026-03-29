@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchSignals, type SignalFilters } from "./api";
 import type { Signal } from "./types";
 
+const POLL_INTERVAL_MS = 30_000;
+
 interface UseSignalsResult {
   signals: Signal[];
   total: number;
@@ -39,7 +41,7 @@ export function useSignals(filters: SignalFilters = {}): UseSignalsResult {
   useEffect(() => {
     setLoading(true);
     void load();
-    const interval = setInterval(() => { void load(); }, 30_000);
+    const interval = setInterval(() => { void load(); }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [load]);
 

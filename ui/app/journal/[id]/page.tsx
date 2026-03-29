@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useReducer, useState, use } from "react";
 import { useRouter } from "next/navigation";
-
 
 import { Button } from "@/components/ui/button";
 import { TradeInfoPanel } from "@/components/TradeInfoPanel";
@@ -16,6 +15,39 @@ import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { useAccounts } from "@/lib/useAccounts";
 import { getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
 
+interface EditableFields {
+  exitPrice: string;
+  tags: string[];
+  notes: string;
+  rating: number | null;
+  confidence: number | null;
+  screenshotUrl: string;
+  confirmDelete: boolean;
+}
+
+type EditAction =
+  | { type: "SET_FIELD"; field: keyof EditableFields; value: EditableFields[keyof EditableFields] }
+  | { type: "LOAD"; payload: Omit<EditableFields, "confirmDelete"> };
+
+const INITIAL_EDITABLE: EditableFields = {
+  exitPrice: "",
+  tags: [],
+  notes: "",
+  rating: null,
+  confidence: null,
+  screenshotUrl: "",
+  confirmDelete: false,
+};
+
+function editableReducer(state: EditableFields, action: EditAction): EditableFields {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "LOAD":
+      return { ...state, ...action.payload, confirmDelete: false };
+  }
+}
+
 interface TradeDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -28,27 +60,24 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Editable fields
-  const [exitPrice, setExitPrice] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
-  const [rating, setRating] = useState<number | null>(null);
-  const [confidence, setConfidence] = useState<number | null>(null);
-  const [screenshotUrl, setScreenshotUrl] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const { accounts } = useAccounts();
 
   useEffect(() => {
     fetchTrade(id)
       .then((t) => {
         setTrade(t);
-        setExitPrice(t.exit_price != null ? String(t.exit_price) : "");
-        setTags(t.tags);
-        setNotes(t.notes);
-        setRating(t.rating);
-        setConfidence(t.confidence);
-        setScreenshotUrl(t.screenshot_url ?? "");
+        dispatch({
+          type: "LOAD",
+          payload: {
+            exitPrice: t.exit_price != null ? String(t.exit_price) : "",
+            tags: t.tags,
+            notes: t.notes,
+            rating: t.rating,
+            confidence: t.confidence,
+            screenshotUrl: t.screenshot_url ?? "",
+          },
+        });
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
@@ -65,10 +94,10 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const sizeLabel = getSizeLabel(instrumentType);
 
   const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
-    if (!exitPrice && outcome !== "breakeven") return;
+    if (!editable.exitPrice && outcome !== "breakeven") return;
     setSaving(true);
     try {
-      const ep = outcome === "breakeven" ? trade.entry_price : parseFloat(exitPrice);
+      const ep = outcome === "breakeven" ? trade.entry_price : parseFloat(editable.exitPrice);
       const status = outcome === "breakeven" ? "breakeven" : "closed";
       const t = await updateTrade(id, {
         exit_price: ep,
@@ -77,7 +106,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
         close_time: new Date().toISOString(),
       });
       setTrade(t);
-      setExitPrice(t.exit_price != null ? String(t.exit_price) : "");
+      dispatch({ type: "SET_FIELD", field: "exitPrice", value: t.exit_price != null ? String(t.exit_price) : "" });
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to close trade");
     } finally {
@@ -101,11 +130,11 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     setSaving(true);
     try {
       const t = await updateTrade(id, {
-        tags,
-        notes,
-        rating,
-        confidence,
-        screenshot_url: screenshotUrl || null,
+        tags: editable.tags,
+        notes: editable.notes,
+        rating: editable.rating,
+        confidence: editable.confidence,
+        screenshot_url: editable.screenshotUrl || null,
       });
       setTrade(t);
     } catch (e) {
@@ -152,44 +181,44 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
         <div className="space-y-4">
           {isOpen && (
             <TradeCloseActions
-              exitPrice={exitPrice}
+              exitPrice={editable.exitPrice}
               saving={saving}
-              onExitPriceChange={setExitPrice}
+              onExitPriceChange={(v) => dispatch({ type: "SET_FIELD", field: "exitPrice", value: v })}
               onClose={closeTrade}
               onCancel={cancelTrade}
             />
           )}
 
           <TradeAssessmentPanel
-            rating={rating}
-            confidence={confidence}
-            tags={tags}
-            notes={notes}
-            screenshotUrl={screenshotUrl}
+            rating={editable.rating}
+            confidence={editable.confidence}
+            tags={editable.tags}
+            notes={editable.notes}
+            screenshotUrl={editable.screenshotUrl}
             saving={saving}
-            onRatingChange={setRating}
-            onConfidenceChange={setConfidence}
-            onTagsChange={setTags}
-            onNotesChange={setNotes}
-            onScreenshotUrlChange={setScreenshotUrl}
+            onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
+            onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
+            onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
+            onNotesChange={(v) => dispatch({ type: "SET_FIELD", field: "notes", value: v })}
+            onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
             onSave={saveAssessment}
           />
 
           {/* Delete */}
           <div className="pt-2">
-            {confirmDelete ? (
+            {editable.confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-bear">Are you sure?</span>
                 <Button variant="destructive" size="sm" onClick={handleDelete} disabled={saving}>
                   Yes, delete
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>
+                <Button variant="outline" size="sm" onClick={() => dispatch({ type: "SET_FIELD", field: "confirmDelete", value: false })}>
                   No
                 </Button>
               </div>
             ) : (
               <button
-                onClick={() => setConfirmDelete(true)}
+                onClick={() => dispatch({ type: "SET_FIELD", field: "confirmDelete", value: true })}
                 className="text-xs text-text-muted hover:text-bear cursor-pointer transition-colors"
               >
                 Delete trade

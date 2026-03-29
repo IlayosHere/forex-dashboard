@@ -6,6 +6,7 @@ Used exclusively by api/routes/trades.py.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
 from sqlalchemy import select
@@ -15,33 +16,37 @@ from api.models import AccountModel, TradeModel
 from shared.calculator import pip_size, pip_value_per_lot
 
 
-def calculate_pnl(
-    symbol: str,
-    direction: str,
-    entry_price: float,
-    exit_price: float,
-    lot_size: float,
-    risk_pips: float,
-    instrument_type: str = "forex",
-) -> tuple[float, float, float | None]:
+@dataclass(frozen=True)
+class PnlInput:
+    """Parameters needed to calculate trade P&L."""
+    symbol: str
+    direction: str
+    entry_price: float
+    exit_price: float
+    lot_size: float
+    risk_pips: float
+    instrument_type: str = "forex"
+
+
+def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
     """Return (pnl_pips, pnl_usd, rr_achieved).
 
     For futures_mnq, pnl_pips stores points and lot_size stores contracts.
     MNQ tick value is $0.50 per 0.25 point = $2.00 per point per contract.
     """
-    direction_mult = 1.0 if direction == "BUY" else -1.0
+    direction_mult = 1.0 if pnl.direction == "BUY" else -1.0
 
-    if instrument_type == "futures_mnq":
-        pnl_points = round((exit_price - entry_price) * direction_mult, 2)
-        pnl_usd = round(pnl_points * 2.0 * lot_size, 2)
-        rr = round(pnl_points / risk_pips, 2) if risk_pips > 0 else None
+    if pnl.instrument_type == "futures_mnq":
+        pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
+        pnl_usd = round(pnl_points * 2.0 * pnl.lot_size, 2)
+        rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
         return pnl_points, pnl_usd, rr
 
-    ps = pip_size(symbol)
-    pnl_pips = round((exit_price - entry_price) / ps * direction_mult, 1)
-    pip_val = pip_value_per_lot(symbol, entry_price)
-    pnl_usd = round(pnl_pips * pip_val * lot_size, 2)
-    rr = round(pnl_pips / risk_pips, 2) if risk_pips > 0 else None
+    ps = pip_size(pnl.symbol)
+    pnl_pips = round((pnl.exit_price - pnl.entry_price) / ps * direction_mult, 1)
+    pip_val = pip_value_per_lot(pnl.symbol, pnl.entry_price)
+    pnl_usd = round(pnl_pips * pip_val * pnl.lot_size, 2)
+    rr = round(pnl_pips / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
     return pnl_pips, pnl_usd, rr
 
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { postCalculate } from "./api";
 import type { Signal, CalculateResponse } from "./types";
 
+const DEBOUNCE_MS = 300;
 const LS_BALANCE = "forex_account_balance";
 const LS_RISK = "forex_risk_percent";
 const DEFAULT_BALANCE = "10000";
@@ -106,7 +107,7 @@ export function useCalculator(signal: Signal): UseCalculatorResult {
       } finally {
         setIsPending(false);
       }
-    }, 300);
+    }, DEBOUNCE_MS);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

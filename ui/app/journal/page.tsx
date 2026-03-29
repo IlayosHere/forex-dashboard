@@ -12,6 +12,7 @@ import { TradeFilters, type TradeFilterValues } from "@/components/TradeFilters"
 import { TradeCard } from "@/components/TradeCard";
 import { Button } from "@/components/ui/button";
 import type { AccountType, InstrumentType } from "@/lib/types";
+import { strategies } from "@/lib/strategies";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex", label: "Forex" },
@@ -66,9 +67,17 @@ export default function JournalPage() {
     return map;
   }, [accounts]);
 
-  const newTradeUrl = filters.strategy
-    ? `/journal/new?strategy=${encodeURIComponent(filters.strategy)}`
-    : "/journal/new";
+  const newTradeUrl = useMemo(() => {
+    if (filters.strategy) {
+      return `/journal/new?strategy=${encodeURIComponent(filters.strategy)}`;
+    }
+    // Auto-select the first strategy matching the current instrument tab
+    const defaultStrategy = strategies.find((s) => s.instrumentType === instrumentType);
+    if (defaultStrategy) {
+      return `/journal/new?strategy=${encodeURIComponent(defaultStrategy.slug)}`;
+    }
+    return "/journal/new";
+  }, [filters.strategy, instrumentType]);
 
   // Collect unique symbols from trades for the filter dropdown
   const symbols = useMemo(() => {

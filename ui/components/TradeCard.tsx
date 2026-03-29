@@ -44,17 +44,18 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
     <div
       onClick={onClick}
       data-interactive
-      className="cursor-pointer px-4 py-3 border-l-2 bg-[#161616] hover:bg-[#1a1a1a]"
-      style={{ borderLeftColor: isBuy ? "#26a69a" : "#ef5350" }}
+      className={`cursor-pointer px-4 py-3 border-l-2 bg-card hover:bg-surface-raised ${
+        isBuy ? "border-l-bull" : "border-l-bear"
+      }`}
     >
       {/* Line 1 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span style={{ color: isBuy ? "#26a69a" : "#ef5350" }}>
+          <span className={isBuy ? "text-bull" : "text-bear"}>
             {isBuy ? "▲" : "▼"}
           </span>
-          <span className="font-bold text-[#e0e0e0]">{trade.symbol}</span>
-          <span className="text-xs font-medium" style={{ color: isBuy ? "#26a69a" : "#ef5350" }}>
+          <span className="font-bold text-foreground">{trade.symbol}</span>
+          <span className={`text-xs font-medium ${isBuy ? "text-bull" : "text-bear"}`}>
             {trade.direction}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
@@ -68,13 +69,13 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
           {trade.rating != null && (
             <StarRating value={trade.rating} onChange={() => {}} size="sm" />
           )}
-          <span className="text-xs text-[#777777]">{trade.strategy}</span>
+          <span className="text-xs text-muted-foreground">{trade.strategy}</span>
         </div>
       </div>
 
       {/* Line 2 */}
       <div className="flex items-center gap-2 mt-1">
-        <span className="text-xs text-[#777777]">
+        <span className="text-xs text-muted-foreground">
           {formatTime(trade.open_time)}
           {" → "}
           {trade.close_time ? formatTime(trade.close_time) : "OPEN"}
@@ -89,7 +90,7 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
         {trade.tags.map((tag) => (
           <span
             key={tag}
-            className="text-[10px] bg-[#1e1e1e] text-[#777777] rounded px-1.5 py-0.5"
+            className="text-[10px] bg-elevated text-muted-foreground rounded px-1.5 py-0.5"
           >
             {tag}
           </span>

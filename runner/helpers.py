@@ -1,0 +1,159 @@
+"""
+runner/helpers.py
+-----------------
+Helper functions extracted from runner/main.py: strategy discovery,
+DB persistence, Discord notification, and market-hours logic.
+"""
+from __future__ import annotations
+
+import importlib
+import logging
+import os
+import pkgutil
+import time
+from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from api.models import SignalModel
+from shared.signal import Signal
+
+logger = logging.getLogger("Runner")
+
+_STRATEGIES_DIR: str = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "strategies",
+)
+
+
+# ---------------------------------------------------------------------------
+# Market hours
+# ---------------------------------------------------------------------------
+
+def is_market_open() -> bool:
+    """Return True if the forex market is open (Sun 22:00 UTC - Fri 22:00 UTC)."""
+    now = datetime.now(timezone.utc)
+    day = now.weekday()  # Mon=0 ... Sun=6
+    hour = now.hour
+    if day == 4 and hour >= 22:  # Friday 22:00+
+        return False
+    if day == 5:  # Saturday
+        return False
+    if day == 6 and hour < 22:  # Sunday before 22:00 UTC
+        return False
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Candle timing
+# ---------------------------------------------------------------------------
+
+SCAN_INTERVAL_SECONDS: int = 15 * 60
+
+
+def wait_for_next_candle() -> None:
+    """Sleep until the next 15-minute candle boundary + 5-second buffer."""
+    now = datetime.now(timezone.utc)
+    elapsed = (now.minute % 15) * 60 + now.second
+    seconds_to_wait = SCAN_INTERVAL_SECONDS - elapsed + 5
+    if seconds_to_wait <= 5:
+        seconds_to_wait += SCAN_INTERVAL_SECONDS
+    next_time = datetime.fromtimestamp(now.timestamp() + seconds_to_wait, tz=timezone.utc)
+    logger.info(
+        "Next scan at %s (in %ds)",
+        next_time.strftime("%H:%M:%S UTC"),
+        seconds_to_wait,
+    )
+    time.sleep(seconds_to_wait)
+
+
+# ---------------------------------------------------------------------------
+# Strategy discovery
+# ---------------------------------------------------------------------------
+
+def discover_strategies() -> dict[str, object]:
+    """Return {module_name: scan_callable} for every valid strategy package.
+
+    A valid strategy is a package under strategies/ whose scanner.py exports
+    a callable ``scan() -> list[Signal]``.
+    """
+    found: dict[str, object] = {}
+    for _finder, name, is_pkg in pkgutil.iter_modules([_STRATEGIES_DIR]):
+        if not is_pkg:
+            continue
+        module_path = f"strategies.{name}.scanner"
+        try:
+            mod = importlib.import_module(module_path)
+        except Exception:
+            logger.exception("Failed to import %s -- skipping", module_path)
+            continue
+        if not callable(getattr(mod, "scan", None)):
+            logger.warning("%s has no scan() function -- skipping", module_path)
+            continue
+        found[name] = mod.scan
+        logger.info("Registered strategy: %s", name)
+    return found
+
+
+# ---------------------------------------------------------------------------
+# DB helpers
+# ---------------------------------------------------------------------------
+
+def is_duplicate(db: Session, sig: Signal) -> bool:
+    """Return True if a signal for (strategy, symbol, candle_time) already exists."""
+    return (
+        db.query(SignalModel)
+        .filter(
+            SignalModel.strategy == sig.strategy,
+            SignalModel.symbol == sig.symbol,
+            SignalModel.candle_time == sig.candle_time,
+        )
+        .first()
+        is not None
+    )
+
+
+def persist(db: Session, sig: Signal) -> None:
+    """Insert a Signal into the DB and commit."""
+    db.add(
+        SignalModel(
+            id=sig.id,
+            strategy=sig.strategy,
+            symbol=sig.symbol,
+            direction=sig.direction,
+            candle_time=sig.candle_time,
+            entry=sig.entry,
+            sl=sig.sl,
+            tp=sig.tp,
+            lot_size=sig.lot_size,
+            risk_pips=sig.risk_pips,
+            spread_pips=sig.spread_pips,
+            signal_metadata=sig.metadata,
+            created_at=sig.created_at,
+        )
+    )
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Discord notification
+# ---------------------------------------------------------------------------
+
+def to_discord_dict(sig: Signal) -> dict:
+    """Convert a Signal to the dict format expected by discord_notifier.
+
+    Base fields are mapped explicitly; strategy-specific extras (e.g. fvg_near_edge)
+    live in sig.metadata and are spread in so the FVG embed builder finds them.
+    """
+    return {
+        "symbol": sig.symbol,
+        "direction": sig.direction,
+        "candle_time": sig.candle_time,
+        "entry_price": sig.entry,
+        "sl": sig.sl,
+        "tp": sig.tp,
+        "lot_size": sig.lot_size,
+        "risk_pips": sig.risk_pips,
+        "spread_pips": sig.spread_pips,
+        **sig.metadata,
+    }
