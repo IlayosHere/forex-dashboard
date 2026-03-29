@@ -16,6 +16,12 @@ export const strategies: StrategyMeta[] = [
     description: "Fair Value Gap detection on M15 with impulse confirmation",
   },
   {
+    slug: "nova-candle",
+    label: "Nova Candle",
+    instrumentType: "forex",
+    description: "Wickless momentum candle detection on M15 with EMA50 trend filter",
+  },
+  {
     slug: "mnq-daily",
     label: "MNQ Daily",
     instrumentType: "futures_mnq",

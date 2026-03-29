@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSignals } from "@/lib/useSignals";
 import { SignalCard } from "@/components/SignalCard";
 import { SignalDetail } from "@/components/SignalDetail";
@@ -64,8 +65,14 @@ export default function StrategyPage({ params }: StrategyPageProps) {
         className="w-72 shrink-0 flex flex-col border-r border-[#2a2a2a] overflow-y-auto"
         style={{ backgroundColor: "#111111" }}
       >
-        {/* Strategy header */}
+        {/* Back + Strategy header */}
         <div className="px-4 py-3 border-b border-[#2a2a2a]">
+          <Link
+            href={`/?strategy=${slug}`}
+            className="text-sm text-[#26a69a] hover:text-[#2bbbad] transition-colors inline-flex items-center gap-1.5 mb-2 font-medium"
+          >
+            &larr; {strategyMeta?.label ?? slug}
+          </Link>
           <div className="font-semibold text-[#e0e0e0] text-sm">
             {strategyMeta?.label ?? slug}
           </div>
@@ -104,8 +111,9 @@ export default function StrategyPage({ params }: StrategyPageProps) {
           <SignalDetail signal={selectedSignal} />
         ) : (
           !loading && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-[#777777] text-sm">Select a signal to view details</p>
+            <div className="flex flex-col items-center justify-center h-full gap-2">
+              <span className="text-2xl text-[#2a2a2a]">&#9664;</span>
+              <p className="text-[#777777] text-sm">Select a signal from the list</p>
             </div>
           )
         )}
