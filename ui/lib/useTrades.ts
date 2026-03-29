@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchTrades, type TradeFilters } from "./api";
 import type { Trade } from "./types";
 
+const POLL_INTERVAL_MS = 30_000;
+
 interface UseTradesResult {
   trades: Trade[];
   loading: boolean;
@@ -38,7 +40,7 @@ export function useTrades(filters: TradeFilters = {}): UseTradesResult {
   useEffect(() => {
     setLoading(true);
     void load();
-    const interval = setInterval(() => { void load(); }, 30_000);
+    const interval = setInterval(() => { void load(); }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [load]);
 

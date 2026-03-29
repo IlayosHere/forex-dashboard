@@ -15,18 +15,16 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
-from tvDatafeed import TvDatafeed, Interval
 
 from shared.signal import Signal
+from strategies.fvg_impulse.data import get_candles
+
 from .calculations import calculate_trade_params
-from strategies.fvg_impulse.config import EXCHANGE_TZ
 
 logger = logging.getLogger(__name__)
-
-_tv: TvDatafeed | None = None
 
 # Already-alerted candles: set of (symbol, candle_time) to prevent duplicate alerts
 _alerted_candles: set = set()
@@ -35,73 +33,10 @@ DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD"
 
 
 # ---------------------------------------------------------------------------
-# TradingView connection
-# ---------------------------------------------------------------------------
-
-def _get_tv() -> TvDatafeed:
-    """Get or create the TvDatafeed connection (lazy singleton)."""
-    global _tv
-    if _tv is None:
-        _tv = TvDatafeed()
-        _tv._TvDatafeed__ws_timeout = 15
-        logger.info("TvDatafeed connection established")
-    return _tv
-
-
-def _reset_tv() -> None:
-    """Force reconnection on next call."""
-    global _tv
-    _tv = None
-    logger.warning("TvDatafeed connection reset, will reconnect on next call")
-
-
-# ---------------------------------------------------------------------------
-# Data fetching
-# ---------------------------------------------------------------------------
-
-def get_candles(symbol: str, count: int = 70) -> Optional[pd.DataFrame]:
-    """Fetch M15 candles from TradingView. Returns DataFrame or None."""
-    df = None
-    for attempt in range(2):
-        try:
-            tv = _get_tv()
-            df = tv.get_hist(
-                symbol=symbol,
-                exchange="PEPPERSTONE",
-                interval=Interval.in_15_minute,
-                n_bars=count,
-            )
-        except Exception as exc:
-            logger.error("TradingView request failed for %s (attempt %d): %s",
-                         symbol, attempt + 1, exc)
-
-        if df is not None and not df.empty:
-            break
-
-        # Retry once with a fresh connection
-        if attempt == 0:
-            _reset_tv()
-            time.sleep(2)
-
-    if df is None or df.empty:
-        logger.error("No data returned for %s", symbol)
-        return None
-
-    df = df[["open", "high", "low", "close"]].copy()
-    # tvDatafeed returns timestamps in the exchange timezone.
-    # Convert to UTC for consistent comparisons.
-    if df.index.tz is None:
-        df.index = df.index.tz_localize(EXCHANGE_TZ).tz_convert(timezone.utc)
-    else:
-        df.index = df.index.tz_convert(timezone.utc)
-    return df
-
-
-# ---------------------------------------------------------------------------
 # Nova (wickless momentum) candle detection
 # ---------------------------------------------------------------------------
 
-def _find_last_closed_index(candles: pd.DataFrame) -> Optional[int]:
+def _find_last_closed_index(candles: pd.DataFrame) -> int | None:
     """Find the index of the last closed candle (before current 15-min boundary)."""
     now = datetime.now(timezone.utc)
     current_boundary = now.replace(
@@ -117,7 +52,7 @@ def _find_last_closed_index(candles: pd.DataFrame) -> Optional[int]:
 def find_nova_candle(
     candles: pd.DataFrame,
     symbol: str = "",
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Inspect the last closed candle for a Nova (wickless momentum) pattern.
 
@@ -211,8 +146,8 @@ def find_nova_candle(
 # ---------------------------------------------------------------------------
 
 def scan_all_symbols(
-    symbols: List[str],
-) -> List[Dict[str, Any]]:
+    symbols: list[str],
+) -> list[dict[str, Any]]:
     """Scan all symbols and return a list of nova candle signals."""
     # Purge stale entries from dedup set (older than 30 minutes)
     now = datetime.now(timezone.utc)
@@ -243,7 +178,7 @@ def scan_all_symbols(
 # Plugin entry point
 # ---------------------------------------------------------------------------
 
-def _to_signal(raw: Dict[str, Any]) -> Signal:
+def _to_signal(raw: dict[str, Any]) -> Signal:
     """Map a raw signal dict to the shared Signal dataclass."""
     return Signal(
         strategy="nova-candle",

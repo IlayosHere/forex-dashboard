@@ -3,10 +3,13 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { fetchSignal } from "@/lib/api";
-import { createTrade } from "@/lib/api";
-import { TradeForm, type TradeFormData } from "@/components/TradeForm";
+
+import { TradeForm } from "@/components/TradeForm";
+
 import type { Signal } from "@/lib/types";
+import type { TradeFormData } from "@/components/TradeForm";
+
+import { fetchSignal, createTrade } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
 
 function pipSize(symbol: string): number {
@@ -149,12 +152,12 @@ export default function NewTradePage() {
     <div className="p-6">
       <Link
         href="/journal"
-        className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors inline-flex items-center gap-1 mb-4"
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-4"
       >
         ← Back to Journal
       </Link>
-      <h1 className="text-lg font-semibold text-[#e0e0e0] mb-4">Log Trade</h1>
-      <Suspense fallback={<p className="text-[#777777] text-sm">Loading...</p>}>
+      <h1 className="text-lg font-semibold text-foreground mb-4">Log Trade</h1>
+      <Suspense fallback={<p className="text-muted-foreground text-sm">Loading...</p>}>
         <NewTradeContent />
       </Suspense>
     </div>

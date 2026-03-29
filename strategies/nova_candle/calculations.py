@@ -16,7 +16,7 @@ Account assumptions
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -33,10 +33,10 @@ ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
 
 
 def calculate_trade_params(
-    signal: Dict[str, Any],
+    signal: dict[str, Any],
     candles: pd.DataFrame,
     signal_idx: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute BOS-based SL, TP, lot size and risk pips.
 
     Parameters
@@ -84,12 +84,12 @@ def calculate_trade_params(
 
 
 def _build_params(
-    signal: Dict[str, Any],
+    signal: dict[str, Any],
     sl: float,
     entry: float,
     pip: float,
     candle_time,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build the final trade parameter dict from BOS SL."""
     symbol = signal["symbol"]
     direction = signal["direction"]
@@ -119,11 +119,11 @@ def _build_params(
 
 
 def _fallback_params(
-    signal: Dict[str, Any],
+    signal: dict[str, Any],
     candle_time,
     pip: float,
     candles: pd.DataFrame,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fallback when no BOS swing is found — use candle extreme + buffer."""
     direction = signal["direction"]
     entry = signal["open"]

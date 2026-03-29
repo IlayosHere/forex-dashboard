@@ -32,36 +32,30 @@ export function SignalDetail({ signal }: SignalDetailProps) {
   const router = useRouter();
   const isBuy = signal.direction === "BUY";
   const calc = useCalculator(signal);
-  const directionColor = isBuy ? "#26a69a" : "#ef5350";
 
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl font-bold text-[#e0e0e0]">{signal.symbol}</span>
+          <span className="text-xl font-bold text-foreground">{signal.symbol}</span>
           <span
-            className="text-sm font-semibold px-1.5 py-0.5 rounded"
-            style={{
-              color: directionColor,
-              backgroundColor: isBuy ? "#26a69a1a" : "#ef53501a",
-            }}
+            className={`text-sm font-semibold px-1.5 py-0.5 rounded ${
+              isBuy ? "text-bull bg-bull/10" : "text-bear bg-bear/10"
+            }`}
           >
             {isBuy ? "▲" : "▼"} {signal.direction}
           </span>
         </div>
-        <div className="text-[#777777] text-xs">
+        <div className="text-muted-foreground text-xs">
           {signal.strategy} &middot; M15 &middot; {formatCandle(signal.candle_time)}
         </div>
       </div>
 
       {/* Entry price */}
-      <div
-        className="border border-[#2a2a2a] rounded px-3 py-2 flex justify-between items-center"
-        style={{ backgroundColor: "#161616" }}
-      >
+      <div className="border border-border rounded px-3 py-2 flex justify-between items-center bg-card">
         <span className="label">Entry</span>
-        <span className="price text-[#e0e0e0] font-medium">{signal.entry}</span>
+        <span className="price text-foreground font-medium">{signal.entry}</span>
       </div>
 
       {/* Calculator */}
@@ -87,7 +81,7 @@ export function SignalDetail({ signal }: SignalDetailProps) {
           }
           router.push(`/journal/new?${params.toString()}`);
         }}
-        className="w-full bg-[#1e1e1e] border border-[#2a2a2a] text-[#e0e0e0] text-sm font-medium rounded px-3 py-2 hover:bg-[#2a2a2a] transition-colors"
+        className="w-full bg-elevated border border-border text-foreground text-sm font-medium rounded px-3 py-2 hover:bg-border transition-colors"
       >
         Log Trade
       </button>

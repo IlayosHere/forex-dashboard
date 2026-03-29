@@ -48,6 +48,9 @@
   --color-text-muted: #777777;
   --color-text-dim: #555555;
 
+  /* Sidebar */
+  --color-sidebar: #111111;
+
   /* Legacy alias — kept for existing usage, prefer surface-input */
   --color-elevated: #1e1e1e;
 }

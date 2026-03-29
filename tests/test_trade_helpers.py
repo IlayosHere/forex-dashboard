@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from api.models import TradeModel
 from api.services.trade_helpers import (
+    PnlInput,
     apply_trade_filters,
     calculate_pnl,
     trade_to_response,
@@ -27,55 +28,55 @@ from tests.conftest import make_trade
 
 
 def test_pnl_buy_forex_profit() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="EURUSD", direction="BUY",
         entry_price=1.08000, exit_price=1.08300,
         lot_size=1.0, risk_pips=20.0,
-    )
+    ))
     assert pips == 30.0
     assert usd == 300.0
     assert rr == 1.5
 
 
 def test_pnl_sell_forex_profit() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="EURUSD", direction="SELL",
         entry_price=1.08300, exit_price=1.08000,
         lot_size=1.0, risk_pips=20.0,
-    )
+    ))
     assert pips == 30.0
     assert usd == 300.0
     assert rr == 1.5
 
 
 def test_pnl_buy_forex_loss() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="EURUSD", direction="BUY",
         entry_price=1.08300, exit_price=1.08000,
         lot_size=1.0, risk_pips=20.0,
-    )
+    ))
     assert pips == -30.0
     assert usd == -300.0
     assert rr == -1.5
 
 
 def test_pnl_jpy_pair() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="USDJPY", direction="BUY",
         entry_price=150.000, exit_price=150.200,
         lot_size=1.0, risk_pips=10.0,
-    )
+    ))
     assert pips == 20.0
     expected_pip_val = (100_000 * 0.01) / 150.0
     assert usd == pytest.approx(20.0 * expected_pip_val * 1.0, rel=0.01)
 
 
 def test_pnl_zero_risk_pips_returns_none_rr() -> None:
-    _, _, rr = calculate_pnl(
+    _, _, rr = calculate_pnl(PnlInput(
         symbol="EURUSD", direction="BUY",
         entry_price=1.08000, exit_price=1.08100,
         lot_size=1.0, risk_pips=0.0,
-    )
+    ))
     assert rr is None
 
 
@@ -85,24 +86,24 @@ def test_pnl_zero_risk_pips_returns_none_rr() -> None:
 
 
 def test_pnl_buy_futures_profit() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MNQ", direction="BUY",
         entry_price=20000, exit_price=20050,
         lot_size=2, risk_pips=25.0,
         instrument_type="futures_mnq",
-    )
+    ))
     assert pips == 50.0
     assert usd == 200.0  # 50 * 2.0 * 2
     assert rr == 2.0
 
 
 def test_pnl_sell_futures_loss() -> None:
-    pips, usd, rr = calculate_pnl(
+    pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MNQ", direction="SELL",
         entry_price=20000, exit_price=20030,
         lot_size=1, risk_pips=25.0,
         instrument_type="futures_mnq",
-    )
+    ))
     assert pips == -30.0
     assert usd == -60.0
 

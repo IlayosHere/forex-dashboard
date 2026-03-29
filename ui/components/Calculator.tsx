@@ -20,7 +20,8 @@ function fmtRR(rr: number | null | undefined): string {
 
 export function Calculator({ direction, calculator }: CalculatorProps) {
   const isBuy = direction === "BUY";
-  const ringColor = isBuy ? "ring-[#26a69a]" : "ring-[#ef5350]";
+  const ringColor = isBuy ? "ring-bull" : "ring-bear";
+  const inputClass = `bg-surface-input border-border text-foreground focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor} price`;
 
   const {
     slPips, setSlPips,
@@ -44,7 +45,7 @@ export function Calculator({ direction, calculator }: CalculatorProps) {
             value={slPips}
             onChange={(e) => setSlPips(e.target.value)}
             placeholder="e.g. 15"
-            className={`bg-[#1e1e1e] border-[#2a2a2a] text-[#e0e0e0] focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor} price`}
+            className={inputClass}
           />
         </div>
         <div className="space-y-1">
@@ -56,7 +57,7 @@ export function Calculator({ direction, calculator }: CalculatorProps) {
             value={tpPips}
             onChange={(e) => setTpPips(e.target.value)}
             placeholder="e.g. 15"
-            className={`bg-[#1e1e1e] border-[#2a2a2a] text-[#e0e0e0] focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor} price`}
+            className={inputClass}
           />
         </div>
       </div>
@@ -71,7 +72,7 @@ export function Calculator({ direction, calculator }: CalculatorProps) {
             value={accountBalance}
             onChange={(e) => setAccountBalance(e.target.value)}
             placeholder="10000"
-            className={`bg-[#1e1e1e] border-[#2a2a2a] text-[#e0e0e0] focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor} price`}
+            className={inputClass}
           />
         </div>
         <div className="space-y-1">
@@ -84,38 +85,37 @@ export function Calculator({ direction, calculator }: CalculatorProps) {
             value={riskPercent}
             onChange={(e) => setRiskPercent(e.target.value)}
             placeholder="1.0"
-            className={`bg-[#1e1e1e] border-[#2a2a2a] text-[#e0e0e0] focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor}`}
+            className={`bg-surface-input border-border text-foreground focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor}`}
           />
         </div>
       </div>
 
       {/* Output box */}
       <div
-        className={`border border-[#2a2a2a] rounded p-4 space-y-2 ${isPending ? "opacity-50" : ""}`}
-        style={{ backgroundColor: "#1e1e1e" }}
+        className={`border border-border rounded p-4 space-y-2 bg-elevated ${isPending ? "opacity-50" : ""}`}
       >
         <div className="flex items-end justify-between">
           <span className="label">Lot Size</span>
-          <span className="lot-size" style={{ color: isBuy ? "#26a69a" : "#ef5350" }}>
+          <span className={`lot-size ${isBuy ? "text-bull" : "text-bear"}`}>
             {result ? fmt(result.lot_size, 2) : "—"}
           </span>
         </div>
-        <div className="border-t border-[#2a2a2a] pt-2 space-y-1.5">
+        <div className="border-t border-border pt-2 space-y-1.5">
           <div className="flex justify-between">
             <span className="label">Risk USD</span>
-            <span className="price text-[#e0e0e0]">
+            <span className="price text-foreground">
               {result ? `$${fmt(result.risk_usd, 2)}` : "—"}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="label">SL Distance</span>
-            <span className="price text-[#e0e0e0]">
+            <span className="price text-foreground">
               {result ? `${fmt(result.sl_pips, 1)} pips` : "—"}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="label">R : R</span>
-            <span className="price text-[#e0e0e0]">
+            <span className="price text-foreground">
               {result ? fmtRR(result.rr) : "—"}
             </span>
           </div>

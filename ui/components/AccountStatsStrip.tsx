@@ -23,27 +23,27 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
   const dim = loading ? "opacity-50" : "";
 
   return (
-    <div className={`bg-[#161616] border border-[#2a2a2a] rounded overflow-hidden mb-3 ${dim}`}>
+    <div className={`bg-card border border-border rounded overflow-hidden mb-3 ${dim}`}>
       {entries.map(([accountId, data]) => {
         const isSelected = selectedAccountId === accountId;
         const winRateColor = data.win_rate === null
-          ? "#777777"
+          ? "text-text-muted"
           : data.win_rate >= 50
-            ? "#26a69a"
-            : "#ef5350";
-        const pnlColor = data.total_pnl_usd === 0
-          ? "#777777"
+            ? "text-bull"
+            : "text-bear";
+        const pnlColorClass = data.total_pnl_usd === 0
+          ? "text-text-muted"
           : data.total_pnl_usd > 0
-            ? "#26a69a"
-            : "#ef5350";
+            ? "text-bull"
+            : "text-bear";
 
         return (
           <div
             key={accountId}
             onClick={() => onSelect(isSelected ? "" : accountId)}
             data-interactive
-            className={`px-4 py-2 text-sm cursor-pointer hover:bg-[#1e1e1e] flex items-center justify-between gap-3 border-l-2 ${
-              isSelected ? "border-l-[#26a69a] bg-[#1a1a1a]" : "border-l-transparent"
+            className={`px-4 py-2 text-sm cursor-pointer hover:bg-elevated flex items-center justify-between gap-3 border-l-2 ${
+              isSelected ? "border-l-bull bg-surface-raised" : "border-l-transparent"
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -51,16 +51,16 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
                 name={data.account_name}
                 accountType={data.account_type as AccountType}
               />
-              <span className="text-xs text-[#777777]">
+              <span className="text-xs text-muted-foreground">
                 {data.instrument_type === "futures_mnq" ? "Futures" : "Forex"}
               </span>
             </div>
             <div className="flex items-center gap-4 shrink-0 text-xs">
-              <span className="text-[#777777]">{data.total} trades</span>
-              <span style={{ color: winRateColor }}>
+              <span className="text-muted-foreground">{data.total} trades</span>
+              <span className={winRateColor}>
                 {data.win_rate !== null ? `${fmt(data.win_rate)}%` : "--"}
               </span>
-              <span className="price" style={{ color: pnlColor }}>
+              <span className={`price ${pnlColorClass}`}>
                 {data.total_pnl_usd >= 0 ? "+" : ""}${fmt(data.total_pnl_usd, 2)}
               </span>
             </div>

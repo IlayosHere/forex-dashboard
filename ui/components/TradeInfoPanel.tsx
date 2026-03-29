@@ -33,11 +33,9 @@ export function TradeInfoPanel({ trade, accountType, unitLabel, sizeLabel }: Tra
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xl font-bold text-text-primary">{trade.symbol}</span>
           <span
-            className="text-sm font-semibold px-1.5 py-0.5 rounded"
-            style={{
-              color: isBuy ? "#26a69a" : "#ef5350",
-              backgroundColor: isBuy ? "#26a69a1a" : "#ef53501a",
-            }}
+            className={`text-sm font-semibold px-1.5 py-0.5 rounded ${
+              isBuy ? "text-bull bg-bull/10" : "text-bear bg-bear/10"
+            }`}
           >
             {isBuy ? "\u25B2" : "\u25BC"} {trade.direction}
           </span>
