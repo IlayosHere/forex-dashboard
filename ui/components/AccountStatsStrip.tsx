@@ -61,7 +61,7 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
                 {data.win_rate !== null ? `${fmt(data.win_rate)}%` : "--"}
               </span>
               <span className={`price ${pnlColorClass}`}>
-                {data.total_pnl_usd >= 0 ? "+" : ""}${fmt(data.total_pnl_usd, 2)}
+                {data.total_pnl_usd >= 0 ? "+$" : "-$"}{Math.abs(data.total_pnl_usd).toFixed(2)}
               </span>
             </div>
           </div>

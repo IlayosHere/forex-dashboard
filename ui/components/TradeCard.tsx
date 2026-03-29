@@ -62,7 +62,7 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
             {pnlSign(trade.pnl_pips)} {unitLabel}
           </span>
           <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
-            {trade.pnl_usd !== null ? `${pnlSign(trade.pnl_usd, 2)}$` : ""}
+            {trade.pnl_usd !== null ? `${trade.pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(trade.pnl_usd).toFixed(2)}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">

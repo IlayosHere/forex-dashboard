@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
@@ -46,7 +46,7 @@ function formatPrice(price: number, symbol: string): string {
   return price.toFixed(isJpy ? 3 : 5);
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStrategy = strategies.find((s) => s.slug === searchParams.get("strategy")) ?? strategies[0];
@@ -242,5 +242,13 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<p className="p-6 text-[#777777] text-sm">Loading...</p>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

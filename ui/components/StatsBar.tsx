@@ -2,8 +2,6 @@
 
 import type { TradeStats } from "@/lib/types";
 
-const STARTING_BALANCE = 50_000;
-
 interface StatsBarProps {
   stats: TradeStats | null;
   loading: boolean;
@@ -29,7 +27,6 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
   const dim = loading || !stats ? "opacity-50" : "";
   const s = stats;
   const streak = streakText(s?.current_streak ?? 0);
-  const pnlPct = s ? (s.total_pnl_usd / STARTING_BALANCE) * 100 : null;
 
   return (
     <div className={`flex gap-3 overflow-x-auto pb-1 ${dim}`}>
@@ -45,9 +42,8 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
       />
       <StatCard
         title="P&L"
-        primary={pnlPct != null ? `${pnlPct >= 0 ? "+" : ""}${fmt(pnlPct, 2)}%` : "—"}
-        primaryColorClass={pnlColorClass(pnlPct)}
-        secondary={s ? `${s.total_pnl_usd >= 0 ? "+" : ""}$${fmt(s.total_pnl_usd, 2)}` : undefined}
+        primary={s ? `${s.total_pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(s.total_pnl_usd).toFixed(2)}` : "—"}
+        primaryColorClass={pnlColorClass(s?.total_pnl_usd)}
       />
       <StatCard
         title="Avg R:R"
