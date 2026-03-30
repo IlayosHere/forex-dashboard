@@ -129,6 +129,21 @@ def calculate(req: CalculateRequest) -> CalculateResponse:
     )
 ```
 
+## MANDATORY: Before Writing Any Code
+
+**Read `docs/coding-standards.md` first. Every time. No exceptions — including small changes.**
+
+Key rules it enforces:
+- File size limits: 200 lines Python modules, 40 lines route handlers (hard limits)
+- Function size limits: 50 lines Python functions, max 6 parameters
+- PEP 8 import groups (future → stdlib → third-party → project-local), alphabetized
+- `Mapped[type]` SQLAlchemy style — no legacy `Column()`
+- Docstrings required on all route handlers and public functions
+- `logging.getLogger(__name__)` in every API module — no `print()`
+- `from __future__ import annotations` at top of every file
+
+Run through the checklist at the bottom of that file before submitting.
+
 ## Critical Rules
 
 1. **Pydantic v2 everywhere** — no raw dicts crossing API boundaries

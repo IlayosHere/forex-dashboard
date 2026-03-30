@@ -162,6 +162,18 @@ POSTGRES_PASSWORD=yourpassword
 | Env | `.env` file | `.env` file (not committed) |
 | SSL | None | nginx + certbot |
 
+## MANDATORY: Before Writing Any Code
+
+**Read `docs/coding-standards.md` first. Every time. No exceptions — including config file changes.**
+
+Key rules it enforces:
+- Config files: max 100 lines, no logic
+- No hardcoded URLs, credentials, or magic numbers — use env vars and named constants
+- No commented-out code — delete it, git has history
+- No TODO comments without a plan
+
+Run through the checklist at the bottom of that file before submitting.
+
 ## Communication Style
 - Provide complete, working config files — no placeholders unless essential
 - Flag when a simpler approach exists

@@ -32,6 +32,11 @@ function errBorder(errors: Record<string, boolean>, field: string): string {
   return errors[field] ? "border-bear" : "";
 }
 
+function ErrMsg({ errors, field, msg }: { errors: Record<string, boolean>; field: string; msg: string }) {
+  if (!errors[field]) return null;
+  return <p className="text-bear text-xs mt-1">{msg}</p>;
+}
+
 export function TradeSetupFields({
   form,
   errors,
@@ -79,6 +84,7 @@ export function TradeSetupFields({
             ))}
             <option value="__manage__">Manage accounts...</option>
           </select>
+          <ErrMsg errors={errors} field="account_id" msg="Please select an account" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -99,6 +105,7 @@ export function TradeSetupFields({
                 <option key={s.slug} value={s.slug}>{s.label}</option>
               ))}
             </select>
+            <ErrMsg errors={errors} field="strategy" msg="Required" />
           </div>
           <div className="space-y-1">
             <label className="label">Symbol</label>
@@ -108,6 +115,7 @@ export function TradeSetupFields({
               placeholder="EURUSD"
               className={`${INPUT_CLASS} ${errBorder(errors, "symbol")}`}
             />
+            <ErrMsg errors={errors} field="symbol" msg="Required" />
           </div>
         </div>
 

@@ -70,6 +70,7 @@ class AccountCreateRequest(BaseModel):
     status: str = "active"
     prop_firm: str | None = None
     phase: str | None = None
+    balance: float | None = None
 
     @field_validator("account_type")
     @classmethod
@@ -98,6 +99,7 @@ class AccountUpdateRequest(BaseModel):
     status: str | None = None
     prop_firm: str | None = None
     phase: str | None = None
+    balance: float | None = None
 
     @field_validator("status")
     @classmethod
@@ -117,6 +119,7 @@ class AccountResponse(BaseModel):
     status: str
     prop_firm: str | None
     phase: str | None
+    balance: float | None
     created_at: datetime
 
     @field_validator("created_at", mode="before")

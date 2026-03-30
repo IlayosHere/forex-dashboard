@@ -59,6 +59,7 @@ class AccountModel(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")  # active, passed, failed, closed
     prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
     phase: Mapped[str | None] = mapped_column(String, nullable=True)
+    balance: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (

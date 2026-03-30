@@ -52,6 +52,7 @@ def create_account(
         status=req.status,
         prop_firm=req.prop_firm,
         phase=req.phase,
+        balance=req.balance,
         created_at=now,
     )
     db.add(account)

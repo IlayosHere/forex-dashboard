@@ -24,6 +24,19 @@ Design software architectures that balance competing concerns:
 4. **Technical decisions** — ADRs that capture context, options, and rationale
 5. **Evolution strategy** — How the system grows without rewrites
 
+## MANDATORY: Before Writing Any Code
+
+**Read `docs/coding-standards.md` first. Every time. No exceptions — including scaffolding and ADRs.**
+
+Key rules it enforces:
+- File and function size limits (hard limits — not guidelines)
+- Naming conventions per layer (snake_case Python, PascalCase components, camelCase hooks)
+- No barrel files (`index.ts` re-exporting everything)
+- When to create new files vs. keep inline
+- Directory structure rules for `api/`, `strategies/`, `ui/`
+
+Run through the checklist at the bottom of that file before submitting.
+
 ## Critical Rules
 
 1. **No architecture astronautics** — Every abstraction must justify its complexity

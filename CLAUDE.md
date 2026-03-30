@@ -247,3 +247,36 @@ See `.claude/agents/` for the full roster. Key ones by phase:
 | New strategy scaffold | `/add-strategy` slash command |
 | Backend tests | `/test-backend` — run, write, find gaps, fix failures |
 | Frontend tests | `/test-client` — run, write, find gaps, fix failures |
+
+---
+
+## UI/UX Problem Protocol — MANDATORY
+
+Whenever a UI problem is raised (visual issue, layout complaint, interaction feels wrong,
+component looks bad, unclear feedback, etc.), you MUST consult the specialist agents
+**before writing any fix**. Do not guess at the solution.
+
+**The workflow:**
+
+1. Read the relevant component(s) to understand the current state
+2. Spawn **both** agents in parallel — always consult both together:
+   - `UI Designer` — visual design, color, spacing, component patterns
+   - `UX Architect` — interaction model, information architecture, affordance
+3. Synthesize their responses — identify where they agree (implement it) and where
+   they diverge (present the trade-off to the user or pick the more conservative option)
+4. Implement the agreed solution
+
+**Triggers — automatically invoke this protocol when the user says things like:**
+- "this looks bad / not good / ugly"
+- "I can't see / hard to read / not visible"
+- "this doesn't feel right"
+- "the [component] UI is wrong"
+- "review the [component] and fix"
+- "talk to the UI/UX agent" (explicit request)
+
+**What the agents need in their prompt:**
+- The exact current Tailwind classes and JSX of the problem component
+- All relevant design tokens (from `ui/app/globals.css` `@theme` block)
+- The specific complaint the user raised
+- Available shadcn components (check `ui/components/ui/`)
+- Space constraints (e.g., inside a side sheet, inside a grid cell)

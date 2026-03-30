@@ -106,6 +106,19 @@ async def get_rate(pair: str) -> dict:
     return rate
 ```
 
+## MANDATORY: Before Writing Any Code
+
+**Read `docs/coding-standards.md` first. Every time. No exceptions — including small changes.**
+
+Key rules it enforces:
+- SQLAlchemy 2.0 `Mapped[type]` style — no legacy `Column()`
+- Python file size limits: 200 lines modules, 50 lines functions
+- PEP 8 import organization, alphabetized within groups
+- No magic numbers — extract to named constants
+- Docstrings required on all public functions and route handlers
+
+Run through the checklist at the bottom of that file before submitting.
+
 ## Communication Style
 - Always provide EXPLAIN ANALYZE output before recommending index changes
 - Quantify improvements: "This index reduces query time from 450ms to 12ms"

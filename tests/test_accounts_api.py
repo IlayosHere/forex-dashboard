@@ -64,6 +64,19 @@ def test_create_funded_account_with_details(client: TestClient) -> None:
     assert data["phase"] == "Phase 1"
 
 
+def test_create_account_with_balance(client: TestClient) -> None:
+    resp = client.post("/api/accounts", json=_account_payload(balance=10000.0))
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["balance"] == 10000.0
+
+
+def test_create_account_without_balance_defaults_null(client: TestClient) -> None:
+    resp = client.post("/api/accounts", json=_account_payload())
+    assert resp.status_code == 201
+    assert resp.json()["balance"] is None
+
+
 # ---------------------------------------------------------------------------
 # GET /api/accounts
 # ---------------------------------------------------------------------------
@@ -105,6 +118,22 @@ def test_update_account_name(client: TestClient) -> None:
     resp = client.put(f"/api/accounts/{account_id}", json={"name": "Renamed"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Renamed"
+
+
+def test_update_account_balance(client: TestClient) -> None:
+    create_resp = client.post("/api/accounts", json=_account_payload())
+    account_id = create_resp.json()["id"]
+    resp = client.put(f"/api/accounts/{account_id}", json={"balance": 50000.0})
+    assert resp.status_code == 200
+    assert resp.json()["balance"] == 50000.0
+
+
+def test_update_account_balance_clears_to_null(client: TestClient) -> None:
+    create_resp = client.post("/api/accounts", json=_account_payload(balance=10000.0))
+    account_id = create_resp.json()["id"]
+    resp = client.put(f"/api/accounts/{account_id}", json={"balance": None})
+    assert resp.status_code == 200
+    assert resp.json()["balance"] is None
 
 
 def test_update_account_not_found(client: TestClient) -> None:
