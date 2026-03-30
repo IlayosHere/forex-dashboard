@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Already-alerted candles: set of (symbol, candle_time) to prevent duplicate alerts
 _alerted_candles: set = set()
 
-DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD"
+DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD,EURJPY,GBPJPY,EURGBP,AUDJPY"
 
 
 # ---------------------------------------------------------------------------

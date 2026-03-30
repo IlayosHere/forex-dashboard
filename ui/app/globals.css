@@ -93,6 +93,10 @@
     border-color: #2a2a2a;
     box-sizing: border-box;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer !important;
+  }
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);

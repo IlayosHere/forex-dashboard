@@ -22,7 +22,21 @@ function formatValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number") return String(value);
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+      try {
+        const d = new Date(value);
+        const day = d.getUTCDate().toString().padStart(2, "0");
+        const mon = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
+        const hh = d.getUTCHours().toString().padStart(2, "0");
+        const mm = d.getUTCMinutes().toString().padStart(2, "0");
+        return `${day} ${mon} ${hh}:${mm} UTC`;
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
   return JSON.stringify(value);
 }
 
@@ -36,7 +50,7 @@ export function MetadataPanel({ metadata }: MetadataPanelProps) {
     <div className="border border-border rounded bg-card">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full px-3 py-2.5 text-left"
+        className="flex items-center justify-between w-full px-3 py-2.5 text-left cursor-pointer"
       >
         <span className="label">Strategy Details</span>
         <span className="text-muted-foreground text-xs">{open ? "▲" : "▼"}</span>

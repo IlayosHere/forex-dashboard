@@ -16,6 +16,12 @@ const emptyFilters: SignalFilterValues = {
   dateTo: "",
 };
 
+function getYesterdayUTC(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
@@ -51,7 +57,10 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const initialStrategy = strategies.find((s) => s.slug === searchParams.get("strategy")) ?? strategies[0];
   const [activeStrategy, setActiveStrategy] = useState<StrategyMeta>(initialStrategy);
-  const [filters, setFilters] = useState<SignalFilterValues>(emptyFilters);
+  const [filters, setFilters] = useState<SignalFilterValues>({
+    ...emptyFilters,
+    dateFrom: getYesterdayUTC(),
+  });
   const [page, setPage] = useState(0);
 
   // Reset page when filters change
@@ -62,7 +71,7 @@ function DashboardContent() {
 
   const handleTabChange = (strategy: StrategyMeta) => {
     setActiveStrategy(strategy);
-    setFilters(emptyFilters);
+    setFilters({ ...emptyFilters, dateFrom: getYesterdayUTC() });
     setPage(0);
   };
 
@@ -114,13 +123,12 @@ function DashboardContent() {
       </div>
 
       {/* Filter bar */}
-      <div className="mb-4 p-3 rounded border border-[#2a2a2a] bg-[#131313]">
+      <div className="mb-4">
         <SignalFilters
           values={filters}
           onChange={handleFilterChange}
           total={total}
           onReset={() => { setFilters(emptyFilters); setPage(0); }}
-          instrumentType={activeStrategy.instrumentType}
         />
       </div>
 
@@ -154,16 +162,15 @@ function DashboardContent() {
         <div className="border border-[#2a2a2a] rounded overflow-hidden bg-[#131313]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#2a2a2a] text-[#777777] text-xs">
-                <th className="text-left px-3 py-2.5 font-medium">Pair</th>
-                <th className="text-left px-3 py-2.5 font-medium">Direction</th>
-                <th className="text-left px-3 py-2.5 font-medium">Entry</th>
-                <th className="text-left px-3 py-2.5 font-medium">SL</th>
-                <th className="text-left px-3 py-2.5 font-medium">TP</th>
-                <th className="text-right px-3 py-2.5 font-medium">Risk ({unitLabel})</th>
-                <th className="text-right px-3 py-2.5 font-medium">{activeStrategy.instrumentType === "futures_mnq" ? "Contracts" : "Lot"}</th>
-                <th className="text-right px-3 py-2.5 font-medium">Date</th>
-                <th className="text-right px-3 py-2.5 font-medium">Time</th>
+              <tr className="border-b border-[#2a2a2a]">
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Pair</th>
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Dir</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Entry</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">SL</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">TP</th>
+                <th className="text-right pl-6 pr-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Risk ({unitLabel})</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Lot</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Time (UTC)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1e1e1e]">
@@ -177,10 +184,10 @@ function DashboardContent() {
                     }
                     className="cursor-pointer hover:bg-[#1a1a1a] transition-colors"
                   >
-                    <td className="px-3 py-2.5 font-medium text-[#e0e0e0]">
+                    <td className="px-3 py-1.5 font-medium text-[#e0e0e0] text-xs">
                       {s.symbol}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-1.5">
                       <span
                         className="inline-flex items-center gap-1 text-xs font-medium"
                         style={{ color: isBuy ? "#26a69a" : "#ef5350" }}
@@ -188,26 +195,23 @@ function DashboardContent() {
                         {isBuy ? "▲" : "▼"} {s.direction}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-[#c0c0c0] font-mono text-xs">
+                    <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
                       {formatPrice(s.entry, s.symbol)}
                     </td>
-                    <td className="px-3 py-2.5 text-[#ef5350] font-mono text-xs">
+                    <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
                       {formatPrice(s.sl, s.symbol)}
                     </td>
-                    <td className="px-3 py-2.5 text-[#26a69a] font-mono text-xs">
+                    <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
                       {formatPrice(s.tp, s.symbol)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-[#c0c0c0] text-xs">
+                    <td className="pl-6 pr-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
                       {s.risk_pips.toFixed(1)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-[#c0c0c0] font-mono text-xs">
+                    <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#666666]">
                       {s.lot_size.toFixed(2)}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-[#777777] text-xs">
-                      {formatDate(s.candle_time)}
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-[#777777] text-xs whitespace-nowrap">
-                      {formatTime(s.candle_time)} UTC
+                    <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums whitespace-nowrap text-[#666666]">
+                      {formatDate(s.candle_time)} {formatTime(s.candle_time)}
                     </td>
                   </tr>
                 );
@@ -227,14 +231,14 @@ function DashboardContent() {
             <button
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
-              className="px-3 py-1.5 text-xs rounded border border-[#2a2a2a] bg-[#1a1a1a] text-[#e0e0e0] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#222222] transition-colors"
+              className="px-3 py-1.5 text-xs rounded border border-[#2a2a2a] bg-[#1a1a1a] text-[#e0e0e0] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#222222] transition-colors"
             >
               Previous
             </button>
             <button
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 text-xs rounded border border-[#2a2a2a] bg-[#1a1a1a] text-[#e0e0e0] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#222222] transition-colors"
+              className="px-3 py-1.5 text-xs rounded border border-[#2a2a2a] bg-[#1a1a1a] text-[#e0e0e0] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#222222] transition-colors"
             >
               Next
             </button>

@@ -1,17 +1,9 @@
 "use client";
 
-import type { InstrumentType } from "@/lib/types";
-
 const FOREX_PAIRS = [
   "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD",
-  "EURJPY", "EURGBP", "EURCHF", "EURAUD", "EURCAD", "EURNZD",
-  "GBPJPY", "GBPAUD", "GBPCAD", "GBPCHF", "GBPNZD",
-  "AUDJPY", "AUDCAD", "AUDCHF", "AUDNZD",
-  "NZDJPY", "NZDCAD", "NZDCHF",
-  "CADJPY", "CADCHF", "CHFJPY",
+  "EURJPY", "GBPJPY", "EURGBP", "AUDJPY",
 ];
-
-const FUTURES_SYMBOLS = ["MNQ"];
 
 export interface SignalFilterValues {
   symbol: string;
@@ -25,7 +17,6 @@ interface SignalFiltersProps {
   onChange: (values: SignalFilterValues) => void;
   total: number;
   onReset: () => void;
-  instrumentType: InstrumentType;
 }
 
 const selectClass =
@@ -36,14 +27,12 @@ const inputClass =
   "bg-[#1a1a1a] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
   "focus:outline-none focus:border-[#3a3a3a] min-w-[130px]";
 
-export function SignalFilters({ values, onChange, total, onReset, instrumentType }: SignalFiltersProps) {
+export function SignalFilters({ values, onChange, total, onReset }: SignalFiltersProps) {
   const update = (patch: Partial<SignalFilterValues>) =>
     onChange({ ...values, ...patch });
 
   const hasFilters =
     values.symbol || values.direction || values.dateFrom || values.dateTo;
-
-  const symbols = instrumentType === "futures_mnq" ? FUTURES_SYMBOLS : FOREX_PAIRS;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -53,8 +42,8 @@ export function SignalFilters({ values, onChange, total, onReset, instrumentType
         value={values.symbol}
         onChange={(e) => update({ symbol: e.target.value })}
       >
-        <option value="">{instrumentType === "futures_mnq" ? "All Symbols" : "All Pairs"}</option>
-        {symbols.map((p) => (
+        <option value="">All Pairs</option>
+        {FOREX_PAIRS.map((p) => (
           <option key={p} value={p}>{p}</option>
         ))}
       </select>
