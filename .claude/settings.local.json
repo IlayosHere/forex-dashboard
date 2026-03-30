@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash(curl -s \"https://raw.githubusercontent.com/huybuidac/shadcn-datetime-picker/main/src/datetime-picker.tsx\")"
     ]
   }
 }
