@@ -22,11 +22,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 # ---------------------------------------------------------------------------
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_NOTIFIER_DIR = os.path.join(_ROOT, "impulse-notifier")
 
-for _p in (_ROOT, _NOTIFIER_DIR):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from dotenv import load_dotenv
 
@@ -54,20 +52,13 @@ from runner.helpers import (  # noqa: E402
     is_duplicate,
     is_market_open,
     persist,
-    to_discord_dict,
     wait_for_next_candle,
 )
+from runner.notifier import send_signals  # noqa: E402
 from shared.signal import Signal  # noqa: E402
 
 # Ensure DB tables exist -- the runner may start before the API server
 Base.metadata.create_all(bind=engine)
-
-try:
-    from discord_notifier import send_discord_alert  # impulse-notifier/discord_notifier.py
-    _discord_available = True
-except ImportError:
-    logger.warning("discord_notifier not importable -- Discord alerts disabled")
-    _discord_available = False
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -105,10 +96,7 @@ def _start_health_server() -> None:
 def _notify_discord(signals: list[Signal]) -> None:
     if not signals:
         return
-    if not _discord_available or not DISCORD_WEBHOOK_URL:
-        logger.warning("Discord not configured -- skipping %d alert(s)", len(signals))
-        return
-    send_discord_alert(DISCORD_WEBHOOK_URL, [to_discord_dict(s) for s in signals])
+    send_signals(signals)
 
 
 # ---------------------------------------------------------------------------
