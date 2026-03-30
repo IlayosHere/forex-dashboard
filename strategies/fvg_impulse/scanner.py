@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Dedup: set of (symbol, candle_time) to prevent duplicate alerts within a cycle
 _alerted_candles: set = set()
 
-DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD"
+DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD,EURJPY,GBPJPY,EURGBP,AUDJPY"
 
 
 # ---------------------------------------------------------------------------

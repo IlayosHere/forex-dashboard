@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Calculator } from "./Calculator";
 import { MetadataPanel } from "./MetadataPanel";
 import { useCalculator } from "@/lib/useCalculator";
+import { formatPrice } from "@/lib/utils";
 import type { Signal } from "@/lib/types";
 
 interface SignalDetailProps {
@@ -55,7 +56,7 @@ export function SignalDetail({ signal }: SignalDetailProps) {
       {/* Entry price */}
       <div className="border border-border rounded px-3 py-2 flex justify-between items-center bg-card">
         <span className="label">Entry</span>
-        <span className="price text-foreground font-medium">{signal.entry}</span>
+        <span className="price text-foreground font-medium">{formatPrice(signal.entry, signal.symbol)}</span>
       </div>
 
       {/* Calculator */}
@@ -81,7 +82,7 @@ export function SignalDetail({ signal }: SignalDetailProps) {
           }
           router.push(`/journal/new?${params.toString()}`);
         }}
-        className="w-full bg-elevated border border-border text-foreground text-sm font-medium rounded px-3 py-2 hover:bg-border transition-colors"
+        className="w-full cursor-pointer bg-elevated border border-border text-foreground text-sm font-medium rounded px-3 py-2 hover:bg-border transition-colors"
       >
         Log Trade
       </button>

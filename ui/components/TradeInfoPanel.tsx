@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DirectionToggle } from "@/components/DirectionToggle";
+import { formatPrice } from "@/lib/utils";
 
 import type { Trade } from "@/lib/types";
 
@@ -31,10 +32,11 @@ export function TradeInfoPanel({
 }: TradeInfoPanelProps) {
   const [editing, setEditing] = useState(false);
   const [direction, setDirection] = useState<"BUY" | "SELL">(trade.direction);
-  const [entry, setEntry] = useState(String(trade.entry_price));
-  const [exitPrice, setExitPrice] = useState(trade.exit_price != null ? String(trade.exit_price) : "");
-  const [sl, setSl] = useState(String(trade.sl_price));
-  const [tp, setTp] = useState(trade.tp_price != null ? String(trade.tp_price) : "");
+  const fp = (v: number) => formatPrice(v, trade.symbol);
+  const [entry, setEntry] = useState(fp(trade.entry_price));
+  const [exitPrice, setExitPrice] = useState(trade.exit_price != null ? fp(trade.exit_price) : "");
+  const [sl, setSl] = useState(fp(trade.sl_price));
+  const [tp, setTp] = useState(trade.tp_price != null ? fp(trade.tp_price) : "");
   const [lotSize, setLotSize] = useState(String(trade.lot_size));
   const [error, setError] = useState<string | null>(null);
 
@@ -43,10 +45,10 @@ export function TradeInfoPanel({
 
   const resetFields = () => {
     setDirection(trade.direction);
-    setEntry(String(trade.entry_price));
-    setExitPrice(trade.exit_price != null ? String(trade.exit_price) : "");
-    setSl(String(trade.sl_price));
-    setTp(trade.tp_price != null ? String(trade.tp_price) : "");
+    setEntry(fp(trade.entry_price));
+    setExitPrice(trade.exit_price != null ? fp(trade.exit_price) : "");
+    setSl(fp(trade.sl_price));
+    setTp(trade.tp_price != null ? fp(trade.tp_price) : "");
     setLotSize(String(trade.lot_size));
     setError(null);
   };
@@ -108,12 +110,12 @@ export function TradeInfoPanel({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-        <PriceRow label="Entry" value={trade.entry_price} editValue={entry} editing={editing} onChange={setEntry} />
-        <PriceRow label="SL" value={trade.sl_price} editValue={sl} editing={editing} onChange={setSl} />
-        <PriceRow label="TP" value={trade.tp_price} editValue={tp} editing={editing} onChange={setTp} placeholder="\u2014" />
+        <PriceRow label="Entry" value={trade.entry_price} editValue={entry} editing={editing} onChange={setEntry} format={fp} />
+        <PriceRow label="SL" value={trade.sl_price} editValue={sl} editing={editing} onChange={setSl} format={fp} />
+        <PriceRow label="TP" value={trade.tp_price} editValue={tp} editing={editing} onChange={setTp} placeholder="\u2014" format={fp} />
         <PriceRow label={sizeFieldLabel} value={trade.lot_size} editValue={lotSize} editing={editing} onChange={setLotSize} />
         {(isClosed || editing) && (
-          <PriceRow label="Exit" value={trade.exit_price} editValue={exitPrice} editing={editing} onChange={setExitPrice} placeholder="\u2014" />
+          <PriceRow label="Exit" value={trade.exit_price} editValue={exitPrice} editing={editing} onChange={setExitPrice} placeholder="\u2014" format={fp} />
         )}
         {!editing && (
           <div className="flex justify-between">
@@ -148,15 +150,16 @@ interface PriceRowProps {
   editing: boolean;
   onChange: (v: string) => void;
   placeholder?: string;
+  format?: (v: number) => string;
 }
 
-function PriceRow({ label, value, editValue, editing, onChange, placeholder }: PriceRowProps) {
+function PriceRow({ label, value, editValue, editing, onChange, placeholder, format = String }: PriceRowProps) {
   if (!editing) {
     if (value == null && !placeholder) return null;
     return (
       <div className="flex justify-between">
         <span className="label">{label}</span>
-        <span className="price text-text-primary">{value ?? placeholder}</span>
+        <span className="price text-text-primary">{value != null ? format(value) : placeholder}</span>
       </div>
     );
   }

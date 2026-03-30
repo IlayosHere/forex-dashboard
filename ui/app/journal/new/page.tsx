@@ -11,6 +11,7 @@ import type { TradeFormData } from "@/components/TradeForm";
 
 import { fetchSignal, createTrade } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
+import { formatPrice } from "@/lib/utils";
 
 function pipSize(symbol: string): number {
   return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
@@ -88,9 +89,9 @@ function NewTradeContent() {
           strategy: signal.strategy,
           symbol: signal.symbol,
           direction: signal.direction,
-          entry_price: String(signal.entry),
-          sl_price: String(sl),
-          tp_price: String(tp),
+          entry_price: formatPrice(signal.entry, signal.symbol),
+          sl_price: formatPrice(sl, signal.symbol),
+          tp_price: formatPrice(tp, signal.symbol),
           lot_size: String(lotSize),
           risk_pips: String(riskPips),
           open_time: toLocalDatetime(signal.candle_time),
