@@ -131,6 +131,16 @@
 .pnl-negative { color: #ef5350; }
 .pnl-zero     { color: #777777; }
 
+/* Dark-mode native select dropdowns */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
 /* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

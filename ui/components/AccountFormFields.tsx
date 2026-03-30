@@ -10,6 +10,7 @@ interface AccountFormState {
   status: AccountStatus;
   prop_firm: string;
   phase: string;
+  balance: string;
 }
 
 interface AccountFormFieldsProps {
@@ -21,14 +22,65 @@ interface AccountFormFieldsProps {
   onCancel: () => void;
 }
 
+interface SegmentOption<T extends string> {
+  value: T;
+  label: string;
+  disabled?: boolean;
+  disabledReason?: string;
+}
+
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull";
 const SELECT_CLASS =
   "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
+const SEGMENT_ACTIVE_CLASS = "bg-white/15 text-text-primary ring-1 ring-inset ring-white/20";
 
-function getAccountTypeOptions(instrumentType: InstrumentType): AccountType[] {
-  if (instrumentType === "futures_mnq") return ["demo", "funded", "live"];
-  return ["demo", "live"];
+const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
+  { value: "forex",       label: "Forex" },
+  { value: "futures_mnq", label: "Futures" },
+];
+
+const ACCOUNT_TYPE_OPTIONS: SegmentOption<AccountType>[] = [
+  { value: "demo",   label: "Demo" },
+  { value: "live",   label: "Live" },
+  { value: "funded", label: "Funded" },
+];
+
+function SegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: SegmentOption<T>[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex h-8 rounded border border-border bg-surface-input p-0.5 gap-0.5">
+      {options.map((opt) => {
+        const isActive = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={opt.disabled}
+            title={opt.disabled ? opt.disabledReason : undefined}
+            onClick={() => onChange(opt.value)}
+            className={[
+              "flex-1 rounded-sm text-xs font-medium transition-colors px-2",
+              opt.disabled
+                ? "cursor-not-allowed text-text-dim opacity-30"
+                : isActive
+                ? SEGMENT_ACTIVE_CLASS
+                : "text-text-dim hover:text-text-muted cursor-pointer",
+            ].join(" ")}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function AccountFormFields({
@@ -40,6 +92,19 @@ export function AccountFormFields({
   onCancel,
 }: AccountFormFieldsProps) {
   const isFunded = form.account_type === "funded";
+
+  const accountTypeOptions = ACCOUNT_TYPE_OPTIONS.map((opt) =>
+    opt.value === "funded" && form.instrument_type !== "futures_mnq"
+      ? { ...opt, disabled: true, disabledReason: "Funded accounts require Futures instrument" }
+      : opt
+  );
+
+  function handleInstrumentChange(it: InstrumentType) {
+    onChange("instrument_type", it);
+    if (it === "forex" && form.account_type === "funded") {
+      onChange("account_type", "demo");
+    }
+  }
 
   return (
     <>
@@ -58,33 +123,19 @@ export function AccountFormFields({
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="label">Instrument</label>
-              <select
-                className={SELECT_CLASS}
+              <SegmentedControl
                 value={form.instrument_type}
-                onChange={(e) => {
-                  const it = e.target.value as InstrumentType;
-                  onChange("instrument_type", it);
-                  const validTypes = getAccountTypeOptions(it);
-                  if (!validTypes.includes(form.account_type)) {
-                    onChange("account_type", validTypes[0]);
-                  }
-                }}
-              >
-                <option value="forex">Forex</option>
-                <option value="futures_mnq">Futures (MNQ)</option>
-              </select>
+                options={INSTRUMENT_OPTIONS}
+                onChange={handleInstrumentChange}
+              />
             </div>
             <div className="space-y-1">
               <label className="label">Type</label>
-              <select
-                className={SELECT_CLASS}
+              <SegmentedControl
                 value={form.account_type}
-                onChange={(e) => onChange("account_type", e.target.value as AccountType)}
-              >
-                {getAccountTypeOptions(form.instrument_type).map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+                options={accountTypeOptions}
+                onChange={(v) => onChange("account_type", v)}
+              />
             </div>
           </div>
         )}
@@ -101,6 +152,18 @@ export function AccountFormFields({
             <option value="failed">Failed</option>
             <option value="closed">Closed</option>
           </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="label">Balance ($)</label>
+          <Input
+            type="number"
+            step="any"
+            value={form.balance}
+            onChange={(e) => onChange("balance", e.target.value)}
+            placeholder="e.g. 10000"
+            className={INPUT_CLASS}
+          />
         </div>
 
         {isFunded && (

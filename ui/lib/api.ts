@@ -157,6 +157,7 @@ export async function createAccount(data: {
   status?: string;
   prop_firm?: string | null;
   phase?: string | null;
+  balance?: number | null;
 }): Promise<Account> {
   const res = await fetch(`${BASE_URL}/api/accounts`, {
     method: "POST",
@@ -172,6 +173,7 @@ export async function updateAccount(id: string, data: {
   status?: string;
   prop_firm?: string | null;
   phase?: string | null;
+  balance?: number | null;
 }): Promise<Account> {
   const res = await fetch(`${BASE_URL}/api/accounts/${id}`, {
     method: "PUT",

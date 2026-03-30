@@ -51,6 +51,16 @@ def _migrate_add_account_id_column() -> None:
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_trades_account_id ON trades (account_id)"))
 
 
+def _migrate_add_account_balance_columns() -> None:
+    inspector = inspect(engine)
+    if "accounts" not in inspector.get_table_names():
+        return
+    cols = [c["name"] for c in inspector.get_columns("accounts")]
+    with engine.begin() as conn:
+        if "balance" not in cols:
+            conn.execute(text("ALTER TABLE accounts ADD COLUMN balance FLOAT"))
+
+
 def seed_default_accounts(db: Session) -> None:
     """Create default accounts if none exist."""
     count = db.scalar(select(func.count()).select_from(AccountModel))
@@ -84,6 +94,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting up: creating tables and running migrations")
     Base.metadata.create_all(bind=engine)
     _migrate_add_account_id_column()
+    _migrate_add_account_balance_columns()
     db = SessionLocal()
     try:
         seed_default_accounts(db)

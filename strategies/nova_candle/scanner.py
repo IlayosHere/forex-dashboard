@@ -185,7 +185,11 @@ def _to_signal(raw: dict[str, Any]) -> Signal:
             "high": raw["high"],
             "low": raw["low"],
             "close": raw["close"],
-            "bos_candle_time": raw.get("bos_candle_time"),
+            "bos_candle_time": (
+                raw["bos_candle_time"].isoformat()
+                if raw.get("bos_candle_time") is not None
+                else None
+            ),
             "bos_swing_price": raw.get("bos_swing_price"),
         },
     )

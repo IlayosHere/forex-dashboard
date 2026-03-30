@@ -25,6 +25,7 @@ interface FormState {
   status: AccountStatus;
   prop_firm: string;
   phase: string;
+  balance: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -34,6 +35,7 @@ const EMPTY_FORM: FormState = {
   status: "active",
   prop_firm: "",
   phase: "",
+  balance: "",
 };
 
 export function AccountSheet({ open, onOpenChange, onAccountCreated }: AccountSheetProps) {
@@ -66,6 +68,7 @@ export function AccountSheet({ open, onOpenChange, onAccountCreated }: AccountSh
       status: account.status,
       prop_firm: account.prop_firm ?? "",
       phase: account.phase ?? "",
+      balance: account.balance != null ? String(account.balance) : "",
     });
     setShowForm(true);
   };
@@ -80,6 +83,7 @@ export function AccountSheet({ open, onOpenChange, onAccountCreated }: AccountSh
           status: form.status,
           prop_firm: isFunded ? (form.prop_firm || null) : null,
           phase: isFunded ? (form.phase || null) : null,
+          balance: form.balance ? parseFloat(form.balance) : null,
         });
       } else {
         const account = await createAccount({
@@ -89,6 +93,7 @@ export function AccountSheet({ open, onOpenChange, onAccountCreated }: AccountSh
           status: form.status,
           prop_firm: isFunded ? (form.prop_firm || null) : null,
           phase: isFunded ? (form.phase || null) : null,
+          balance: form.balance ? parseFloat(form.balance) : null,
         });
         onAccountCreated?.(account);
       }

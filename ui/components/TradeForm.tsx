@@ -113,7 +113,14 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) onSubmit({ ...form, instrument_type: instrumentType });
+    if (validate()) {
+      onSubmit({ ...form, instrument_type: instrumentType });
+    } else {
+      setTimeout(() => {
+        const el = document.querySelector(".border-bear");
+        if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+    }
   };
 
   return (

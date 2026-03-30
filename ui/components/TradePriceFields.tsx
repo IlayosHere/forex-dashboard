@@ -10,6 +10,11 @@ function errBorder(errors: Record<string, boolean>, field: string): string {
   return errors[field] ? "border-bear" : "";
 }
 
+function ErrMsg({ errors, field, msg }: { errors: Record<string, boolean>; field: string; msg: string }) {
+  if (!errors[field]) return null;
+  return <p className="text-bear text-xs mt-1">{msg}</p>;
+}
+
 interface TradePriceFieldsProps {
   form: TradeFormData;
   errors: Record<string, boolean>;
@@ -37,6 +42,7 @@ export function TradePriceFields({
             onChange={(e) => onChange("entry_price", e.target.value)}
             className={`${INPUT_CLASS} ${errBorder(errors, "entry_price")}`}
           />
+          <ErrMsg errors={errors} field="entry_price" msg="Required" />
         </div>
         <div className="space-y-1">
           <label className="label">{isFutures ? "Contracts" : "Lot Size"}</label>
@@ -47,6 +53,7 @@ export function TradePriceFields({
             onChange={(e) => onChange("lot_size", e.target.value)}
             className={`${INPUT_CLASS} ${errBorder(errors, "lot_size")}`}
           />
+          <ErrMsg errors={errors} field="lot_size" msg="Required" />
         </div>
       </div>
 
@@ -60,6 +67,7 @@ export function TradePriceFields({
             onChange={(e) => onChange("sl_price", e.target.value)}
             className={`${INPUT_CLASS} ${errBorder(errors, "sl_price")}`}
           />
+          <ErrMsg errors={errors} field="sl_price" msg="Required" />
         </div>
         <div className="space-y-1">
           <label className="label">TP Price</label>
@@ -91,6 +99,7 @@ export function TradePriceFields({
           onChange={(v) => onChange("open_time", v)}
           hasError={!!errors.open_time}
         />
+        <ErrMsg errors={errors} field="open_time" msg="Required" />
       </div>
     </>
   );

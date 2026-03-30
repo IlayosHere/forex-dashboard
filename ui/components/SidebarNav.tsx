@@ -28,6 +28,7 @@ export function SidebarNav() {
     <nav className="flex-1 px-2 py-3 space-y-0.5">
       <NavLink href="/">Dashboard</NavLink>
       <NavLink href="/journal">Journal</NavLink>
+      <NavLink href="/accounts">Accounts</NavLink>
 
       <div className="pt-3 pb-1 px-3">
         <span className="label">Strategies</span>

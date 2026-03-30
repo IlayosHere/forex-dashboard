@@ -10,6 +10,7 @@ export interface Account {
   status: AccountStatus;
   prop_firm: string | null;
   phase: string | null;
+  balance?: number | null;
   created_at: string;
 }
 
