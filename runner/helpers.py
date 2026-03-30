@@ -2,7 +2,7 @@
 runner/helpers.py
 -----------------
 Helper functions extracted from runner/main.py: strategy discovery,
-DB persistence, Discord notification, and market-hours logic.
+DB persistence, and market-hours logic.
 """
 from __future__ import annotations
 
@@ -90,8 +90,9 @@ def discover_strategies() -> dict[str, object]:
         if not callable(getattr(mod, "scan", None)):
             logger.warning("%s has no scan() function -- skipping", module_path)
             continue
-        found[name] = mod.scan
-        logger.info("Registered strategy: %s", name)
+        slug = name.replace("_", "-")
+        found[slug] = mod.scan
+        logger.info("Registered strategy: %s", slug)
     return found
 
 
@@ -136,25 +137,3 @@ def persist(db: Session, sig: Signal) -> None:
     db.commit()
 
 
-# ---------------------------------------------------------------------------
-# Discord notification
-# ---------------------------------------------------------------------------
-
-def to_discord_dict(sig: Signal) -> dict:
-    """Convert a Signal to the dict format expected by discord_notifier.
-
-    Base fields are mapped explicitly; strategy-specific extras (e.g. fvg_near_edge)
-    live in sig.metadata and are spread in so the FVG embed builder finds them.
-    """
-    return {
-        "symbol": sig.symbol,
-        "direction": sig.direction,
-        "candle_time": sig.candle_time,
-        "entry_price": sig.entry,
-        "sl": sig.sl,
-        "tp": sig.tp,
-        "lot_size": sig.lot_size,
-        "risk_pips": sig.risk_pips,
-        "spread_pips": sig.spread_pips,
-        **sig.metadata,
-    }
