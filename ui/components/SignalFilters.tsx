@@ -8,6 +8,7 @@ const FOREX_PAIRS = [
 export interface SignalFilterValues {
   symbol: string;
   direction: string;
+  resolution: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -31,8 +32,9 @@ export function SignalFilters({ values, onChange, total, onReset }: SignalFilter
   const update = (patch: Partial<SignalFilterValues>) =>
     onChange({ ...values, ...patch });
 
-  const hasFilters =
-    values.symbol || values.direction || values.dateFrom || values.dateTo;
+  const hasFilters = Boolean(
+    values.symbol || values.direction || values.resolution || values.dateFrom || values.dateTo
+  );
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -57,6 +59,20 @@ export function SignalFilters({ values, onChange, total, onReset }: SignalFilter
         <option value="">Buy & Sell</option>
         <option value="BUY">BUY</option>
         <option value="SELL">SELL</option>
+      </select>
+
+      {/* Resolution */}
+      <select
+        className={selectClass}
+        value={values.resolution}
+        onChange={(e) => update({ resolution: e.target.value })}
+      >
+        <option value="">All outcomes</option>
+        <option value="pending">Pending</option>
+        <option value="TP_HIT">TP Hit</option>
+        <option value="SL_HIT">SL Hit</option>
+        <option value="EXPIRED">Expired</option>
+        <option value="NOT_FILLED">Not Filled</option>
       </select>
 
       {/* Date From */}
@@ -89,7 +105,7 @@ export function SignalFilters({ values, onChange, total, onReset }: SignalFilter
         {hasFilters && (
           <button
             onClick={onReset}
-            className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors"
+            className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors cursor-pointer"
           >
             Clear filters
           </button>

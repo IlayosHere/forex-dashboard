@@ -43,9 +43,16 @@ class SignalModel(Base):
     signal_metadata: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    # Resolution tracking (populated by runner/resolver.py after candles close)
+    resolution: Mapped[str | None] = mapped_column(String, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resolution_candles: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     __table_args__ = (
         Index("ix_signals_strategy", "strategy"),
         Index("ix_signals_candle_time", "candle_time"),
+        Index("ix_signals_resolution", "resolution"),
     )
 
 
