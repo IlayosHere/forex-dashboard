@@ -2,16 +2,22 @@
 
 import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
 import { strategies, type StrategyMeta } from "@/lib/strategies";
+
 import type { SignalFilters as ApiFilters } from "@/lib/api";
+
+import { formatPrice } from "@/lib/utils";
+import { RESOLUTION_CONFIG } from "@/lib/signals";
 
 const PAGE_SIZE = 50;
 
 const emptyFilters: SignalFilterValues = {
   symbol: "",
   direction: "",
+  resolution: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -31,7 +37,8 @@ function formatDate(iso: string): string {
       year: "numeric",
       timeZone: "UTC",
     });
-  } catch {
+  } catch (e) {
+    console.warn("Date parse failed:", e);
     return "—";
   }
 }
@@ -42,14 +49,10 @@ function formatTime(iso: string): string {
     const hh = d.getUTCHours().toString().padStart(2, "0");
     const mm = d.getUTCMinutes().toString().padStart(2, "0");
     return `${hh}:${mm}`;
-  } catch {
+  } catch (e) {
+    console.warn("Date parse failed:", e);
     return "—";
   }
-}
-
-function formatPrice(price: number, symbol: string): string {
-  const isJpy = symbol.includes("JPY");
-  return price.toFixed(isJpy ? 3 : 5);
 }
 
 function DashboardContent() {
@@ -63,7 +66,6 @@ function DashboardContent() {
   });
   const [page, setPage] = useState(0);
 
-  // Reset page when filters change
   const handleFilterChange = (newFilters: SignalFilterValues) => {
     setFilters(newFilters);
     setPage(0);
@@ -83,6 +85,7 @@ function DashboardContent() {
     };
     if (filters.symbol) f.symbol = filters.symbol;
     if (filters.direction) f.direction = filters.direction;
+    if (filters.resolution) f.resolution = filters.resolution;
     if (filters.dateFrom) f.from = `${filters.dateFrom}T00:00:00Z`;
     if (filters.dateTo) f.to = `${filters.dateTo}T23:59:59Z`;
     return f;
@@ -146,7 +149,7 @@ function DashboardContent() {
       {!loading && !error && signals.length === 0 && (
         <div className="text-center py-12">
           <p className="text-[#777777] text-sm mb-1">No signals match your filters.</p>
-          {(filters.symbol || filters.direction || filters.dateFrom || filters.dateTo) && (
+          {(filters.symbol || filters.direction || filters.resolution || filters.dateFrom || filters.dateTo) && (
             <button
               onClick={() => { setFilters(emptyFilters); setPage(0); }}
               className="text-xs text-[#26a69a] hover:underline cursor-pointer mt-2"
@@ -170,12 +173,14 @@ function DashboardContent() {
                 <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">TP</th>
                 <th className="text-right pl-6 pr-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Risk ({unitLabel})</th>
                 <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Lot</th>
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Outcome</th>
                 <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Time (UTC)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1e1e1e]">
               {signals.map((s) => {
                 const isBuy = s.direction === "BUY";
+                const resCfg = s.resolution ? RESOLUTION_CONFIG[s.resolution] : null;
                 return (
                   <tr
                     key={s.id}
@@ -209,6 +214,18 @@ function DashboardContent() {
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#666666]">
                       {s.lot_size.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      {resCfg ? (
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: resCfg.color }}
+                        >
+                          {resCfg.label}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#444444]">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums whitespace-nowrap text-[#666666]">
                       {formatDate(s.candle_time)} {formatTime(s.candle_time)}

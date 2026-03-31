@@ -41,7 +41,13 @@ class SignalResponse(BaseModel):
     metadata: dict = Field(validation_alias="signal_metadata")
     created_at: datetime
 
-    @field_validator("candle_time", "created_at", mode="before")
+    # Resolution fields — populated by runner/resolver.py
+    resolution: str | None = None
+    resolved_at: datetime | None = None
+    resolved_price: float | None = None
+    resolution_candles: int | None = None
+
+    @field_validator("candle_time", "created_at", "resolved_at", mode="before")
     @classmethod
     def assume_utc(cls, v: object) -> object:
         if isinstance(v, datetime) and v.tzinfo is None:

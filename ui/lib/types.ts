@@ -14,6 +14,8 @@ export interface Account {
   created_at: string;
 }
 
+export type SignalResolution = "TP_HIT" | "SL_HIT" | "EXPIRED" | "NOT_FILLED";
+
 export interface Signal {
   id: string;
   strategy: string;
@@ -28,6 +30,11 @@ export interface Signal {
   spread_pips: number;
   metadata: Record<string, unknown>;
   created_at: string;    // ISO datetime string
+  // Resolution — populated by runner/resolver.py after signal plays out
+  resolution: SignalResolution | null;
+  resolved_at: string | null;
+  resolved_price: number | null;
+  resolution_candles: number | null;
 }
 
 export interface SignalListResponse {
@@ -40,6 +47,48 @@ export interface CalculateResponse {
   risk_usd: number;
   sl_pips: number;
   rr: number | null;
+  instrument_type: string;
+}
+
+export interface TradeCreateRequest {
+  signal_id?: string | null;
+  account_id?: string | null;
+  strategy: string;
+  symbol: string;
+  instrument_type?: string;
+  direction: "BUY" | "SELL";
+  entry_price: number;
+  sl_price: number;
+  tp_price?: number | null;
+  lot_size: number;
+  risk_pips: number;
+  open_time: string;
+  tags?: string[];
+  notes?: string;
+  rating?: number | null;
+  confidence?: number | null;
+  screenshot_url?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TradeUpdateRequest {
+  instrument_type?: string | null;
+  direction?: "BUY" | "SELL" | null;
+  entry_price?: number | null;
+  exit_price?: number | null;
+  sl_price?: number | null;
+  tp_price?: number | null;
+  lot_size?: number | null;
+  risk_pips?: number | null;
+  status?: "open" | "closed" | "breakeven" | "cancelled" | null;
+  outcome?: "win" | "loss" | "breakeven" | null;
+  close_time?: string | null;
+  tags?: string[] | null;
+  notes?: string | null;
+  rating?: number | null;
+  confidence?: number | null;
+  screenshot_url?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface Trade {

@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account, TradeCreateRequest, TradeUpdateRequest } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -17,6 +17,7 @@ export interface SignalFilters {
   direction?: string;
   from?: string;
   to?: string;
+  resolution?: string;
   limit?: number;
   offset?: number;
 }
@@ -30,8 +31,9 @@ export async function fetchSignals(
   if (filters.direction) params.set("direction", filters.direction);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
+  if (filters.resolution) params.set("resolution", filters.resolution);
   params.set("limit", String(filters.limit ?? 50));
-  if (filters.offset) params.set("offset", String(filters.offset));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
   const res = await fetch(`${BASE_URL}/api/signals?${params.toString()}`, {
     cache: "no-store",
   });
@@ -87,7 +89,7 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.account_id) params.set("account_id", filters.account_id);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   params.set("limit", String(filters.limit ?? 50));
-  if (filters.offset) params.set("offset", String(filters.offset));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
   const res = await fetch(`${BASE_URL}/api/trades?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trades: ${res.status}`);
   return res.json() as Promise<Trade[]>;
@@ -99,7 +101,7 @@ export async function fetchTrade(id: string): Promise<Trade> {
   return res.json() as Promise<Trade>;
 }
 
-export async function createTrade(body: Record<string, unknown>): Promise<Trade> {
+export async function createTrade(body: TradeCreateRequest): Promise<Trade> {
   const res = await fetch(`${BASE_URL}/api/trades`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -109,7 +111,7 @@ export async function createTrade(body: Record<string, unknown>): Promise<Trade>
   return res.json() as Promise<Trade>;
 }
 
-export async function updateTrade(id: string, body: Record<string, unknown>): Promise<Trade> {
+export async function updateTrade(id: string, body: TradeUpdateRequest): Promise<Trade> {
   const res = await fetch(`${BASE_URL}/api/trades/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

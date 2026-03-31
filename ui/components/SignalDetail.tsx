@@ -1,10 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
 import { Calculator } from "./Calculator";
 import { MetadataPanel } from "./MetadataPanel";
 import { useCalculator } from "@/lib/useCalculator";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, pipSize } from "@/lib/utils";
+import { RESOLUTION_CONFIG } from "@/lib/signals";
+
 import type { Signal } from "@/lib/types";
 
 interface SignalDetailProps {
@@ -20,14 +23,13 @@ function formatCandle(iso: string): string {
     const hh = d.getUTCHours().toString().padStart(2, "0");
     const mm = d.getUTCMinutes().toString().padStart(2, "0");
     return `${year}-${month}-${day} ${hh}:${mm} UTC`;
-  } catch {
+  } catch (e) {
+    console.warn("Date parse failed:", e);
     return iso;
   }
 }
 
-function pipSize(symbol: string): number {
-  return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
-}
+
 
 export function SignalDetail({ signal }: SignalDetailProps) {
   const router = useRouter();
@@ -58,6 +60,24 @@ export function SignalDetail({ signal }: SignalDetailProps) {
         <span className="label">Entry</span>
         <span className="price text-foreground font-medium">{formatPrice(signal.entry, signal.symbol)}</span>
       </div>
+
+      {/* Resolution */}
+      {signal.resolution ? (
+        <div className="border border-border rounded px-3 py-2 flex justify-between items-center bg-card">
+          <span className="label">Outcome</span>
+          <span
+            className="text-sm font-semibold"
+            style={{ color: RESOLUTION_CONFIG[signal.resolution].color }}
+          >
+            {RESOLUTION_CONFIG[signal.resolution].label}
+            {signal.resolution_candles != null && (
+              <span className="ml-1.5 font-normal text-xs text-[#777777]">
+                ({signal.resolution_candles} candle{signal.resolution_candles !== 1 ? "s" : ""})
+              </span>
+            )}
+          </span>
+        </div>
+      ) : null}
 
       {/* Calculator */}
       <Calculator direction={signal.direction} calculator={calc} />

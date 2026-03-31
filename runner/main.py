@@ -55,6 +55,7 @@ from runner.helpers import (  # noqa: E402
     wait_for_next_candle,
 )
 from runner.notifier import send_signals  # noqa: E402
+from runner.resolver import resolve_pending_signals  # noqa: E402
 from shared.signal import Signal  # noqa: E402
 
 # Ensure DB tables exist -- the runner may start before the API server
@@ -149,6 +150,10 @@ def run_scan_cycle(strategies: dict[str, object]) -> None:
             "Cycle complete -- %d total new signal(s) across %d strategy(ies).",
             total_new, len(strategies),
         )
+
+        resolved = resolve_pending_signals(db)
+        if resolved:
+            logger.info("Resolution pass: %d signal(s) resolved this cycle.", resolved)
     finally:
         db.close()
 

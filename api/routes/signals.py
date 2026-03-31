@@ -7,7 +7,7 @@ GET /api/signals/{id} — single signal by primary key
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone as _tz
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -31,10 +31,16 @@ def list_signals(
     direction: str | None = Query(default=None, description="Filter by BUY or SELL"),
     date_from: datetime | None = Query(default=None, alias="from", description="Start date (inclusive)"),
     date_to: datetime | None = Query(default=None, alias="to", description="End date (inclusive)"),
+    resolution: str | None = Query(default=None, description="Filter by resolution: TP_HIT|SL_HIT|EXPIRED|pending"),
     limit: int = Query(default=50, ge=1, le=200, description="Max results (1-200)"),
     offset: int = Query(default=0, ge=0, description="Offset for pagination"),
-) -> dict:
+) -> SignalListResponse:
     """List signals with optional filters, newest first."""
+    if date_from is not None and date_from.tzinfo is None:
+        date_from = date_from.replace(tzinfo=_tz.utc)
+    if date_to is not None and date_to.tzinfo is None:
+        date_to = date_to.replace(tzinfo=_tz.utc)
+
     base = select(SignalModel)
     if strategy is not None:
         base = base.where(SignalModel.strategy == strategy)
@@ -46,6 +52,11 @@ def list_signals(
         base = base.where(SignalModel.candle_time >= date_from)
     if date_to is not None:
         base = base.where(SignalModel.candle_time <= date_to)
+    if resolution is not None:
+        if resolution == "pending":
+            base = base.where(SignalModel.resolution.is_(None))
+        else:
+            base = base.where(SignalModel.resolution == resolution)
 
     total = db.scalar(select(func.count()).select_from(base.subquery()))
     items = list(
