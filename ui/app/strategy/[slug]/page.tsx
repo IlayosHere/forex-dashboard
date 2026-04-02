@@ -35,7 +35,7 @@ function StrategyContent({ params }: StrategyPageProps) {
   const router = useRouter();
 
   const strategyMeta = strategies.find((s) => s.slug === slug);
-  const { signals, loading, error } = useSignals({ strategy: slug });
+  const { signals, loading, error } = useSignals({ strategy: slug, limit: 200 });
 
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("signal")

@@ -1,14 +1,18 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { Separator } from "@/components/ui/separator";
 import { Calculator } from "./Calculator";
 import { MetadataPanel } from "./MetadataPanel";
 import { useCalculator } from "@/lib/useCalculator";
 import { formatPrice, pipSize } from "@/lib/utils";
 import { RESOLUTION_CONFIG } from "@/lib/signals";
 
-import type { Signal } from "@/lib/types";
+import type { Signal, SlMethod, SignalResolution } from "@/lib/types";
+
+const METADATA_HIDDEN_KEYS = new Set(["sl_midpoint", "tp_midpoint", "resolution_midpoint", "resolution_midpoint_candles"]);
 
 interface SignalDetailProps {
   signal: Signal;
@@ -29,12 +33,41 @@ function formatCandle(iso: string): string {
   }
 }
 
-
-
 export function SignalDetail({ signal }: SignalDetailProps) {
   const router = useRouter();
   const isBuy = signal.direction === "BUY";
-  const calc = useCalculator(signal);
+
+  const [slMethod, setSlMethod] = useState<SlMethod>("far_edge");
+
+  const hasMidpointSl =
+    signal.strategy === "fvg-impulse" &&
+    typeof signal.metadata.sl_midpoint === "number";
+
+  useEffect(() => {
+    setSlMethod("far_edge");
+  }, [signal.id]);
+
+  const activeSl =
+    slMethod === "midpoint" && hasMidpointSl
+      ? (signal.metadata.sl_midpoint as number)
+      : signal.sl;
+
+  const activeTp =
+    slMethod === "midpoint" && hasMidpointSl
+      ? 2 * signal.entry - (signal.metadata.sl_midpoint as number)
+      : signal.tp;
+
+  const activeResolution =
+    slMethod === "midpoint" && hasMidpointSl
+      ? ((signal.metadata.resolution_midpoint as SignalResolution | null) ?? null)
+      : signal.resolution;
+
+  const activeResolutionCandles =
+    slMethod === "midpoint" && hasMidpointSl
+      ? ((signal.metadata.resolution_midpoint_candles as number | null) ?? null)
+      : signal.resolution_candles;
+
+  const calc = useCalculator(signal, activeSl, activeTp);
 
   return (
     <div className="space-y-4 p-4">
@@ -61,18 +94,57 @@ export function SignalDetail({ signal }: SignalDetailProps) {
         <span className="price text-foreground font-medium">{formatPrice(signal.entry, signal.symbol)}</span>
       </div>
 
-      {/* Resolution */}
-      {signal.resolution ? (
+      {/* SL Method toggle — fvg-impulse with wide FVG only */}
+      {hasMidpointSl && (
+        <>
+          <Separator className="bg-border" />
+          <div>
+            <p className="label mb-1.5">SL Method</p>
+            <div className="w-full grid grid-cols-2 rounded-md border border-[#2a2a2a] bg-[#1e1e1e] overflow-hidden">
+              <button
+                onClick={() => setSlMethod("far_edge")}
+                className={`h-11 flex flex-col items-center justify-center gap-0.5 border-r border-[#2a2a2a] transition-colors duration-100 ${
+                  slMethod === "far_edge"
+                    ? "bg-[#252525] border-b-2 border-b-[#26a69a]"
+                    : "hover:bg-[#1a1a1a]"
+                }`}
+              >
+                <span className={`text-xs font-medium tracking-wide ${slMethod === "far_edge" ? "text-[#e0e0e0]" : "text-[#777777]"}`}>Far Edge</span>
+                <span className={`text-[10px] font-normal ${slMethod === "far_edge" ? "text-[#a0a0a0]" : "text-[#555555]"}`}>
+                  {(Math.abs(signal.entry - signal.sl) / pipSize(signal.symbol)).toFixed(1)} pips
+                </span>
+              </button>
+              <button
+                onClick={() => setSlMethod("midpoint")}
+                className={`h-11 flex flex-col items-center justify-center gap-0.5 transition-colors duration-100 ${
+                  slMethod === "midpoint"
+                    ? "bg-[#252525] border-b-2 border-b-[#26a69a]"
+                    : "hover:bg-[#1a1a1a]"
+                }`}
+              >
+                <span className={`text-xs font-medium tracking-wide ${slMethod === "midpoint" ? "text-[#e0e0e0]" : "text-[#777777]"}`}>Midpoint</span>
+                <span className={`text-[10px] font-normal ${slMethod === "midpoint" ? "text-[#a0a0a0]" : "text-[#555555]"}`}>
+                  {(Math.abs(signal.entry - (signal.metadata.sl_midpoint as number)) / pipSize(signal.symbol)).toFixed(1)} pips
+                </span>
+              </button>
+            </div>
+          </div>
+          <Separator className="bg-border" />
+        </>
+      )}
+
+      {/* Outcome */}
+      {activeResolution && RESOLUTION_CONFIG[activeResolution] ? (
         <div className="border border-border rounded px-3 py-2 flex justify-between items-center bg-card">
           <span className="label">Outcome</span>
           <span
             className="text-sm font-semibold"
-            style={{ color: RESOLUTION_CONFIG[signal.resolution].color }}
+            style={{ color: RESOLUTION_CONFIG[activeResolution].color }}
           >
-            {RESOLUTION_CONFIG[signal.resolution].label}
-            {signal.resolution_candles != null && (
+            {RESOLUTION_CONFIG[activeResolution].label}
+            {activeResolutionCandles != null && (
               <span className="ml-1.5 font-normal text-xs text-[#777777]">
-                ({signal.resolution_candles} candle{signal.resolution_candles !== 1 ? "s" : ""})
+                ({activeResolutionCandles} candle{activeResolutionCandles !== 1 ? "s" : ""})
               </span>
             )}
           </span>
@@ -86,13 +158,9 @@ export function SignalDetail({ signal }: SignalDetailProps) {
       <button
         onClick={() => {
           const ps = pipSize(signal.symbol);
-          const slNum = parseFloat(calc.slPips);
           const tpNum = parseFloat(calc.tpPips);
           const params = new URLSearchParams({ signal: signal.id });
-          if (!isNaN(slNum)) {
-            const slPrice = isBuy ? signal.entry - slNum * ps : signal.entry + slNum * ps;
-            params.set("sl", String(slPrice));
-          }
+          params.set("sl", String(activeSl));
           if (!isNaN(tpNum)) {
             const tpPrice = isBuy ? signal.entry + tpNum * ps : signal.entry - tpNum * ps;
             params.set("tp", String(tpPrice));
@@ -108,7 +176,7 @@ export function SignalDetail({ signal }: SignalDetailProps) {
       </button>
 
       {/* Metadata */}
-      <MetadataPanel metadata={signal.metadata} />
+      <MetadataPanel metadata={signal.metadata} hiddenKeys={METADATA_HIDDEN_KEYS} />
     </div>
   );
 }

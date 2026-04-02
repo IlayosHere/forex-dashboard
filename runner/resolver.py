@@ -193,6 +193,60 @@ def _resolve_nova(signal: SignalModel, df: pd.DataFrame, start_idx: int) -> bool
     return False
 
 
+def _resolve_midpoint(
+    signal: SignalModel,
+    df: pd.DataFrame,
+    start_idx: int,
+    last_closed: int,
+) -> None:
+    """Write resolution_midpoint to signal metadata using the midpoint SL price.
+
+    Runs independently of the far-edge resolution so that signals still pending
+    on far-edge can accumulate midpoint data on each cycle. Idempotent: exits
+    immediately if resolution_midpoint already present in metadata.
+
+    Writes nothing if the candle window is not yet large enough to make a
+    determination — the next cycle will try again.
+    """
+    meta = signal.signal_metadata or {}
+    sl_midpoint: float | None = meta.get("sl_midpoint")
+    if sl_midpoint is None:
+        return
+    if "resolution_midpoint" in meta:
+        return
+
+    tp_midpoint: float = 2 * signal.entry - sl_midpoint
+    end_idx = min(start_idx + MAX_RESOLUTION_CANDLES, last_closed)
+
+    for i in range(start_idx + 1, end_idx + 1):
+        row = df.iloc[i]
+        bar_high = float(row["high"])
+        bar_low = float(row["low"])
+
+        if signal.direction == "BUY":
+            sl_hit = bar_low <= sl_midpoint
+            tp_hit = bar_high >= tp_midpoint
+        else:
+            sl_hit = bar_high >= sl_midpoint
+            tp_hit = bar_low <= tp_midpoint
+
+        label = "SL_HIT" if sl_hit else ("TP_HIT" if tp_hit else None)
+        if label is not None:
+            signal.signal_metadata = {
+                **meta,
+                "resolution_midpoint": label,
+                "resolution_midpoint_candles": i - start_idx,
+            }
+            return
+
+    if (end_idx - start_idx) >= MAX_RESOLUTION_CANDLES:
+        signal.signal_metadata = {
+            **meta,
+            "resolution_midpoint": "EXPIRED",
+            "resolution_midpoint_candles": end_idx - start_idx,
+        }
+
+
 def _resolve_signal(signal: SignalModel, df: pd.DataFrame) -> bool:
     """Attempt to resolve a single signal against the given DataFrame.
 
@@ -207,7 +261,8 @@ def _resolve_signal(signal: SignalModel, df: pd.DataFrame) -> bool:
     if signal.strategy in _LIMIT_ORDER_STRATEGIES:
         return _resolve_nova(signal, df, start_idx)
 
-    last_idx = min(start_idx + MAX_RESOLUTION_CANDLES, _last_closed_idx(df))
+    last_closed = _last_closed_idx(df)
+    last_idx = min(start_idx + MAX_RESOLUTION_CANDLES, last_closed)
 
     for i in range(start_idx + 1, last_idx + 1):
         row = df.iloc[i]
@@ -217,6 +272,8 @@ def _resolve_signal(signal: SignalModel, df: pd.DataFrame) -> bool:
             signal.resolved_at = df.index[i].to_pydatetime().replace(tzinfo=timezone.utc)
             signal.resolved_price = _resolve_price(signal, label, float(row["close"]))
             signal.resolution_candles = i - start_idx
+            if signal.strategy == "fvg-impulse":
+                _resolve_midpoint(signal, df, start_idx, last_closed)
             return True
 
     elapsed = last_idx - start_idx
@@ -226,6 +283,8 @@ def _resolve_signal(signal: SignalModel, df: pd.DataFrame) -> bool:
         signal.resolved_at = df.index[last_idx].to_pydatetime().replace(tzinfo=timezone.utc)
         signal.resolved_price = float(last_row["close"])
         signal.resolution_candles = elapsed
+        if signal.strategy == "fvg-impulse":
+            _resolve_midpoint(signal, df, start_idx, last_closed)
         return True
 
     return False
@@ -277,5 +336,22 @@ def resolve_pending_signals(db: Session) -> int:
         if resolved_this_symbol:
             db.commit()
             total_resolved += resolved_this_symbol
+
+        midpoint_updated = 0
+        for signal in signals:
+            if signal.resolution is not None:
+                continue
+            if signal.strategy != "fvg-impulse":
+                continue
+            start_idx = _signal_candle_idx(df, signal.candle_time)
+            if start_idx is None:
+                continue
+            meta_before = dict(signal.signal_metadata or {})
+            _resolve_midpoint(signal, df, start_idx, _last_closed_idx(df))
+            if signal.signal_metadata != meta_before:
+                midpoint_updated += 1
+
+        if midpoint_updated:
+            db.commit()
 
     return total_resolved

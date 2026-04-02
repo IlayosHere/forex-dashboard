@@ -98,3 +98,36 @@ def calculate_trade_params(signal: dict[str, Any]) -> dict[str, Any]:
         "risk_pips": round(effective_risk_pips, 1),
         "spread_pips": round(spread_pips, 1),
     }
+
+
+# ---------------------------------------------------------------------------
+# Alternative SL: FVG midpoint
+# ---------------------------------------------------------------------------
+
+def calculate_midpoint_sl(signal: dict[str, Any]) -> float | None:
+    """Compute the alternative SL price at the FVG midpoint.
+
+    Returns None when the FVG is too narrow (<=2 pips) for a midpoint SL to
+    be meaningful — the midpoint would sit too close to the near edge to
+    provide any buffer above spread + slippage.
+
+    Parameters
+    ----------
+    signal : dict
+        Must contain: symbol, direction, fvg_near_edge, fvg_far_edge,
+        fvg_width_pips.
+
+    Returns
+    -------
+    float | None
+        Midpoint SL price, or None for narrow FVGs.
+    """
+    if signal["fvg_width_pips"] <= 2.0:
+        return None
+
+    pip = pip_size(signal["symbol"])
+    midpoint = (signal["fvg_near_edge"] + signal["fvg_far_edge"]) / 2
+
+    if signal["direction"] == "BUY":
+        return midpoint - SL_BUFFER_PIPS * pip
+    return midpoint + SL_BUFFER_PIPS * pip

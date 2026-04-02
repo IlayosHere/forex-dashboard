@@ -23,7 +23,7 @@ import pandas as pd
 from shared.calculator import pip_size
 from shared.signal import Signal
 
-from .calculations import calculate_trade_params
+from .calculations import calculate_midpoint_sl, calculate_trade_params
 from .data import FVG, age_and_prune_fvgs, detect_fvgs_at_bar, get_candles
 
 logger = logging.getLogger(__name__)
@@ -165,6 +165,10 @@ def _check_wick_tests(
             "close": bar_close,
         }
         sig.update(calculate_trade_params(sig))
+        sl_mid = calculate_midpoint_sl(sig)
+        if sl_mid is not None:
+            sig["sl_midpoint"] = sl_mid
+            sig["tp_midpoint"] = 2 * bar_close - sl_mid
         signals.append(sig)
 
     return signals
@@ -220,6 +224,7 @@ def _to_signal(raw: dict[str, Any]) -> Signal:
             "fvg_width_pips": raw["fvg_width_pips"],
             "fvg_age": raw["fvg_age"],
             "fvg_formation_time": raw["fvg_formation_time"].isoformat(),
+            **({"sl_midpoint": raw["sl_midpoint"], "tp_midpoint": raw["tp_midpoint"]} if raw.get("sl_midpoint") is not None else {}),
         },
     )
 

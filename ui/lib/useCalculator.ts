@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { postCalculate } from "./api";
+import { pipSize } from "./utils";
 import type { Signal, CalculateResponse } from "./types";
 
 const DEBOUNCE_MS = 300;
@@ -13,10 +14,6 @@ const DEFAULT_RISK = "1.0";
 function readLS(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
   return window.localStorage.getItem(key) ?? fallback;
-}
-
-function pipSize(symbol: string): number {
-  return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
 }
 
 function toPips(price: number, entry: number, symbol: string): string {
@@ -36,15 +33,17 @@ export interface UseCalculatorResult {
   isPending: boolean;
 }
 
-export function useCalculator(signal: Signal): UseCalculatorResult {
-  const [slPips, setSlPips] = useState(() => toPips(signal.sl, signal.entry, signal.symbol));
-  const [tpPips, setTpPips] = useState(() => toPips(signal.tp, signal.entry, signal.symbol));
+export function useCalculator(signal: Signal, slPrice: number, tpPrice: number): UseCalculatorResult {
+  const [slPips, setSlPips] = useState(() => toPips(slPrice, signal.entry, signal.symbol));
+  const [tpPips, setTpPips] = useState(() => toPips(tpPrice, signal.entry, signal.symbol));
   const [accountBalance, setAccountBalanceState] = useState(DEFAULT_BALANCE);
   const [riskPercent, setRiskPercentState] = useState(DEFAULT_RISK);
   const [result, setResult] = useState<CalculateResponse | null>(null);
   const [isPending, setIsPending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signalIdRef = useRef(signal.id);
+  const slPriceRef = useRef(slPrice);
+  const tpPriceRef = useRef(tpPrice);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -52,15 +51,26 @@ export function useCalculator(signal: Signal): UseCalculatorResult {
     setRiskPercentState(readLS(LS_RISK, DEFAULT_RISK));
   }, []);
 
-  // Reset pips when signal changes
+  // Reset all state when the signal itself changes
   useEffect(() => {
     if (signalIdRef.current !== signal.id) {
       signalIdRef.current = signal.id;
-      setSlPips(toPips(signal.sl, signal.entry, signal.symbol));
-      setTpPips(toPips(signal.tp, signal.entry, signal.symbol));
+      slPriceRef.current = slPrice;
+      tpPriceRef.current = tpPrice;
+      setSlPips(toPips(slPrice, signal.entry, signal.symbol));
+      setTpPips(toPips(tpPrice, signal.entry, signal.symbol));
       setResult(null);
     }
-  }, [signal]);
+  }, [signal, slPrice, tpPrice]);
+
+  // Reset slPips and tpPips when prices change on the same signal (e.g. SL method toggle)
+  useEffect(() => {
+    if (signalIdRef.current !== signal.id) return;
+    const slChanged = slPrice !== slPriceRef.current;
+    const tpChanged = tpPrice !== tpPriceRef.current;
+    if (slChanged) { slPriceRef.current = slPrice; setSlPips(toPips(slPrice, signal.entry, signal.symbol)); }
+    if (tpChanged) { tpPriceRef.current = tpPrice; setTpPips(toPips(tpPrice, signal.entry, signal.symbol)); }
+  }, [slPrice, tpPrice, signal]);
 
   const setAccountBalance = useCallback((v: string) => {
     setAccountBalanceState(v);

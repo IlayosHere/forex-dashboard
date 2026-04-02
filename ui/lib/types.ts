@@ -15,6 +15,7 @@ export interface Account {
 }
 
 export type SignalResolution = "TP_HIT" | "SL_HIT" | "EXPIRED" | "NOT_FILLED";
+export type SlMethod = "far_edge" | "midpoint";
 
 export interface Signal {
   id: string;
