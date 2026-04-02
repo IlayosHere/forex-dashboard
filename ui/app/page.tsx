@@ -9,8 +9,9 @@ import { strategies, type StrategyMeta } from "@/lib/strategies";
 
 import type { SignalFilters as ApiFilters } from "@/lib/api";
 
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, pipSize } from "@/lib/utils";
 import { RESOLUTION_CONFIG } from "@/lib/signals";
+import type { Signal, SignalResolution, SlMethod } from "@/lib/types";
 
 const PAGE_SIZE = 50;
 
@@ -55,6 +56,73 @@ function formatTime(iso: string): string {
   }
 }
 
+function OutcomeCell({ s }: { s: Signal }) {
+  const hasDualSl =
+    s.strategy === "fvg-impulse" &&
+    typeof s.metadata.sl_midpoint === "number";
+
+  if (!hasDualSl) {
+    const cfg = s.resolution ? RESOLUTION_CONFIG[s.resolution] : null;
+    return cfg ? (
+      <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+    ) : (
+      <span className="text-xs text-[#444444]">—</span>
+    );
+  }
+
+  const mpRes = typeof s.metadata.resolution_midpoint === "string"
+    ? s.metadata.resolution_midpoint as SignalResolution
+    : null;
+
+  if (s.resolution && mpRes && s.resolution !== mpRes) {
+    const feCfg = RESOLUTION_CONFIG[s.resolution];
+    const mpCfg = RESOLUTION_CONFIG[mpRes];
+    if (!feCfg || !mpCfg) {
+      return <span className="text-xs text-[#444444]">—</span>;
+    }
+    return (
+      <div className="flex flex-col gap-0.5 leading-tight">
+        <span className="text-[10px]" style={{ color: feCfg.color }}>FE: {feCfg.label}</span>
+        <span className="text-[10px]" style={{ color: mpCfg.color }}>MP: {mpCfg.label}</span>
+      </div>
+    );
+  }
+
+  const active = s.resolution ?? mpRes;
+  if (!active) return <span className="text-xs text-[#444444]">—</span>;
+  const cfg = RESOLUTION_CONFIG[active];
+  if (!cfg) return <span className="text-xs text-[#444444]">—</span>;
+  return <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>;
+}
+
+// SLIPPAGE_PIPS mirrors the backend constant in calculations.py
+const SLIPPAGE_PIPS = 0.2;
+
+function getSignalDisplayValues(s: Signal, method: SlMethod) {
+  const hasMidpoint =
+    s.strategy === "fvg-impulse" &&
+    typeof s.metadata.sl_midpoint === "number";
+
+  if (method === "midpoint" && hasMidpoint) {
+    const midSl = s.metadata.sl_midpoint as number;
+    const pip = pipSize(s.symbol);
+    const midRawRisk = Math.abs(s.entry - midSl) / pip;
+    const midEffectiveRisk = midRawRisk + s.spread_pips + SLIPPAGE_PIPS;
+    const tp =
+      s.direction === "BUY"
+        ? s.entry + midRawRisk * pip
+        : s.entry - midRawRisk * pip;
+    // Derive pip_value from stored values, then recompute lot for new risk
+    const lot =
+      Math.round(
+        Math.max((s.risk_pips * s.lot_size) / midEffectiveRisk, 0.01) * 100,
+      ) / 100;
+    return { sl: midSl, tp, riskPips: midEffectiveRisk, lot };
+  }
+
+  return { sl: s.sl, tp: s.tp, riskPips: s.risk_pips, lot: s.lot_size };
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,6 +133,7 @@ function DashboardContent() {
     dateFrom: getYesterdayUTC(),
   });
   const [page, setPage] = useState(0);
+  const [slMethod, setSlMethod] = useState<SlMethod>("far_edge");
 
   const handleFilterChange = (newFilters: SignalFilterValues) => {
     setFilters(newFilters);
@@ -75,6 +144,7 @@ function DashboardContent() {
     setActiveStrategy(strategy);
     setFilters({ ...emptyFilters, dateFrom: getYesterdayUTC() });
     setPage(0);
+    setSlMethod("far_edge");
   };
 
   const apiFilters: ApiFilters = useMemo(() => {
@@ -160,6 +230,35 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* SL Method toggle — fvg-impulse only */}
+      {activeStrategy.slug === "fvg-impulse" && signals.length > 0 && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[10px] uppercase tracking-widest text-[#444444]">SL</span>
+          <div className="flex rounded border border-[#2a2a2a] bg-[#1e1e1e] overflow-hidden">
+            <button
+              onClick={() => setSlMethod("far_edge")}
+              className={`px-3 h-7 text-xs font-medium border-r border-[#2a2a2a] transition-colors duration-100 ${
+                slMethod === "far_edge"
+                  ? "bg-[#252525] text-[#e0e0e0] border-b-2 border-b-[#26a69a]"
+                  : "text-[#777777] hover:text-[#e0e0e0] hover:bg-[#1a1a1a]"
+              }`}
+            >
+              Far Edge
+            </button>
+            <button
+              onClick={() => setSlMethod("midpoint")}
+              className={`px-3 h-7 text-xs font-medium transition-colors duration-100 ${
+                slMethod === "midpoint"
+                  ? "bg-[#252525] text-[#e0e0e0] border-b-2 border-b-[#26a69a]"
+                  : "text-[#777777] hover:text-[#e0e0e0] hover:bg-[#1a1a1a]"
+              }`}
+            >
+              Midpoint
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Signal table */}
       {signals.length > 0 && (
         <div className="border border-[#2a2a2a] rounded overflow-hidden bg-[#131313]">
@@ -180,7 +279,7 @@ function DashboardContent() {
             <tbody className="divide-y divide-[#1e1e1e]">
               {signals.map((s) => {
                 const isBuy = s.direction === "BUY";
-                const resCfg = s.resolution ? RESOLUTION_CONFIG[s.resolution] : null;
+                const display = getSignalDisplayValues(s, slMethod);
                 return (
                   <tr
                     key={s.id}
@@ -204,28 +303,19 @@ function DashboardContent() {
                       {formatPrice(s.entry, s.symbol)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
-                      {formatPrice(s.sl, s.symbol)}
+                      {formatPrice(display.sl, s.symbol)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
-                      {formatPrice(s.tp, s.symbol)}
+                      {formatPrice(display.tp, s.symbol)}
                     </td>
                     <td className="pl-6 pr-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#a0a0a0]">
-                      {s.risk_pips.toFixed(1)}
+                      {display.riskPips.toFixed(1)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-[#666666]">
-                      {s.lot_size.toFixed(2)}
+                      {display.lot.toFixed(2)}
                     </td>
                     <td className="px-3 py-1.5">
-                      {resCfg ? (
-                        <span
-                          className="text-xs font-medium"
-                          style={{ color: resCfg.color }}
-                        >
-                          {resCfg.label}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-[#444444]">—</span>
-                      )}
+                      <OutcomeCell s={s} />
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums whitespace-nowrap text-[#666666]">
                       {formatDate(s.candle_time)} {formatTime(s.candle_time)}

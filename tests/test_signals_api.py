@@ -8,6 +8,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -115,3 +116,69 @@ def test_get_signal_found(client: TestClient, db: Session) -> None:
 def test_get_signal_not_found(client: TestClient) -> None:
     resp = client.get("/api/signals/nonexistent")
     assert resp.status_code == 404
+
+
+def test_get_signal_exposes_resolution_fields(client: TestClient, db: Session) -> None:
+    signal = _insert_signal(
+        db,
+        resolution="TP_HIT",
+        resolved_price=1.09100,
+        resolution_candles=4,
+    )
+    resp = client.get(f"/api/signals/{signal.id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["resolution"] == "TP_HIT"
+    assert data["resolved_price"] == pytest.approx(1.09100)
+    assert data["resolution_candles"] == 4
+
+
+# ---------------------------------------------------------------------------
+# GET /api/signals — resolution filter
+# ---------------------------------------------------------------------------
+
+
+def test_list_signals_filter_resolution_tp_hit(client: TestClient, db: Session) -> None:
+    _insert_signal(db, resolution="TP_HIT")
+    _insert_signal(db, resolution="SL_HIT")
+    _insert_signal(db)  # pending (no resolution)
+    resp = client.get("/api/signals", params={"resolution": "TP_HIT"})
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["resolution"] == "TP_HIT"
+
+
+def test_list_signals_filter_resolution_sl_hit(client: TestClient, db: Session) -> None:
+    _insert_signal(db, resolution="SL_HIT")
+    _insert_signal(db, resolution="EXPIRED")
+    resp = client.get("/api/signals", params={"resolution": "SL_HIT"})
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["resolution"] == "SL_HIT"
+
+
+def test_list_signals_filter_resolution_pending(client: TestClient, db: Session) -> None:
+    _insert_signal(db)                      # pending
+    _insert_signal(db, resolution="TP_HIT")
+    resp = client.get("/api/signals", params={"resolution": "pending"})
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["resolution"] is None
+
+
+def test_list_signals_filter_resolution_not_filled(client: TestClient, db: Session) -> None:
+    _insert_signal(db, resolution="NOT_FILLED")
+    _insert_signal(db, resolution="TP_HIT")
+    resp = client.get("/api/signals", params={"resolution": "NOT_FILLED"})
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["resolution"] == "NOT_FILLED"
+
+
+def test_list_signals_filter_direction(client: TestClient, db: Session) -> None:
+    _insert_signal(db, direction="BUY")
+    _insert_signal(db, direction="SELL")
+    resp = client.get("/api/signals", params={"direction": "SELL"})
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["items"][0]["direction"] == "SELL"

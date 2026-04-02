@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface MetadataPanelProps {
   metadata: Record<string, unknown>;
+  hiddenKeys?: Set<string>;
 }
 
 const ACRONYMS = new Set(["FVG", "SL", "TP", "RR", "USD"]);
@@ -40,9 +41,9 @@ function formatValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export function MetadataPanel({ metadata }: MetadataPanelProps) {
+export function MetadataPanel({ metadata, hiddenKeys }: MetadataPanelProps) {
   const [open, setOpen] = useState(false);
-  const entries = Object.entries(metadata);
+  const entries = Object.entries(metadata).filter(([k]) => !hiddenKeys?.has(k));
 
   if (entries.length === 0) return null;
 
