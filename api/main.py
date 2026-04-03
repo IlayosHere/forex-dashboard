@@ -23,6 +23,7 @@ from sqlalchemy.sql import func
 
 from api.db import Base, SessionLocal, engine
 from api.models import AccountModel
+from api.auth import router as auth_router
 from api.routes.accounts import router as accounts_router
 from api.routes.calculate import router as calculate_router
 from api.routes.signals import router as signals_router
@@ -106,6 +107,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api", tags=["auth"])
 app.include_router(signals_router, prefix="/api")
 app.include_router(calculate_router, prefix="/api")
 app.include_router(trades_router, prefix="/api")

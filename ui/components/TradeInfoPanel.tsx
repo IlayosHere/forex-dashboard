@@ -1,6 +1,7 @@
 import { useRouter } from "next/navigation";
 
 import { AccountBadge } from "@/components/AccountBadge";
+import { formatDateTime } from "@/lib/dates";
 
 import type { Trade, AccountType } from "@/lib/types";
 
@@ -9,17 +10,6 @@ interface TradeInfoPanelProps {
   accountType: AccountType;
   unitLabel: string;
   sizeLabel: string;
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return "\u2014";
-  try {
-    const d = new Date(iso);
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
-  } catch {
-    return "\u2014";
-  }
 }
 
 export function TradeInfoPanel({ trade, accountType, unitLabel, sizeLabel }: TradeInfoPanelProps) {
@@ -43,7 +33,7 @@ export function TradeInfoPanel({ trade, accountType, unitLabel, sizeLabel }: Tra
           </span>
         </div>
         <div className="text-text-muted text-xs flex items-center gap-2">
-          <span>{trade.strategy} &middot; {formatTime(trade.open_time)}</span>
+          <span>{trade.strategy} &middot; {formatDateTime(trade.open_time)} UTC</span>
           {trade.account_name && (
             <AccountBadge name={trade.account_name} accountType={accountType} />
           )}

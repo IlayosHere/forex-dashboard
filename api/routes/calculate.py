@@ -8,9 +8,11 @@ Pure function, no database access. Delegates entirely to shared.calculator.
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from api.auth import get_current_user
 from api.schemas import CalculateRequest, CalculateResponse
 from shared.calculator import calculate_lot_size
 
@@ -20,7 +22,10 @@ router = APIRouter()
 
 
 @router.post("/calculate", response_model=CalculateResponse)
-def calculate(req: CalculateRequest) -> CalculateResponse:
+def calculate(
+    req: CalculateRequest,
+    _user: Annotated[str, Depends(get_current_user)],
+) -> CalculateResponse:
     """Calculate lot size from entry, SL, balance, and risk percent."""
     result = calculate_lot_size(
         symbol=req.symbol,

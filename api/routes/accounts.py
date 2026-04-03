@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from api.auth import get_current_user
 from api.db import get_db
 from api.models import AccountModel, TradeModel
 from api.schemas import (
@@ -40,6 +41,7 @@ router = APIRouter()
 @router.post("/accounts", response_model=AccountResponse, status_code=201)
 def create_account(
     req: AccountCreateRequest,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccountModel:
     """Create a new trading account."""
@@ -63,6 +65,7 @@ def create_account(
 
 @router.get("/accounts", response_model=list[AccountResponse])
 def list_accounts(
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     instrument_type: str | None = Query(default=None),
     status: str | None = Query(default=None),
@@ -83,6 +86,7 @@ def list_accounts(
 def update_account(
     account_id: str,
     req: AccountUpdateRequest,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccountModel:
     """Update an account (partial), return 404 if not found."""
@@ -103,6 +107,7 @@ def update_account(
 @router.delete("/accounts/{account_id}", status_code=204)
 def delete_account(
     account_id: str,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete an account, return 404/409 if not found or has linked trades."""

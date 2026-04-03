@@ -1,6 +1,26 @@
 import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account } from "./types";
 
+import { clearToken, getToken } from "./auth";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string> | undefined),
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(url, { ...init, headers });
+  if (res.status === 401) {
+    clearToken();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
+  return res;
+}
 
 export interface CalculateRequest {
   symbol: string;
@@ -32,7 +52,7 @@ export async function fetchSignals(
   if (filters.to) params.set("to", filters.to);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset) params.set("offset", String(filters.offset));
-  const res = await fetch(`${BASE_URL}/api/signals?${params.toString()}`, {
+  const res = await authFetch(`${BASE_URL}/api/signals?${params.toString()}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Failed to fetch signals: ${res.status}`);
@@ -40,7 +60,7 @@ export async function fetchSignals(
 }
 
 export async function fetchSignal(id: string): Promise<Signal> {
-  const res = await fetch(`${BASE_URL}/api/signals/${id}`, {
+  const res = await authFetch(`${BASE_URL}/api/signals/${id}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Failed to fetch signal ${id}: ${res.status}`);
@@ -50,7 +70,7 @@ export async function fetchSignal(id: string): Promise<Signal> {
 export async function postCalculate(
   body: CalculateRequest
 ): Promise<CalculateResponse> {
-  const res = await fetch(`${BASE_URL}/api/calculate`, {
+  const res = await authFetch(`${BASE_URL}/api/calculate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -88,19 +108,19 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset) params.set("offset", String(filters.offset));
-  const res = await fetch(`${BASE_URL}/api/trades?${params.toString()}`, { cache: "no-store" });
+  const res = await authFetch(`${BASE_URL}/api/trades?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trades: ${res.status}`);
   return res.json() as Promise<Trade[]>;
 }
 
 export async function fetchTrade(id: string): Promise<Trade> {
-  const res = await fetch(`${BASE_URL}/api/trades/${id}`, { cache: "no-store" });
+  const res = await authFetch(`${BASE_URL}/api/trades/${id}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade ${id}: ${res.status}`);
   return res.json() as Promise<Trade>;
 }
 
 export async function createTrade(body: Record<string, unknown>): Promise<Trade> {
-  const res = await fetch(`${BASE_URL}/api/trades`, {
+  const res = await authFetch(`${BASE_URL}/api/trades`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -110,7 +130,7 @@ export async function createTrade(body: Record<string, unknown>): Promise<Trade>
 }
 
 export async function updateTrade(id: string, body: Record<string, unknown>): Promise<Trade> {
-  const res = await fetch(`${BASE_URL}/api/trades/${id}`, {
+  const res = await authFetch(`${BASE_URL}/api/trades/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -120,7 +140,7 @@ export async function updateTrade(id: string, body: Record<string, unknown>): Pr
 }
 
 export async function deleteTrade(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/trades/${id}`, { method: "DELETE" });
+  const res = await authFetch(`${BASE_URL}/api/trades/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete trade: ${res.status}`);
 }
 
@@ -132,7 +152,7 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   if (filters.to) params.set("to", filters.to);
   if (filters.account_id) params.set("account_id", filters.account_id);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
-  const res = await fetch(`${BASE_URL}/api/trades/stats?${params.toString()}`, { cache: "no-store" });
+  const res = await authFetch(`${BASE_URL}/api/trades/stats?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade stats: ${res.status}`);
   return res.json() as Promise<TradeStats>;
 }
@@ -145,7 +165,7 @@ export async function fetchAccounts(params?: { instrument_type?: string; status?
   const qs = new URLSearchParams();
   if (params?.instrument_type) qs.set("instrument_type", params.instrument_type);
   if (params?.status) qs.set("status", params.status);
-  const res = await fetch(`${BASE_URL}/api/accounts?${qs.toString()}`, { cache: "no-store" });
+  const res = await authFetch(`${BASE_URL}/api/accounts?${qs.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
   return res.json() as Promise<Account[]>;
 }
@@ -158,7 +178,7 @@ export async function createAccount(data: {
   prop_firm?: string | null;
   phase?: string | null;
 }): Promise<Account> {
-  const res = await fetch(`${BASE_URL}/api/accounts`, {
+  const res = await authFetch(`${BASE_URL}/api/accounts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -173,7 +193,7 @@ export async function updateAccount(id: string, data: {
   prop_firm?: string | null;
   phase?: string | null;
 }): Promise<Account> {
-  const res = await fetch(`${BASE_URL}/api/accounts/${id}`, {
+  const res = await authFetch(`${BASE_URL}/api/accounts/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -183,6 +203,6 @@ export async function updateAccount(id: string, data: {
 }
 
 export async function deleteAccount(id: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
+  const res = await authFetch(`${BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`);
 }

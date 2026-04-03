@@ -6,6 +6,7 @@ import { useSignals } from "@/lib/useSignals";
 import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilters";
 import { strategies, type StrategyMeta } from "@/lib/strategies";
 import type { SignalFilters as ApiFilters } from "@/lib/api";
+import { formatDate } from "@/lib/dates";
 
 const PAGE_SIZE = 50;
 
@@ -15,20 +16,6 @@ const emptyFilters: SignalFilterValues = {
   dateFrom: "",
   dateTo: "",
 };
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-  } catch {
-    return "—";
-  }
-}
 
 function formatTime(iso: string): string {
   try {
