@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from api.auth import get_current_user
 from api.db import get_db
 from api.models import SignalModel
 from api.schemas import SignalListResponse, SignalResponse
@@ -25,6 +26,7 @@ router = APIRouter()
 
 @router.get("/signals", response_model=SignalListResponse)
 def list_signals(
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     strategy: str | None = Query(default=None, description="Filter by strategy slug"),
     symbol: str | None = Query(default=None, description="Filter by currency pair"),
@@ -70,6 +72,7 @@ def list_signals(
 @router.get("/signals/{signal_id}", response_model=SignalResponse)
 def get_signal(
     signal_id: str,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> SignalModel:
     """Fetch a single signal by ID, return 404 if not found."""

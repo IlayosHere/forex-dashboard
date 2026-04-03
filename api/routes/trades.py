@@ -21,6 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from api.auth import get_current_user
 from api.db import get_db
 from api.models import AccountModel, SignalModel, TradeModel
 from api.schemas import (
@@ -99,6 +100,7 @@ class _StatsFilterParams:
 @router.post("/trades", response_model=TradeResponse, status_code=201)
 def create_trade(
     req: TradeCreateRequest,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Create a new trade journal entry."""
@@ -134,6 +136,7 @@ def create_trade(
 
 @router.get("/trades", response_model=list[TradeResponse])
 def list_trades(
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[_TradeFilterParams, Depends()],
     limit: int = Query(default=50, ge=1, le=200),
@@ -156,6 +159,7 @@ def list_trades(
 
 @router.get("/trades/stats", response_model=TradeStatsResponse)
 def trade_stats(
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[_StatsFilterParams, Depends()],
 ) -> dict:
@@ -182,6 +186,7 @@ def trade_stats(
 @router.get("/trades/{trade_id}", response_model=TradeResponse)
 def get_trade(
     trade_id: str,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Fetch a single trade by ID, return 404 if not found."""
@@ -196,6 +201,7 @@ def get_trade(
 def update_trade(
     trade_id: str,
     req: TradeUpdateRequest,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Update a trade (close it, edit notes, tags, etc.)."""
@@ -236,6 +242,7 @@ def update_trade(
 @router.delete("/trades/{trade_id}", status_code=204)
 def delete_trade(
     trade_id: str,
+    _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete a trade by ID, return 404 if not found."""

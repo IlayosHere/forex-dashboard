@@ -5,24 +5,12 @@ import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
 import { StatusBadge } from "./StatusBadge";
 import { StarRating } from "./StarRating";
 import { AccountBadge } from "./AccountBadge";
+import { formatShortDate } from "@/lib/dates";
 
 interface TradeCardProps {
   trade: Trade;
   onClick: () => void;
   accountType?: AccountType;
-}
-
-function formatTime(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const m = (d.getUTCMonth() + 1).toString().padStart(2, "0");
-    const day = d.getUTCDate().toString().padStart(2, "0");
-    const hh = d.getUTCHours().toString().padStart(2, "0");
-    const mm = d.getUTCMinutes().toString().padStart(2, "0");
-    return `${m}-${day} ${hh}:${mm}`;
-  } catch {
-    return "—";
-  }
 }
 
 function pnlColor(v: number | null): string {
@@ -76,9 +64,9 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
       {/* Line 2 */}
       <div className="flex items-center gap-2 mt-1">
         <span className="text-xs text-muted-foreground">
-          {formatTime(trade.open_time)}
+          {formatShortDate(trade.open_time)}
           {" → "}
-          {trade.close_time ? formatTime(trade.close_time) : "OPEN"}
+          {trade.close_time ? formatShortDate(trade.close_time) : "OPEN"}
         </span>
         {trade.account_name && (
           <AccountBadge

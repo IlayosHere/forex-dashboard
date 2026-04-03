@@ -29,6 +29,7 @@ export function SidebarNav() {
       <NavLink href="/">Dashboard</NavLink>
       <NavLink href="/journal">Journal</NavLink>
       <NavLink href="/accounts">Accounts</NavLink>
+      <NavLink href="/statistics">Statistics</NavLink>
 
       <div className="pt-3 pb-1 px-3">
         <span className="label">Strategies</span>
