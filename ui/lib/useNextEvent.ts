@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-
 import type { CalendarEvent } from "@/lib/types";
 
 export interface UseNextEventResult {
@@ -21,14 +19,7 @@ function calcSecondsUntil(event: CalendarEvent | null, now: Date): number {
   return Math.max(0, Math.floor((new Date(event.datetime_utc).getTime() - now.getTime()) / 1000));
 }
 
-export function useNextEvent(events: CalendarEvent[]): UseNextEventResult {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
+export function useNextEvent(events: CalendarEvent[], now: Date): UseNextEventResult {
   const event = findNextHighImpact(events, now);
   const secondsUntil = calcSecondsUntil(event, now);
 

@@ -8,7 +8,6 @@ import { CalendarNextStrip } from "@/components/CalendarNextStrip";
 import { CalendarTimeGroup } from "@/components/CalendarTimeGroup";
 import { useCalendar } from "@/lib/useCalendar";
 import { useNextEvent } from "@/lib/useNextEvent";
-import { getTodayKeyUTC } from "@/lib/utils";
 
 import type { CalendarContext, CalendarEvent, CalendarImpact, SessionBucket } from "@/lib/types";
 
@@ -21,8 +20,8 @@ const SESSION_LABELS: Record<SessionBucket, string> = {
 const tabClass = (active: boolean) =>
   `px-4 py-2 text-sm font-medium transition-colors cursor-pointer -mb-px ${
     active
-      ? "text-[#26a69a] border-b-2 border-[#26a69a]"
-      : "text-[#777777] hover:text-[#e0e0e0] border-b-2 border-transparent"
+      ? "text-primary border-b-2 border-primary"
+      : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
   }`;
 
 function applyFilters(
@@ -68,15 +67,18 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<"today" | "week">("today");
 
   const { events, loading } = useCalendar({ week, context });
-  const { event: nextEvent, secondsUntil } = useNextEvent(events);
-
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const todayKey = useMemo(() => getTodayKeyUTC(), []);
+  const { event: nextEvent, secondsUntil } = useNextEvent(events, now);
+
+  const todayKey = useMemo(
+    () => `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`,
+    [now],
+  );
 
   const filteredEvents = useMemo(
     () => applyFilters(events, impactFilter, currencyFilter),
@@ -115,7 +117,7 @@ export default function CalendarPage() {
     return (
       <div className="p-6 space-y-2">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="bg-[#1e1e1e] animate-pulse rounded h-8" />
+          <div key={i} className="bg-elevated animate-pulse rounded h-8" />
         ))}
       </div>
     );
@@ -136,7 +138,7 @@ export default function CalendarPage() {
         onCurrencyChange={setCurrencyFilter}
       />
 
-      <div className="flex gap-0 border-b border-[#2a2a2a] px-4">
+      <div className="flex gap-0 border-b border-border px-4">
         <button type="button" className={tabClass(activeTab === "today")} onClick={() => setActiveTab("today")}>
           Today
         </button>
@@ -149,7 +151,7 @@ export default function CalendarPage() {
         {activeTab === "today" && (
           <>
             {todayEvents.length === 0 && (
-              <div className="flex items-center justify-center py-16 text-sm text-[#555555]">
+              <div className="flex items-center justify-center py-16 text-sm text-text-dim">
                 No events match the current filters.
               </div>
             )}
@@ -168,7 +170,7 @@ export default function CalendarPage() {
         {activeTab === "week" && (
           <>
             {sortedDays.length === 0 && (
-              <div className="flex items-center justify-center py-16 text-sm text-[#555555]">
+              <div className="flex items-center justify-center py-16 text-sm text-text-dim">
                 No events match the current filters.
               </div>
             )}
@@ -179,6 +181,7 @@ export default function CalendarPage() {
                 events={filteredByDay[day]}
                 context={context}
                 defaultOpen={day === todayKey}
+                currentTime={now}
               />
             ))}
           </>

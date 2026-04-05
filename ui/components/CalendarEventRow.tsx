@@ -7,18 +7,18 @@ interface CalendarEventRowProps {
 }
 
 const LEFT_BORDER: Record<string, string> = {
-  High: "border-l-2 border-l-[#e6a800]",
-  Medium: "border-l-2 border-l-[#777777]",
-  Low: "border-l-2 border-l-[#333333]",
+  High: "border-l-2 border-l-accent-gold",
+  Medium: "border-l-2 border-l-muted-foreground",
+  Low: "border-l-2 border-l-border-light",
 };
 
 function formatActual(actual: string | null, beatMiss: BeatMiss): { text: string; className: string } {
   if (actual === null || beatMiss === "pending") {
-    return { text: "—", className: "text-[#444444]" };
+    return { text: "—", className: "text-text-dim" };
   }
-  if (beatMiss === "beat") return { text: `▲ ${actual}`, className: "text-[#26a69a]" };
-  if (beatMiss === "miss") return { text: `▼ ${actual}`, className: "text-[#ef5350]" };
-  return { text: actual, className: "text-[#777777]" };
+  if (beatMiss === "beat") return { text: `▲ ${actual}`, className: "text-primary" };
+  if (beatMiss === "miss") return { text: `▼ ${actual}`, className: "text-bear" };
+  return { text: actual, className: "text-muted-foreground" };
 }
 
 function formatTime(event: CalendarEvent, context: CalendarContext): string {
@@ -31,29 +31,29 @@ export function CalendarEventRow({ event, context, isPast }: CalendarEventRowPro
   const rowBase = `grid grid-cols-[4px_52px_52px_1fr_72px_72px_80px] gap-x-3 items-center px-3 py-1.5 text-xs ${borderClass}`;
   const rowStateClass = isPast
     ? "opacity-50"
-    : "hover:bg-[#1a1a1a] transition-colors cursor-default";
+    : "hover:bg-surface-raised transition-colors cursor-default";
 
   const { text: actualText, className: actualClass } = formatActual(event.actual, event.beat_miss);
 
   return (
     <div className={`${rowBase} ${rowStateClass}`} role="row">
       <span />
-      <span className="font-mono text-[#777777] tabular-nums">
+      <span className="font-mono text-muted-foreground tabular-nums">
         {formatTime(event, context)}
       </span>
-      <span className="font-semibold text-[#e0e0e0] uppercase tracking-wide text-[10px]">
+      <span className="font-semibold text-foreground uppercase tracking-wide text-[10px]">
         {event.currency}
       </span>
-      <span className="text-[#c0c0c0] truncate">
+      <span className="text-muted-foreground truncate">
         {event.name}
         {event.promoted && (
-          <span className="ml-1 text-[9px] text-[#e6a800] uppercase tracking-widest">promo</span>
+          <span className="ml-1 text-[9px] text-accent-gold uppercase tracking-widest">promo</span>
         )}
       </span>
-      <span className="text-[#555555] text-right tabular-nums">
+      <span className="text-text-dim text-right tabular-nums">
         {event.previous ?? "—"}
       </span>
-      <span className="text-[#777777] text-right tabular-nums">
+      <span className="text-muted-foreground text-right tabular-nums">
         {event.forecast ?? "—"}
       </span>
       <span className={`text-right tabular-nums font-medium ${actualClass}`}>

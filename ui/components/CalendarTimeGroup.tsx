@@ -15,7 +15,7 @@ export function CalendarTimeGroup({ timeLabel, events, context, currentTime }: C
   return (
     <div>
       <div
-        className="text-[10px] uppercase tracking-widest text-[#444444] px-3 py-1 border-b border-[#2a2a2a]"
+        className="text-[10px] uppercase tracking-widest text-text-dim px-3 py-1 border-b border-border"
         role="rowgroup"
         aria-label={`Events at ${timeLabel}`}
       >

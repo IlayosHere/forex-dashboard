@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-import { BASE_URL } from "@/lib/api";
+import { fetchCalendar } from "@/lib/api";
 import type { CalendarContext, CalendarEvent } from "@/lib/types";
+
+// Calendar data is weekly — 5-minute poll is intentional, not the 30s project default
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 export interface UseCalendarResult {
   events: CalendarEvent[];
-  byDay: Record<string, CalendarEvent[]>;
   loading: boolean;
   error: string | null;
 }
@@ -25,28 +26,14 @@ function isMnqRelevant(event: CalendarEvent): boolean {
   return false;
 }
 
-function groupByDay(events: CalendarEvent[]): Record<string, CalendarEvent[]> {
-  const result: Record<string, CalendarEvent[]> = {};
-  for (const ev of events) {
-    const day = ev.datetime_utc.slice(0, 10);
-    if (!result[day]) result[day] = [];
-    result[day].push(ev);
-  }
-  return result;
-}
-
 export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarResult {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/calendar?week=${week}`, {
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error(`Calendar fetch failed: ${res.status}`);
-      const data = (await res.json()) as CalendarEvent[];
+      const data = await fetchCalendar(week);
       const filtered = context === "mnq" ? data.filter(isMnqRelevant) : data;
       setEvents(filtered);
       setError(null);
@@ -59,12 +46,10 @@ export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarR
 
   useEffect(() => {
     setLoading(true);
-    void fetchData();
-    const id = setInterval(() => void fetchData(), POLL_INTERVAL_MS);
+    void loadData();
+    const id = setInterval(() => void loadData(), POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [fetchData]);
+  }, [loadData]);
 
-  const byDay = useMemo(() => groupByDay(events), [events]);
-
-  return { events, byDay, loading, error };
+  return { events, loading, error };
 }

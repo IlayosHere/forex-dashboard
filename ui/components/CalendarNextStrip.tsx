@@ -22,9 +22,9 @@ function formatEventTime(event: CalendarEvent, context: CalendarContext): string
 }
 
 const IMPACT_BADGE_CLASS: Record<string, string> = {
-  High: "bg-[#e6a800]/15 text-[#e6a800] border border-[#e6a800]/30",
-  Medium: "bg-[#777777]/15 text-[#777777] border border-[#777777]/30",
-  Low: "bg-[#333333]/15 text-[#555555] border border-[#333333]/30",
+  High: "bg-accent-gold/15 text-accent-gold border border-accent-gold/30",
+  Medium: "bg-muted-foreground/15 text-muted-foreground border border-muted-foreground/30",
+  Low: "bg-border-light/15 text-text-dim border border-border-light/30",
 };
 
 export function CalendarNextStrip({ event, secondsUntil, context }: CalendarNextStripProps) {
@@ -32,23 +32,23 @@ export function CalendarNextStrip({ event, secondsUntil, context }: CalendarNext
 
   const isLive = secondsUntil <= LIVE_THRESHOLD_SECONDS;
   const countdownClass = isLive
-    ? "font-mono text-sm tabular-nums text-[#ef5350]"
-    : "font-mono text-sm tabular-nums text-[#e6a800]";
+    ? "font-mono text-sm tabular-nums text-accent-gold animate-pulse"
+    : "font-mono text-sm tabular-nums text-accent-gold";
 
   const badgeClass = IMPACT_BADGE_CLASS[event.impact] ?? IMPACT_BADGE_CLASS["Low"];
 
   return (
-    <div className="w-full h-[52px] flex items-center gap-4 px-6 bg-[#161616] border-b border-[#2a2a2a]">
+    <div className="w-full h-[52px] flex items-center gap-4 px-6 bg-card border-b border-border">
       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide ${badgeClass}`}>
         {event.impact}
       </span>
-      <span className="text-xs font-semibold text-[#777777] uppercase tracking-wide">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {event.currency}
       </span>
-      <span className="text-sm text-[#e0e0e0] font-medium flex-1 truncate">
+      <span className="text-sm text-foreground font-medium flex-1 truncate">
         {event.name}
       </span>
-      <span className="text-xs text-[#555555]">
+      <span className="text-xs text-text-dim">
         {formatEventTime(event, context)}
       </span>
       <span className={countdownClass}>

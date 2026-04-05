@@ -19,6 +19,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from api.schemas import CalendarEventResponse
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["calendar"])
@@ -133,6 +135,8 @@ def _transform_event(raw: dict[str, Any]) -> dict[str, Any]:
     # FF already embeds the ET offset in the timestamp
     raw_date: str = raw.get("date", "")
     dt_et = datetime.fromisoformat(raw_date)
+    if dt_et.tzinfo is None:
+        raise ValueError("naive datetime from feed")
     dt_utc = dt_et.astimezone(timezone.utc)
 
     datetime_utc = dt_utc.isoformat()
@@ -188,7 +192,7 @@ async def _get_events(week: str) -> list[dict[str, Any]]:
 # Route handler
 # ---------------------------------------------------------------------------
 
-@router.get("/calendar")
+@router.get("/calendar", response_model=list[CalendarEventResponse])
 async def get_calendar(
     week: str = Query(default="current", pattern="^(current|next)$"),
 ) -> list[dict[str, Any]]:
@@ -200,7 +204,7 @@ async def get_calendar(
     """
     try:
         return await _get_events(week)
-    except Exception as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         logger.exception("Failed to fetch ForexFactory calendar: %s", exc)
         raise HTTPException(
             status_code=503,
