@@ -3,12 +3,15 @@ api/auth.py
 -----------
 JWT-based authentication for the dashboard.
 
-Single-user auth via environment variables — no user database table.
+Multi-user auth via environment variables — no user database table.
+Users are defined in the AUTH_USERS env var as a JSON object mapping
+usernames to bcrypt password hashes.
 Provides a login endpoint and a reusable FastAPI dependency for
 protecting routes.
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -31,8 +34,21 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _JWT_SECRET = os.getenv("JWT_SECRET", "")
 _JWT_ALGORITHM = "HS256"
 _TOKEN_EXPIRE_HOURS = 24
-_AUTH_USERNAME = os.getenv("AUTH_USERNAME", "admin")
-_AUTH_PASSWORD_HASH = os.getenv("AUTH_PASSWORD_HASH", "")
+
+# Multi-user: AUTH_USERS is a JSON object {"username": "bcrypt_hash", ...}
+# Falls back to legacy single-user AUTH_USERNAME + AUTH_PASSWORD_HASH if set.
+def _load_users() -> dict[str, str]:
+    raw = os.getenv("AUTH_USERS", "")
+    if raw:
+        return json.loads(raw)
+    # Legacy single-user fallback
+    username = os.getenv("AUTH_USERNAME", "admin")
+    pw_hash = os.getenv("AUTH_PASSWORD_HASH", "")
+    if pw_hash:
+        return {username: pw_hash}
+    return {}
+
+_AUTH_USERS: dict[str, str] = _load_users()
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -124,13 +140,14 @@ def get_current_user(
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest) -> LoginResponse:
     """Authenticate with username + password, return a JWT."""
-    if req.username != _AUTH_USERNAME:
+    pw_hash = _AUTH_USERS.get(req.username)
+    if pw_hash is None:
         logger.warning("Login failed: unknown user %r", req.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
-    if not _verify_password(req.password, _AUTH_PASSWORD_HASH):
+    if not _verify_password(req.password, pw_hash):
         logger.warning("Login failed: bad password for %r", req.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
