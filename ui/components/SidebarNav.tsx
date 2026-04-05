@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CalendarDays } from "lucide-react";
+
 import { strategies } from "@/lib/strategies";
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
@@ -28,6 +30,10 @@ export function SidebarNav() {
     <nav className="flex-1 px-2 py-3 space-y-0.5">
       <NavLink href="/">Dashboard</NavLink>
       <NavLink href="/journal">Journal</NavLink>
+      <NavLink href="/calendar">
+        <CalendarDays size={14} />
+        Calendar
+      </NavLink>
       <NavLink href="/accounts">Accounts</NavLink>
 
       <div className="pt-3 pb-1 px-3">
