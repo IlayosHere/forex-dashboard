@@ -35,6 +35,11 @@ function mockFetchFail(status: number) {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetchOk({}));
+  vi.stubGlobal("localStorage", {
+    getItem: vi.fn().mockReturnValue("fake-token"),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+  });
 });
 
 afterEach(() => {
@@ -154,7 +159,7 @@ describe("fetchTrades", () => {
 
 describe("createTrade", () => {
   it("posts trade data", async () => {
-    const body = { strategy: "fvg-impulse", symbol: "EURUSD" };
+    const body = { strategy: "fvg-impulse", symbol: "EURUSD" } as Parameters<typeof createTrade>[0];
     await createTrade(body);
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe(`${BASE_URL}/api/trades`);
@@ -165,7 +170,7 @@ describe("createTrade", () => {
 
 describe("updateTrade", () => {
   it("puts trade data with correct id in URL", async () => {
-    const body = { status: "closed" };
+    const body = { status: "closed" } as Parameters<typeof updateTrade>[1];
     await updateTrade("t-1", body);
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe(`${BASE_URL}/api/trades/t-1`);

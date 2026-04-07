@@ -1,5 +1,7 @@
 "use client";
 
+import { fmt, pnlColor } from "@/lib/format";
+
 interface PerformanceRow {
   name: string;
   total: number;
@@ -14,16 +16,6 @@ interface PerformanceTableProps {
   title: string;
   rows: PerformanceRow[];
   pnlUnit?: string;
-}
-
-function fmt(v: number | null, decimals = 1): string {
-  if (v === null) return "--";
-  return v.toFixed(decimals);
-}
-
-function pnlColor(v: number): string {
-  if (v === 0) return "#777777";
-  return v > 0 ? "#26a69a" : "#ef5350";
 }
 
 function winRateColor(v: number | null): string {

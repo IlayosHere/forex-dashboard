@@ -2,72 +2,96 @@
 
 import { useState, useMemo } from "react";
 
-import { StatCard } from "@/components/StatCard";
-import { PerformanceTable } from "@/components/PerformanceTable";
 import { StatsFilters } from "@/components/StatsFilters";
-import { AccountPerformanceTable } from "@/components/AccountPerformanceTable";
+import { AccountStatsStrip } from "@/components/AccountStatsStrip";
+import { EquityCurveChart } from "@/components/stats/EquityCurveChart";
+import { CalendarHeatmap } from "@/components/stats/CalendarHeatmap";
+import { MonthlyBars } from "@/components/stats/MonthlyBars";
+import { PerformanceBreakdowns } from "@/components/stats/PerformanceBreakdowns";
+import { EdgeMetrics } from "@/components/stats/EdgeMetrics";
+import { AssessmentAnalysis } from "@/components/stats/AssessmentAnalysis";
 
-import type { InstrumentType, TradeStats, AccountType } from "@/lib/types";
+import type { InstrumentType } from "@/lib/types";
 
 import { useTradeStats } from "@/lib/useTradeStats";
 import { useAccounts } from "@/lib/useAccounts";
+import { useEquityCurve } from "@/lib/useEquityCurve";
+import { useDailySummary } from "@/lib/useDailySummary";
 
-function fmt(v: number | null | undefined, decimals = 1): string {
-  if (v === null || v === undefined) return "--";
-  return v.toFixed(decimals);
-}
+type PresetKey = "7d" | "30d" | "month" | "3m" | "all";
 
-function pnlColor(v: number | null | undefined): string {
-  if (v === null || v === undefined || v === 0) return "#777777";
-  return v > 0 ? "#26a69a" : "#ef5350";
-}
+const PRESETS: { key: PresetKey; label: string }[] = [
+  { key: "7d", label: "Last 7 Days" },
+  { key: "30d", label: "Last 30 Days" },
+  { key: "month", label: "This Month" },
+  { key: "3m", label: "Last 3 Months" },
+  { key: "all", label: "All Time" },
+];
 
-function streakText(streak: number): { text: string; color: string } {
-  if (streak === 0) return { text: "--", color: "#777777" };
-  if (streak > 0) return { text: `W${streak}`, color: "#26a69a" };
-  return { text: `L${Math.abs(streak)}`, color: "#ef5350" };
-}
-
-function formatHoldTime(hours: number | null): string {
-  if (hours === null) return "--";
-  if (hours < 1) return `${Math.round(hours * 60)}m`;
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+function computePresetDates(preset: PresetKey): { from: string; to: string } {
+  const now = new Date();
+  const to = now.toISOString().slice(0, 10);
+  if (preset === "all") return { from: "", to: "" };
+  if (preset === "month") {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    return { from, to };
+  }
+  const days = preset === "7d" ? 7 : preset === "30d" ? 30 : 90;
+  const fromDate = new Date(now);
+  fromDate.setDate(fromDate.getDate() - days);
+  return { from: fromDate.toISOString().slice(0, 10), to };
 }
 
 export default function StatisticsPage() {
   const [instrumentType, setInstrumentType] = useState<InstrumentType | "">("");
   const [strategy, setStrategy] = useState("");
   const [accountId, setAccountId] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [preset, setPreset] = useState<PresetKey>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const { accounts } = useAccounts();
+
+  const dates = useMemo(() => {
+    if (customFrom || customTo) return { from: customFrom, to: customTo };
+    return computePresetDates(preset);
+  }, [preset, customFrom, customTo]);
 
   const apiFilters = useMemo(() => {
     const f: Record<string, string | undefined> = {};
     if (instrumentType) f.instrument_type = instrumentType;
     if (strategy) f.strategy = strategy;
     if (accountId) f.account_id = accountId;
-    if (from) f.from = from;
-    if (to) f.to = to;
+    if (dates.from) f.from = dates.from;
+    if (dates.to) f.to = dates.to;
     return f;
-  }, [instrumentType, strategy, accountId, from, to]);
+  }, [instrumentType, strategy, accountId, dates]);
 
-  const { stats, loading } = useTradeStats(apiFilters);
-  const streak = streakText(stats?.current_streak ?? 0);
+  const { stats, loading: statsLoading, error, refetch } = useTradeStats(apiFilters);
+  const { data: equityData, loading: equityLoading } = useEquityCurve(apiFilters);
+  const { data: dailyData, loading: dailyLoading } = useDailySummary(apiFilters);
 
-  const strategyRows = useMemo(() => buildRows(stats?.by_strategy), [stats?.by_strategy]);
-  const symbolRows = useMemo(() => buildRows(stats?.by_symbol), [stats?.by_symbol]);
-  const accountRows = useMemo(() => buildAccountRows(stats?.by_account), [stats?.by_account]);
+  function handlePresetChange(value: string) {
+    setPreset(value as PresetKey);
+    setCustomFrom("");
+    setCustomTo("");
+  }
 
-  const dim = loading ? "opacity-50 pointer-events-none" : "";
+  function handleFromChange(v: string) {
+    setCustomFrom(v);
+    if (v) setPreset("all");
+  }
+
+  function handleToChange(v: string) {
+    setCustomTo(v);
+    if (v) setPreset("all");
+  }
 
   return (
-    <div className="p-6 max-w-6xl">
-      <h1 className="text-lg font-semibold text-[#e0e0e0] mb-4">Statistics</h1>
+    <div className="p-6 max-w-7xl">
+      <h1 className="text-lg font-semibold text-text-primary mb-4">Statistics</h1>
 
+      {/* Filters */}
       <StatsFilters
         instrumentType={instrumentType}
         onInstrumentChange={setInstrumentType}
@@ -76,117 +100,77 @@ export default function StatisticsPage() {
         accountId={accountId}
         onAccountChange={setAccountId}
         accounts={accounts}
-        from={from}
-        onFromChange={setFrom}
-        to={to}
-        onToChange={setTo}
+        from={customFrom}
+        onFromChange={handleFromChange}
+        to={customTo}
+        onToChange={handleToChange}
       />
 
-      <div className={dim}>
-        {/* Overview Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          <StatCard
-            label="Total Trades"
-            value={stats ? String(stats.total_trades) : "--"}
-            subtitle={stats ? `${stats.open_trades} open / ${stats.closed_trades} closed` : undefined}
-          />
-          <StatCard
-            label="Win Rate"
-            value={stats?.win_rate != null ? `${fmt(stats.win_rate)}%` : "--"}
-            color={stats?.win_rate != null ? (stats.win_rate >= 50 ? "#26a69a" : "#ef5350") : undefined}
-            subtitle={stats ? `${stats.wins}W ${stats.losses}L ${stats.breakevens}BE` : undefined}
-          />
-          <StatCard
-            label="P&L (USD)"
-            value={stats ? `${stats.total_pnl_usd >= 0 ? "+" : ""}$${fmt(stats.total_pnl_usd, 2)}` : "--"}
-            color={pnlColor(stats?.total_pnl_usd)}
-          />
-          <StatCard
-            label="P&L (Pips)"
-            value={stats ? `${stats.total_pnl_pips >= 0 ? "+" : ""}${fmt(stats.total_pnl_pips)}` : "--"}
-            color={pnlColor(stats?.total_pnl_pips)}
-          />
-          <StatCard label="Avg R:R" value={stats?.avg_rr != null ? fmt(stats.avg_rr, 2) : "--"} />
-          <StatCard label="Profit Factor" value={stats?.profit_factor != null ? fmt(stats.profit_factor, 2) : "--"} />
-          <StatCard label="Streak" value={streak.text} color={streak.color} />
-          <StatCard label="Avg Hold Time" value={formatHoldTime(stats?.avg_hold_time_hours ?? null)} />
-        </div>
-
-        {/* Breakdowns */}
-        <div className="mt-6">
-          <PerformanceTable title="Performance by Strategy" rows={strategyRows} />
-        </div>
-        <div className="mt-4">
-          <PerformanceTable title="Performance by Symbol" rows={symbolRows} />
-        </div>
-        <div className="mt-4">
-          <AccountPerformanceTable rows={accountRows} />
-        </div>
-
-        {/* Best / Worst */}
-        <BestWorstCards best={stats?.best_trade_pnl ?? null} worst={stats?.worst_trade_pnl ?? null} />
+      {/* Preset selector */}
+      <div className="flex gap-2 mb-4">
+        {PRESETS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => handlePresetChange(p.key)}
+            className={`px-3 py-1 text-xs rounded-full border ${
+              preset === p.key && !customFrom && !customTo
+                ? "border-bull text-bull bg-bull/10"
+                : "border-border text-text-muted hover:text-text-primary"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
-    </div>
-  );
-}
 
-/* --- Helpers --- */
+      {/* Account strip */}
+      <AccountStatsStrip
+        byAccount={stats?.by_account ?? {}}
+        selectedAccountId={accountId}
+        onSelect={setAccountId}
+        loading={statsLoading}
+      />
 
-type BreakdownMap = TradeStats["by_strategy"] | undefined;
+      {error && (
+        <div className="mb-4 flex items-center gap-3 rounded border border-bear/30 bg-bear/10 px-4 py-3">
+          <p className="text-sm text-bear flex-1">Failed to load statistics: {error}</p>
+          <button type="button" onClick={refetch} className="text-sm text-text-primary underline hover:text-white">
+            Retry
+          </button>
+        </div>
+      )}
 
-function buildRows(map: BreakdownMap) {
-  if (!map) return [];
-  return Object.entries(map)
-    .map(([name, d]) => ({
-      name,
-      total: d.total,
-      wins: d.wins,
-      losses: d.losses,
-      winRate: d.win_rate,
-      pnl: d.total_pnl_pips,
-    }))
-    .sort((a, b) => b.total - a.total);
-}
+      {/* Section 1: Equity Curve */}
+      <EquityCurveChart data={equityData} stats={stats} loading={equityLoading || statsLoading} />
 
-function buildAccountRows(map: TradeStats["by_account"] | undefined) {
-  if (!map) return [];
-  return Object.entries(map)
-    .map(([, d]) => ({
-      name: d.account_name,
-      accountType: d.account_type as AccountType,
-      instrumentType: d.instrument_type,
-      total: d.total,
-      wins: d.wins,
-      losses: d.losses,
-      winRate: d.win_rate,
-      pnlPips: d.total_pnl_pips,
-      pnlUsd: d.total_pnl_usd,
-    }))
-    .sort((a, b) => b.pnlUsd - a.pnlUsd);
-}
-
-function BestWorstCards({ best, worst }: { best: number | null; worst: number | null }) {
-  if (best === null && worst === null) return null;
-
-  return (
-    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div className="border border-[#2a2a2a] rounded-lg px-4 py-4" style={{ backgroundColor: "#161616" }}>
-        <div className="text-xs text-[#777777] uppercase tracking-wide mb-1">Best Trade</div>
-        <div
-          className="text-xl font-bold"
-          style={{ color: best !== null && best > 0 ? "#26a69a" : "#777777", fontVariantNumeric: "tabular-nums" }}
-        >
-          {best !== null ? `${best >= 0 ? "+" : ""}$${fmt(best, 2)}` : "--"}
+      {/* Section 2: Calendar + Monthly */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 mt-3">
+        <div className="lg:col-span-3">
+          <CalendarHeatmap data={dailyData} loading={dailyLoading} />
+        </div>
+        <div className="lg:col-span-2">
+          <MonthlyBars data={dailyData} loading={dailyLoading} />
         </div>
       </div>
-      <div className="border border-[#2a2a2a] rounded-lg px-4 py-4" style={{ backgroundColor: "#161616" }}>
-        <div className="text-xs text-[#777777] uppercase tracking-wide mb-1">Worst Trade</div>
-        <div
-          className="text-xl font-bold"
-          style={{ color: worst !== null && worst < 0 ? "#ef5350" : "#777777", fontVariantNumeric: "tabular-nums" }}
-        >
-          {worst !== null ? `${worst >= 0 ? "+" : ""}$${fmt(worst, 2)}` : "--"}
-        </div>
+
+      {/* Section 3: Performance Breakdowns */}
+      <div className="mt-3">
+        <PerformanceBreakdowns stats={stats} loading={statsLoading} />
+      </div>
+
+      {/* Section 4: Edge Metrics */}
+      <div className="mt-3">
+        <EdgeMetrics stats={stats} loading={statsLoading} />
+      </div>
+
+      {/* Section 5: Assessment Analysis */}
+      <div className="mt-3">
+        <AssessmentAnalysis
+          byConfidence={stats?.by_confidence}
+          byRating={stats?.by_rating}
+          loading={statsLoading}
+        />
       </div>
     </div>
   );

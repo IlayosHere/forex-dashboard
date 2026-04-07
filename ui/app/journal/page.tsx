@@ -169,7 +169,7 @@ export default function JournalPage() {
           </Button>
         </div>
       )}
-      {trades.length > 0 && (
+      {!loading && trades.length > 0 && (
         <div className="border border-[#2a2a2a] rounded overflow-hidden divide-y divide-[#2a2a2a]" style={{ backgroundColor: "#161616" }}>
           {trades.map((trade) => (
             <TradeCard

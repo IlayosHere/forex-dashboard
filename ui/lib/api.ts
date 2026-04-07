@@ -1,8 +1,8 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account, TradeCreateRequest, TradeUpdateRequest } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse } from "./types";
 
 import { clearToken, getToken } from "./auth";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const token = getToken();
@@ -18,6 +18,7 @@ async function authFetch(url: string, init: RequestInit = {}): Promise<Response>
     if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
+    throw new Error("Session expired");
   }
   return res;
 }
@@ -159,6 +160,33 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   return res.json() as Promise<TradeStats>;
 }
 
+export type StatsFiltersParam = Omit<TradeFilters, "status" | "outcome" | "limit" | "offset">;
+
+function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.strategy) params.set("strategy", filters.strategy);
+  if (filters.symbol) params.set("symbol", filters.symbol);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
+  return params;
+}
+
+export async function fetchEquityCurve(filters: StatsFiltersParam = {}): Promise<EquityCurvePoint[]> {
+  const params = buildStatsParams(filters);
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/equity-curve?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch equity curve: ${res.status}`);
+  return res.json() as Promise<EquityCurvePoint[]>;
+}
+
+export async function fetchDailySummary(filters: StatsFiltersParam = {}): Promise<DailySummaryPoint[]> {
+  const params = buildStatsParams(filters);
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/daily-summary?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch daily summary: ${res.status}`);
+  return res.json() as Promise<DailySummaryPoint[]>;
+}
+
 // ---------------------------------------------------------------------------
 // Accounts
 // ---------------------------------------------------------------------------
@@ -209,4 +237,32 @@ export async function updateAccount(id: string, data: {
 export async function deleteAccount(id: string): Promise<void> {
   const res = await authFetch(`${BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`);
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+export async function fetchMe(): Promise<UserProfile> {
+  const res = await authFetch(`${BASE_URL}/api/auth/me`);
+  if (!res.ok) throw new Error(`Failed to fetch profile: ${res.status}`);
+  return res.json() as Promise<UserProfile>;
+}
+
+export async function refreshToken(): Promise<LoginResponse> {
+  const res = await authFetch(`${BASE_URL}/api/auth/refresh`, { method: "POST" });
+  if (!res.ok) throw new Error(`Failed to refresh token: ${res.status}`);
+  return res.json() as Promise<LoginResponse>;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/auth/password`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `Failed to change password: ${res.status}`);
+  }
 }

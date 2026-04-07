@@ -56,6 +56,7 @@ export function StatsFilters({
         <select
           value={strategy}
           onChange={(e) => onStrategyChange(e.target.value)}
+          aria-label="Filter by strategy"
           className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         >
           <option value="">All Strategies</option>
@@ -67,6 +68,7 @@ export function StatsFilters({
         <select
           value={accountId}
           onChange={(e) => onAccountChange(e.target.value)}
+          aria-label="Filter by account"
           className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         >
           <option value="">All Accounts</option>
@@ -80,6 +82,7 @@ export function StatsFilters({
           value={from}
           onChange={(e) => onFromChange(e.target.value)}
           placeholder="From"
+          aria-label="From date"
           className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         />
         <input
@@ -87,6 +90,7 @@ export function StatsFilters({
           value={to}
           onChange={(e) => onToChange(e.target.value)}
           placeholder="To"
+          aria-label="To date"
           className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         />
       </div>

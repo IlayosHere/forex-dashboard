@@ -15,6 +15,10 @@ from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from api.schemas_stats import (  # noqa: F401 -- re-export
+    DailySummaryPoint,
+    EquityCurvePoint,
+)
 from api.schemas_trade import (  # noqa: F401 -- re-export
     TradeCreateRequest,
     TradeResponse,
@@ -70,6 +74,8 @@ _VALID_ACCOUNT_STATUSES = ("active", "passed", "failed", "closed")
 
 
 class AccountCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
     account_type: str
     instrument_type: str
@@ -101,6 +107,8 @@ class AccountCreateRequest(BaseModel):
 
 
 class AccountUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = None
     status: str | None = None
     prop_firm: str | None = None

@@ -3,17 +3,13 @@
 import type { TradeStats } from "@/lib/types";
 import { AccountBadge } from "./AccountBadge";
 import type { AccountType } from "@/lib/types";
+import { fmt } from "@/lib/format";
 
 interface AccountStatsStripProps {
   byAccount: TradeStats["by_account"];
   selectedAccountId: string;
   onSelect: (accountId: string) => void;
   loading: boolean;
-}
-
-function fmt(v: number | null | undefined, decimals = 1): string {
-  if (v === null || v === undefined) return "--";
-  return v.toFixed(decimals);
 }
 
 export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, loading }: AccountStatsStripProps) {

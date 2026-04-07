@@ -17,7 +17,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,12 @@ from api.services.trade_stats import (
     aggregate_by_account,
     aggregate_by_field,
     calculate_trade_metrics,
+)
+from api.services.trade_stats_extended import (
+    aggregate_by_assessment,
+    aggregate_by_day_of_week,
+    aggregate_by_session,
+    calculate_edge_metrics,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,7 +106,7 @@ class _StatsFilterParams:
 @router.post("/trades", response_model=TradeResponse, status_code=201)
 def create_trade(
     req: TradeCreateRequest,
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Create a new trade journal entry."""
@@ -109,7 +115,8 @@ def create_trade(
             logger.warning("Linked signal not found: %s", req.signal_id)
             raise HTTPException(status_code=404, detail="Linked signal not found")
     if req.account_id is not None:
-        if db.get(AccountModel, req.account_id) is None:
+        acct = db.get(AccountModel, req.account_id)
+        if acct is None or acct.owner != current_user:
             logger.warning("Linked account not found: %s", req.account_id)
             raise HTTPException(status_code=404, detail="Linked account not found")
 
@@ -117,6 +124,7 @@ def create_trade(
     trade = TradeModel(
         id=str(uuid.uuid4()), signal_id=req.signal_id,
         account_id=req.account_id, strategy=req.strategy,
+        owner=current_user,
         symbol=req.symbol, instrument_type=req.instrument_type,
         direction=req.direction, entry_price=req.entry_price,
         exit_price=None, sl_price=req.sl_price, tp_price=req.tp_price,
@@ -136,7 +144,7 @@ def create_trade(
 
 @router.get("/trades", response_model=list[TradeResponse])
 def list_trades(
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[_TradeFilterParams, Depends()],
     limit: int = Query(default=50, ge=1, le=200),
@@ -144,6 +152,7 @@ def list_trades(
 ) -> list[dict]:
     """List trades with optional filters, newest first."""
     stmt = select(TradeModel).order_by(TradeModel.open_time.desc())
+    stmt = stmt.where(TradeModel.owner == current_user)
     stmt = apply_trade_filters(
         stmt, filters.strategy, filters.symbol, filters.status,
         filters.outcome, filters.date_from, filters.date_to,
@@ -159,12 +168,13 @@ def list_trades(
 
 @router.get("/trades/stats", response_model=TradeStatsResponse)
 def trade_stats(
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[_StatsFilterParams, Depends()],
 ) -> dict:
     """Return aggregated performance statistics for filtered trades."""
     stmt = select(TradeModel)
+    stmt = stmt.where(TradeModel.owner == current_user)
     stmt = apply_trade_filters(
         stmt, filters.strategy, filters.symbol, None, None,
         filters.date_from, filters.date_to,
@@ -180,18 +190,23 @@ def trade_stats(
     metrics["by_account"] = aggregate_by_account(
         closed, build_account_lookup(db, trades),
     )
+    metrics.update(calculate_edge_metrics(closed))
+    metrics["by_day_of_week"] = aggregate_by_day_of_week(closed)
+    metrics["by_session"] = aggregate_by_session(closed)
+    metrics["by_confidence"] = aggregate_by_assessment(closed, "confidence")
+    metrics["by_rating"] = aggregate_by_assessment(closed, "rating")
     return metrics
 
 
 @router.get("/trades/{trade_id}", response_model=TradeResponse)
 def get_trade(
     trade_id: str,
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Fetch a single trade by ID, return 404 if not found."""
     trade = db.get(TradeModel, trade_id)
-    if trade is None:
+    if trade is None or trade.owner != current_user:
         logger.warning("Trade not found: %s", trade_id)
         raise HTTPException(status_code=404, detail="Trade not found")
     return trade_to_response(trade, build_account_lookup(db, [trade]))
@@ -201,23 +216,49 @@ def get_trade(
 def update_trade(
     trade_id: str,
     req: TradeUpdateRequest,
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Update a trade (close it, edit notes, tags, etc.)."""
     trade = db.get(TradeModel, trade_id)
-    if trade is None:
+    if trade is None or trade.owner != current_user:
         logger.warning("Trade not found for update: %s", trade_id)
         raise HTTPException(status_code=404, detail="Trade not found")
 
     update_data = req.model_dump(exclude_unset=True)
+
+    # Guard: prevent reopening a terminal trade
+    _TERMINAL = {"closed", "breakeven", "cancelled"}
+    current_status = trade.status
+    new_status = update_data.get("status", current_status)
+    if current_status in _TERMINAL and new_status not in _TERMINAL:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Cannot change status from '{current_status}' to '{new_status}'",
+        )
+
+    # FIX 6: only allow fields defined in TradeUpdateRequest
+    _ALLOWED_UPDATE_FIELDS = {
+        "instrument_type", "direction", "entry_price", "exit_price",
+        "sl_price", "tp_price", "lot_size", "risk_pips", "status",
+        "outcome", "close_time", "tags", "notes", "rating",
+        "confidence", "screenshot_url", "metadata",
+    }
     for field, value in update_data.items():
+        if field not in _ALLOWED_UPDATE_FIELDS:
+            continue
         if field == "metadata":
             setattr(trade, "trade_metadata", value)
         else:
             setattr(trade, field, value)
 
-    if trade.exit_price is not None and trade.status in ("closed", "breakeven"):
+    # Recalculate P&L when closing
+    if trade.status in ("closed", "breakeven"):
+        if trade.exit_price is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="exit_price is required to close or mark a trade as breakeven",
+            )
         pnl_pips, pnl_usd, rr = calculate_pnl(PnlInput(
             symbol=trade.symbol, direction=trade.direction,
             entry_price=trade.entry_price, exit_price=trade.exit_price,
@@ -227,11 +268,23 @@ def update_trade(
         trade.pnl_pips = pnl_pips
         trade.pnl_usd = pnl_usd
         trade.rr_achieved = rr
-        logger.info("Trade closed: %s pnl_pips=%s", trade_id, pnl_pips)
-    elif trade.status == "open":
-        trade.pnl_pips = None
-        trade.pnl_usd = None
-        trade.rr_achieved = None
+
+        # FIX 2: auto-derive outcome from P&L
+        if abs(pnl_pips) < 0.1:
+            trade.outcome = "breakeven"
+            trade.status = "breakeven"
+        elif pnl_pips > 0:
+            trade.outcome = "win"
+            trade.status = "closed"
+        else:
+            trade.outcome = "loss"
+            trade.status = "closed"
+
+        # FIX 1: auto-set close_time when closing
+        if trade.close_time is None:
+            trade.close_time = datetime.now(timezone.utc)
+
+        logger.info("Trade closed: %s pnl_pips=%s outcome=%s", trade_id, pnl_pips, trade.outcome)
 
     trade.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -242,12 +295,12 @@ def update_trade(
 @router.delete("/trades/{trade_id}", status_code=204)
 def delete_trade(
     trade_id: str,
-    _user: Annotated[str, Depends(get_current_user)],
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete a trade by ID, return 404 if not found."""
     trade = db.get(TradeModel, trade_id)
-    if trade is None:
+    if trade is None or trade.owner != current_user:
         logger.warning("Trade not found for deletion: %s", trade_id)
         raise HTTPException(status_code=404, detail="Trade not found")
     db.delete(trade)

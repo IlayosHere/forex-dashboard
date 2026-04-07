@@ -34,7 +34,7 @@ def calculate_trade_metrics(
     breakevens = sum(1 for t in closed if t.outcome == "breakeven")
     win_rate = round(wins / (wins + losses) * 100, 1) if (wins + losses) > 0 else None
 
-    rr_values = [t.rr_achieved for t in closed if t.rr_achieved is not None and t.outcome == "win"]
+    rr_values = [t.rr_achieved for t in closed if t.rr_achieved is not None]
     avg_rr = round(sum(rr_values) / len(rr_values), 2) if rr_values else None
 
     pnl_pips_values = [t.pnl_pips for t in closed if t.pnl_pips is not None]
@@ -70,15 +70,21 @@ def calculate_trade_metrics(
 
 
 def _compute_streak(closed: list[TradeModel]) -> int:
-    """Count consecutive same outcomes from the most recent closed trade."""
+    """Count consecutive win/loss streak from the most recent closed trade.
+
+    Breakeven trades are skipped — they do not interrupt or contribute to
+    streaks.  Returns positive for win streaks, negative for loss streaks,
+    0 if no decisive (win/loss) trades exist.
+    """
     sorted_closed = sorted(
         closed, key=lambda t: t.close_time or t.open_time, reverse=True,
     )
-    if not sorted_closed:
+    decisive = [t for t in sorted_closed if t.outcome in ("win", "loss")]
+    if not decisive:
         return 0
-    streak_outcome = sorted_closed[0].outcome
+    streak_outcome = decisive[0].outcome
     streak = 0
-    for t in sorted_closed:
+    for t in decisive:
         if t.outcome == streak_outcome:
             streak += 1
         else:
@@ -133,6 +139,7 @@ def aggregate_by_field(
             buckets[key] = {
                 "total": 0, "wins": 0, "losses": 0,
                 "win_rate": None, "total_pnl_pips": 0.0,
+                "total_pnl_usd": 0.0,
             }
         buckets[key]["total"] += 1
         if t.outcome == "win":
@@ -141,10 +148,13 @@ def aggregate_by_field(
             buckets[key]["losses"] += 1
         if t.pnl_pips is not None:
             buckets[key]["total_pnl_pips"] += t.pnl_pips
+        if t.pnl_usd is not None:
+            buckets[key]["total_pnl_usd"] += t.pnl_usd
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
         v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
     return buckets
 
 
@@ -176,6 +186,7 @@ def aggregate_by_account(
                 "instrument_type": acct.instrument_type if acct else None,
                 "total": 0, "wins": 0, "losses": 0,
                 "win_rate": None, "total_pnl_pips": 0.0,
+                "total_pnl_usd": 0.0,
             }
         buckets[aid]["total"] += 1
         if t.outcome == "win":
@@ -184,8 +195,11 @@ def aggregate_by_account(
             buckets[aid]["losses"] += 1
         if t.pnl_pips is not None:
             buckets[aid]["total_pnl_pips"] += t.pnl_pips
+        if t.pnl_usd is not None:
+            buckets[aid]["total_pnl_usd"] += t.pnl_usd
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
         v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
     return buckets

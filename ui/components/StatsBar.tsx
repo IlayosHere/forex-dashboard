@@ -2,14 +2,11 @@
 
 import type { TradeStats } from "@/lib/types";
 
+import { fmt } from "@/lib/format";
+
 interface StatsBarProps {
   stats: TradeStats | null;
   loading: boolean;
-}
-
-function fmt(v: number | null | undefined, decimals = 1): string {
-  if (v === null || v === undefined) return "—";
-  return v.toFixed(decimals);
 }
 
 function pnlColorClass(v: number | null | undefined): string {

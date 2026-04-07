@@ -6,16 +6,12 @@ import { StatusBadge } from "./StatusBadge";
 import { StarRating } from "./StarRating";
 import { AccountBadge } from "./AccountBadge";
 import { formatShortDate } from "@/lib/dates";
+import { pnlColor } from "@/lib/format";
 
 interface TradeCardProps {
   trade: Trade;
   onClick: () => void;
   accountType?: AccountType;
-}
-
-function pnlColor(v: number | null): string {
-  if (v === null || v === 0) return "#777777";
-  return v > 0 ? "#26a69a" : "#ef5350";
 }
 
 function pnlSign(v: number | null, decimals = 1): string {
