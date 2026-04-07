@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import { strategies } from "@/lib/strategies";
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
@@ -14,8 +15,8 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       href={href}
       className={`flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors ${
         isActive
-          ? "bg-[#1e1e1e] text-[#e0e0e0] font-medium"
-          : "text-[#999999] hover:bg-[#1a1a1a] hover:text-[#e0e0e0]"
+          ? "bg-elevated text-foreground font-medium"
+          : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
       }`}
     >
       {children}
@@ -28,6 +29,7 @@ export function SidebarNav() {
     <nav className="flex-1 px-2 py-3 space-y-0.5">
       <NavLink href="/">Dashboard</NavLink>
       <NavLink href="/journal">Journal</NavLink>
+      <NavLink href="/calendar">Calendar</NavLink>
       <NavLink href="/accounts">Accounts</NavLink>
 
       <div className="pt-3 pb-1 px-3">

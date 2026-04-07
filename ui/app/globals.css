@@ -51,6 +51,9 @@
   /* Sidebar */
   --color-sidebar: #111111;
 
+  /* Currency colors */
+  --color-currency-gbp: #9c27b0;
+
   /* Legacy alias — kept for existing usage, prefer surface-input */
   --color-elevated: #1e1e1e;
 }
@@ -77,6 +80,9 @@
   --input:                 #2a2a2a;
   --ring:                  #26a69a;
   --radius:                0.375rem;
+  /* Currency colors */
+  --currency-gbp:          #9c27b0;
+
   /* semantic aliases */
   --bg-base:               #0f0f0f;
   --bg-sidebar:            #111111;

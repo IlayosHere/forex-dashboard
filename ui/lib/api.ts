@@ -1,6 +1,6 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account, TradeCreateRequest, TradeUpdateRequest } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, Account, TradeCreateRequest, TradeUpdateRequest, CalendarEvent } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface CalculateRequest {
   symbol: string;
@@ -189,4 +189,14 @@ export async function updateAccount(id: string, data: {
 export async function deleteAccount(id: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/accounts/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`);
+}
+
+// ---------------------------------------------------------------------------
+// Economic Calendar
+// ---------------------------------------------------------------------------
+
+export async function fetchCalendar(week: "current" | "next" = "current"): Promise<CalendarEvent[]> {
+  const res = await fetch(`${BASE_URL}/api/calendar?week=${week}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch calendar: ${res.status}`);
+  return res.json() as Promise<CalendarEvent[]>;
 }

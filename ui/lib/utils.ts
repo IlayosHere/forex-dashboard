@@ -13,3 +13,8 @@ export function formatPrice(price: number, symbol: string): string {
 export function pipSize(symbol: string): number {
   return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
 }
+
+export function getTodayKeyUTC(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
