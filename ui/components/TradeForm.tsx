@@ -70,7 +70,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   // Clear account if it no longer matches the filtered list (e.g. strategy changed)
   useEffect(() => {
     if (form.account_id && filteredAccounts.length > 0 && !filteredAccounts.some((a) => a.id === form.account_id)) {
-      set("account_id", "");
+      setForm((prev) => ({ ...prev, account_id: "" }));
     }
   }, [filteredAccounts, form.account_id]);
 

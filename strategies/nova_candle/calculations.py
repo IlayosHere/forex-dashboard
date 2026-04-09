@@ -35,7 +35,7 @@ def calculate_trade_params(
     signal: dict[str, Any],
     candles: pd.DataFrame,
     signal_idx: int,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Compute BOS-based SL, TP, lot size and risk pips.
 
     Parameters
@@ -77,6 +77,8 @@ def calculate_trade_params(
     bos_price = float(highs[swing_idx]) if dir_int == 1 else float(lows[swing_idx])
 
     result = _build_params(signal, sl, entry, pip, candle_time)
+    if result is None:
+        return None
     result["bos_candle_time"] = bos_time
     result["bos_swing_price"] = bos_price
     return result
@@ -88,7 +90,7 @@ def _build_params(
     entry: float,
     pip: float,
     candle_time,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Build the final trade parameter dict from BOS SL."""
     symbol = signal["symbol"]
     direction = signal["direction"]
@@ -125,7 +127,7 @@ def _fallback_params(
     candle_time,
     pip: float,
     candles: pd.DataFrame,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Fallback when no BOS swing is found — use candle extreme + buffer."""
     direction = signal["direction"]
     entry = signal["open"]
@@ -136,6 +138,8 @@ def _fallback_params(
         sl = signal["high"] + SL_BUFFER_PIPS * pip
 
     result = _build_params(signal, sl, entry, pip, candle_time)
+    if result is None:
+        return None
     result["bos_candle_time"] = None
     result["bos_swing_price"] = None
     return result

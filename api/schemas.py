@@ -28,7 +28,7 @@ from api.schemas_trade import (  # noqa: F401 -- re-export
 
 
 class SignalResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: str
     strategy: str

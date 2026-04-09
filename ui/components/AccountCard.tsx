@@ -112,7 +112,7 @@ export function AccountCard({
         <div>
           <span className="text-[11px] text-text-muted">Win Rate</span>
           <div className="text-[12px] text-text-primary">
-            {stats?.win_rate != null ? `${Math.round(stats.win_rate * 100)}%` : "—"}
+            {stats?.win_rate != null ? `${Math.round(stats.win_rate)}%` : "—"}
           </div>
         </div>
         <div className="col-span-2">

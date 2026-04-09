@@ -231,6 +231,7 @@ def update_trade(
         raise HTTPException(status_code=404, detail="Trade not found")
 
     update_data = req.model_dump(exclude_unset=True)
+    user_sent_outcome = "outcome" in update_data
 
     # Guard: prevent reopening a terminal trade
     _TERMINAL = {"closed", "breakeven", "cancelled"}
@@ -274,16 +275,16 @@ def update_trade(
         trade.pnl_usd = pnl_usd
         trade.rr_achieved = rr
 
-        # FIX 2: auto-derive outcome from P&L
-        if abs(pnl_pips) < 0.1:
-            trade.outcome = "breakeven"
-            trade.status = "breakeven"
-        elif pnl_pips > 0:
-            trade.outcome = "win"
-            trade.status = "closed"
-        else:
-            trade.outcome = "loss"
-            trade.status = "closed"
+        if not user_sent_outcome:
+            if abs(pnl_pips) < 0.1:
+                trade.outcome = "breakeven"
+                trade.status = "breakeven"
+            elif pnl_pips > 0:
+                trade.outcome = "win"
+                trade.status = "closed"
+            else:
+                trade.outcome = "loss"
+                trade.status = "closed"
 
         # FIX 1: auto-set close_time when closing
         if trade.close_time is None:

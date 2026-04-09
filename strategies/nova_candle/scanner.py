@@ -94,8 +94,8 @@ def find_nova_candle(
 
     # No open-side wick (bullish: open == low, bearish: open == high)
     # Tolerance: 1 point (0.1 pip) — essentially zero wick
-    pip = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
-    wick_tolerance = pip
+    point = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
+    wick_tolerance = point
 
     if is_bullish:
         open_wick = abs(l - o)

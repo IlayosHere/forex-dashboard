@@ -75,10 +75,8 @@ export default function CalendarPage() {
 
   const { event: nextEvent, secondsUntil } = useNextEvent(events, now);
 
-  const todayKey = useMemo(
-    () => `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`,
-    [now],
-  );
+  const todayDateStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+  const todayKey = useMemo(() => todayDateStr, [todayDateStr]);
 
   const filteredEvents = useMemo(
     () => applyFilters(events, impactFilter, currencyFilter),

@@ -6,11 +6,9 @@ export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:800
 
 async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const token = getToken();
-  const headers: Record<string, string> = {
-    ...(init.headers as Record<string, string> | undefined),
-  };
+  const headers = new Headers(init.headers);
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
   const res = await fetch(url, { ...init, headers });
   if (res.status === 401) {

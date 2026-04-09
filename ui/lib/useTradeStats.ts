@@ -34,6 +34,8 @@ export function useTradeStats(filters: { strategy?: string; symbol?: string; fro
   useEffect(() => {
     setLoading(true);
     void load();
+    const interval = setInterval(() => { void load(); }, 30_000);
+    return () => clearInterval(interval);
   }, [load]);
 
   return { stats, loading, error, refetch: load };

@@ -13,6 +13,8 @@ import pkgutil
 import time
 from datetime import datetime, timezone
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from api.models import SignalModel
@@ -102,38 +104,42 @@ def discover_strategies() -> dict[str, object]:
 
 def is_duplicate(db: Session, sig: Signal) -> bool:
     """Return True if a signal for (strategy, symbol, candle_time) already exists."""
-    return (
-        db.query(SignalModel)
-        .filter(
+    return db.scalar(
+        select(SignalModel).where(
             SignalModel.strategy == sig.strategy,
             SignalModel.symbol == sig.symbol,
             SignalModel.direction == sig.direction,
             SignalModel.candle_time == sig.candle_time,
-        )
-        .first()
-        is not None
-    )
+        ),
+    ) is not None
 
 
 def persist(db: Session, sig: Signal) -> None:
-    """Insert a Signal into the DB and commit."""
-    db.add(
-        SignalModel(
-            id=sig.id,
-            strategy=sig.strategy,
-            symbol=sig.symbol,
-            direction=sig.direction,
-            candle_time=sig.candle_time,
-            entry=sig.entry,
-            sl=sig.sl,
-            tp=sig.tp,
-            lot_size=sig.lot_size,
-            risk_pips=sig.risk_pips,
-            spread_pips=sig.spread_pips,
-            signal_metadata=sig.metadata,
-            created_at=sig.created_at,
+    """Insert a Signal into the DB. Skip gracefully on duplicate."""
+    try:
+        db.add(
+            SignalModel(
+                id=sig.id,
+                strategy=sig.strategy,
+                symbol=sig.symbol,
+                direction=sig.direction,
+                candle_time=sig.candle_time,
+                entry=sig.entry,
+                sl=sig.sl,
+                tp=sig.tp,
+                lot_size=sig.lot_size,
+                risk_pips=sig.risk_pips,
+                spread_pips=sig.spread_pips,
+                signal_metadata=sig.metadata,
+                created_at=sig.created_at,
+            )
         )
-    )
-    db.commit()
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        logger.info(
+            "Duplicate signal skipped: %s %s %s",
+            sig.strategy, sig.symbol, sig.candle_time,
+        )
 
 

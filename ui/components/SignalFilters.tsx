@@ -21,12 +21,12 @@ interface SignalFiltersProps {
 }
 
 const selectClass =
-  "bg-[#1a1a1a] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
-  "focus:outline-none focus:border-[#3a3a3a] appearance-none cursor-pointer min-w-[120px]";
+  "bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
+  "focus:outline-none focus:border-[#26a69a] appearance-none cursor-pointer min-w-[120px]";
 
 const inputClass =
-  "bg-[#1a1a1a] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
-  "focus:outline-none focus:border-[#3a3a3a] min-w-[130px]";
+  "bg-[#1e1e1e] border border-[#2a2a2a] rounded px-2.5 py-1.5 text-sm text-[#e0e0e0] " +
+  "focus:outline-none focus:border-[#26a69a] min-w-[130px]";
 
 export function SignalFilters({ values, onChange, total, onReset }: SignalFiltersProps) {
   const update = (patch: Partial<SignalFilterValues>) =>

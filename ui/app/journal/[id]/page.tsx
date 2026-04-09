@@ -109,7 +109,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="p-6 text-text-muted text-sm">Loading...</div>;
+  if (loading) return <div className="p-6 text-muted-foreground text-sm">Loading...</div>;
   if (error || !trade) return <div className="p-6 text-bear text-sm">Error: {error ?? "Trade not found"}</div>;
 
   const isOpen = trade.status === "open";

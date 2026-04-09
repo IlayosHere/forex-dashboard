@@ -19,9 +19,10 @@ Indexes on strategy and candle_time support the two most common query patterns:
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base
 
@@ -54,7 +55,7 @@ class SignalModel(Base):
     lot_size: Mapped[float] = mapped_column(Float, nullable=False)
     risk_pips: Mapped[float] = mapped_column(Float, nullable=False)
     spread_pips: Mapped[float] = mapped_column(Float, nullable=False)
-    signal_metadata: Mapped[dict] = mapped_column(JSON, nullable=False)
+    signal_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Resolution tracking (populated by runner/resolver.py after candles close)
@@ -64,9 +65,11 @@ class SignalModel(Base):
     resolution_candles: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (
-        Index("ix_signals_strategy", "strategy"),
+        Index("ix_signals_strategy_candle_time", "strategy", "candle_time"),
         Index("ix_signals_candle_time", "candle_time"),
+        Index("ix_signals_symbol", "symbol"),
         Index("ix_signals_resolution", "resolution"),
+        UniqueConstraint("strategy", "symbol", "candle_time", name="uq_signal_dedup"),
     )
 
 
@@ -98,11 +101,14 @@ class TradeModel(Base):
     # Identity
     id: Mapped[str] = mapped_column(String, primary_key=True)
     signal_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("signals.id"), nullable=True
+        String, ForeignKey("signals.id", ondelete="SET NULL"), nullable=True
     )
     account_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("accounts.id"), nullable=True
+        String, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True
     )
+
+    signal: Mapped[SignalModel | None] = relationship(lazy="noload")
+    account: Mapped[AccountModel | None] = relationship(lazy="noload")
 
     # Trade setup
     strategy: Mapped[str] = mapped_column(String, nullable=False)
@@ -130,14 +136,14 @@ class TradeModel(Base):
     close_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Assessment
-    tags: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    tags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     notes: Mapped[str] = mapped_column(String, nullable=False, default="")
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
     confidence: Mapped[int | None] = mapped_column(Integer, nullable=True)
     screenshot_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Extensibility
-    trade_metadata: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -155,4 +161,6 @@ class TradeModel(Base):
         Index("ix_trades_instrument_type", "instrument_type"),
         Index("ix_trades_account_id", "account_id"),
         Index("ix_trades_owner", "owner"),
+        Index("ix_trades_owner_open_time", "owner", "open_time"),
+        Index("ix_trades_owner_status", "owner", "status"),
     )

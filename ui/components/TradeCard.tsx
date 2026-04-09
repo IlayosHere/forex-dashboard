@@ -51,14 +51,14 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {trade.rating != null && (
-            <StarRating value={trade.rating} onChange={() => {}} size="sm" />
+            <StarRating value={trade.rating} size="sm" readOnly />
           )}
           <span className="text-xs text-muted-foreground">{trade.strategy}</span>
         </div>
       </div>
 
       {/* Line 2 */}
-      <div className="flex items-center gap-2 mt-1">
+      <div className="flex flex-wrap items-center gap-2 mt-1">
         <span className="text-xs text-muted-foreground">
           {formatShortDate(trade.open_time)}
           {" → "}

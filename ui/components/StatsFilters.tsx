@@ -57,7 +57,7 @@ export function StatsFilters({
           value={strategy}
           onChange={(e) => onStrategyChange(e.target.value)}
           aria-label="Filter by strategy"
-          className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
+          className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         >
           <option value="">All Strategies</option>
           {strategies.map((s) => (
@@ -69,7 +69,7 @@ export function StatsFilters({
           value={accountId}
           onChange={(e) => onAccountChange(e.target.value)}
           aria-label="Filter by account"
-          className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
+          className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         >
           <option value="">All Accounts</option>
           {accounts.map((a) => (
@@ -83,7 +83,7 @@ export function StatsFilters({
           onChange={(e) => onFromChange(e.target.value)}
           placeholder="From"
           aria-label="From date"
-          className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
+          className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         />
         <input
           type="date"
@@ -91,7 +91,7 @@ export function StatsFilters({
           onChange={(e) => onToChange(e.target.value)}
           placeholder="To"
           aria-label="To date"
-          className="bg-[#161616] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
+          className="bg-[#1e1e1e] border border-[#2a2a2a] rounded px-3 py-1.5 text-sm text-[#e0e0e0] focus:outline-none focus:border-[#26a69a]"
         />
       </div>
     </div>

@@ -133,6 +133,9 @@ def run_scan_cycle(strategies: dict[str, object]) -> None:
                 persist(db, sig)
                 new_signals.append(sig)
 
+            if new_signals:
+                db.commit()
+
             count = len(new_signals)
             total_new += count
 

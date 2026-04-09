@@ -28,8 +28,7 @@ function formatCandle(iso: string): string {
     const hh = d.getUTCHours().toString().padStart(2, "0");
     const mm = d.getUTCMinutes().toString().padStart(2, "0");
     return `${year}-${month}-${day} ${hh}:${mm} UTC`;
-  } catch (e) {
-    console.warn("Date parse failed:", e);
+  } catch {
     return iso;
   }
 }
@@ -174,7 +173,7 @@ export function SignalDetail({ signal }: SignalDetailProps) {
           }
           router.push(`/journal/new?${params.toString()}`);
         }}
-        className="w-full cursor-pointer bg-elevated border border-border text-foreground text-sm font-medium rounded px-3 py-2 hover:bg-border transition-colors"
+        className="w-full cursor-pointer bg-elevated border border-border text-foreground text-sm font-medium rounded px-3 py-2 hover:bg-[#333333] transition-colors"
       >
         Log Trade
       </button>

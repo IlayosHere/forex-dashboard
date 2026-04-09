@@ -170,7 +170,7 @@ export default function JournalPage() {
         </div>
       )}
       {!loading && trades.length > 0 && (
-        <div className="border border-[#2a2a2a] rounded overflow-hidden divide-y divide-[#2a2a2a]" style={{ backgroundColor: "#161616" }}>
+        <div className="border border-[#2a2a2a] rounded overflow-hidden divide-y divide-[#2a2a2a] bg-card">
           {trades.map((trade) => (
             <TradeCard
               key={trade.id}

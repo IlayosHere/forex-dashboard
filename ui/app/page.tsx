@@ -36,8 +36,7 @@ function formatTime(iso: string): string {
     const hh = d.getUTCHours().toString().padStart(2, "0");
     const mm = d.getUTCMinutes().toString().padStart(2, "0");
     return `${hh}:${mm}`;
-  } catch (e) {
-    console.warn("Date parse failed:", e);
+  } catch {
     return "—";
   }
 }
@@ -52,7 +51,7 @@ function OutcomeCell({ s }: { s: Signal }) {
     return cfg ? (
       <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
     ) : (
-      <span className="text-xs text-[#444444]">—</span>
+      <span className="text-xs text-[#666666]">—</span>
     );
   }
 
@@ -64,7 +63,7 @@ function OutcomeCell({ s }: { s: Signal }) {
     const feCfg = RESOLUTION_CONFIG[s.resolution];
     const mpCfg = RESOLUTION_CONFIG[mpRes];
     if (!feCfg || !mpCfg) {
-      return <span className="text-xs text-[#444444]">—</span>;
+      return <span className="text-xs text-[#666666]">—</span>;
     }
     return (
       <div className="flex flex-col gap-0.5 leading-tight">
@@ -75,9 +74,9 @@ function OutcomeCell({ s }: { s: Signal }) {
   }
 
   const active = s.resolution ?? mpRes;
-  if (!active) return <span className="text-xs text-[#444444]">—</span>;
+  if (!active) return <span className="text-xs text-[#666666]">—</span>;
   const cfg = RESOLUTION_CONFIG[active];
-  if (!cfg) return <span className="text-xs text-[#444444]">—</span>;
+  if (!cfg) return <span className="text-xs text-[#666666]">—</span>;
   return <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>;
 }
 
@@ -219,7 +218,7 @@ function DashboardContent() {
       {/* SL Method toggle — fvg-impulse only */}
       {activeStrategy.slug === "fvg-impulse" && signals.length > 0 && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] uppercase tracking-widest text-[#444444]">SL</span>
+          <span className="text-[10px] uppercase tracking-widest text-[#666666]">SL</span>
           <div className="flex rounded border border-[#2a2a2a] bg-[#1e1e1e] overflow-hidden">
             <button
               onClick={() => setSlMethod("far_edge")}
@@ -247,19 +246,19 @@ function DashboardContent() {
 
       {/* Signal table */}
       {signals.length > 0 && (
-        <div className="border border-[#2a2a2a] rounded overflow-hidden bg-[#131313]">
+        <div className="border border-[#2a2a2a] rounded overflow-hidden bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#2a2a2a]">
-                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Pair</th>
-                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Dir</th>
-                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Entry</th>
-                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">SL</th>
-                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">TP</th>
-                <th className="text-right pl-6 pr-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Risk ({unitLabel})</th>
-                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Lot</th>
-                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Outcome</th>
-                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#444444]">Time (UTC)</th>
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Pair</th>
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Dir</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Entry</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">SL</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">TP</th>
+                <th className="text-right pl-6 pr-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Risk ({unitLabel})</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Lot</th>
+                <th className="text-left px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Outcome</th>
+                <th className="text-right px-3 py-1.5 font-normal text-[10px] uppercase tracking-widest text-[#666666]">Time (UTC)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1e1e1e]">
