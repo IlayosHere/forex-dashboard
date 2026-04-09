@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from api.auth import get_current_user
 from api.db import get_db
 from api.models import AccountModel, TradeModel
 from api.schemas import (
@@ -40,6 +41,7 @@ router = APIRouter()
 @router.post("/accounts", response_model=AccountResponse, status_code=201)
 def create_account(
     req: AccountCreateRequest,
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccountModel:
     """Create a new trading account."""
@@ -53,6 +55,7 @@ def create_account(
         prop_firm=req.prop_firm,
         phase=req.phase,
         balance=req.balance,
+        owner=current_user,
         created_at=now,
     )
     db.add(account)
@@ -64,6 +67,7 @@ def create_account(
 
 @router.get("/accounts", response_model=list[AccountResponse])
 def list_accounts(
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     instrument_type: str | None = Query(default=None),
     status: str | None = Query(default=None),
@@ -71,6 +75,7 @@ def list_accounts(
 ) -> list[AccountModel]:
     """List accounts with optional filters."""
     stmt = select(AccountModel).order_by(AccountModel.created_at.asc())
+    stmt = stmt.where(AccountModel.owner == current_user)
     if instrument_type is not None:
         stmt = stmt.where(AccountModel.instrument_type == instrument_type)
     if status is not None:
@@ -84,16 +89,20 @@ def list_accounts(
 def update_account(
     account_id: str,
     req: AccountUpdateRequest,
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AccountModel:
-    """Update an account (partial), return 404 if not found."""
+    """Update an account (partial), return 404 if not found or not owned by current user."""
     account = db.get(AccountModel, account_id)
-    if account is None:
+    if account is None or account.owner != current_user:
         logger.warning("Account not found: %s", account_id)
         raise HTTPException(status_code=404, detail="Account not found")
 
     update_data = req.model_dump(exclude_unset=True)
+    _ALLOWED_UPDATE_FIELDS = {"name", "status", "prop_firm", "phase", "balance"}
     for field, value in update_data.items():
+        if field not in _ALLOWED_UPDATE_FIELDS:
+            continue
         setattr(account, field, value)
 
     db.commit()
@@ -104,11 +113,12 @@ def update_account(
 @router.delete("/accounts/{account_id}", status_code=204)
 def delete_account(
     account_id: str,
+    current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete an account, return 404/409 if not found or has linked trades."""
     account = db.get(AccountModel, account_id)
-    if account is None:
+    if account is None or account.owner != current_user:
         logger.warning("Account not found for deletion: %s", account_id)
         raise HTTPException(status_code=404, detail="Account not found")
 

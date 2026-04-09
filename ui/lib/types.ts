@@ -124,6 +124,28 @@ export interface Trade {
   updated_at: string;
 }
 
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface UserProfile {
+  username: string;
+  is_admin: boolean;
+}
+
+export interface BreakdownEntry {
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  total_pnl_pips: number;
+  total_pnl_usd: number;
+  avg_pnl_usd: number;
+  avg_rr: number | null;
+  name: string;
+}
+
 // ---------------------------------------------------------------------------
 // Economic Calendar
 // ---------------------------------------------------------------------------
@@ -164,12 +186,19 @@ export interface TradeStats {
   current_streak: number;
   profit_factor: number | null;
   avg_hold_time_hours: number | null;
-  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number }>;
-  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number }>;
+  avg_win_pips: number | null;
+  avg_loss_pips: number | null;
+  avg_win_usd: number | null;
+  avg_loss_usd: number | null;
+  expectancy_usd: number | null;
+  expectancy_pips: number | null;
+  consistency_ratio: number | null;
+  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
+  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
   by_account: Record<string, {
     account_name: string;
-    account_type: string;
-    instrument_type: string;
+    account_type: AccountType;
+    instrument_type: InstrumentType;
     total: number;
     wins: number;
     losses: number;
@@ -177,4 +206,29 @@ export interface TradeStats {
     total_pnl_pips: number;
     total_pnl_usd: number;
   }>;
+  by_day_of_week: Record<string, BreakdownEntry>;
+  by_session: Record<string, BreakdownEntry>;
+  by_confidence: Record<string, BreakdownEntry>;
+  by_rating: Record<string, BreakdownEntry>;
+}
+
+export interface EquityCurvePoint {
+  date: string | null;
+  close_time: string | null;
+  pnl_usd: number;
+  pnl_pips: number;
+  cumulative_pnl_usd: number;
+  cumulative_pnl_pips: number;
+  trade_count: number;
+  outcome: string | null;
+}
+
+export interface DailySummaryPoint {
+  date: string;
+  trades: number;
+  wins: number;
+  losses: number;
+  breakevens: number;
+  pnl_usd: number;
+  pnl_pips: number;
 }

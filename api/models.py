@@ -20,10 +20,24 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, String
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from api.db import Base
+
+
+class UserModel(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    username: Mapped[str] = mapped_column(String, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_users_username", "username", unique=True),
+    )
 
 
 class SignalModel(Base):
@@ -67,12 +81,14 @@ class AccountModel(Base):
     prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
     phase: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    owner: Mapped[str] = mapped_column(String, nullable=False, default="admin")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         Index("ix_accounts_account_type", "account_type"),
         Index("ix_accounts_instrument_type", "instrument_type"),
         Index("ix_accounts_status", "status"),
+        Index("ix_accounts_owner", "owner"),
     )
 
 
@@ -127,6 +143,9 @@ class TradeModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    # Ownership
+    owner: Mapped[str] = mapped_column(String, nullable=False, default="admin")
+
     __table_args__ = (
         Index("ix_trades_strategy", "strategy"),
         Index("ix_trades_symbol", "symbol"),
@@ -135,4 +154,5 @@ class TradeModel(Base):
         Index("ix_trades_outcome", "outcome"),
         Index("ix_trades_instrument_type", "instrument_type"),
         Index("ix_trades_account_id", "account_id"),
+        Index("ix_trades_owner", "owner"),
     )

@@ -1,15 +1,11 @@
 import { StatusBadge } from "@/components/StatusBadge";
 
 import type { Trade } from "@/lib/types";
+import { pnlColor } from "@/lib/format";
 
 interface TradeResultPanelProps {
   trade: Trade;
   unitLabel: string;
-}
-
-function pnlColor(v: number | null): string {
-  if (v === null || v === 0) return "#777777";
-  return v > 0 ? "#26a69a" : "#ef5350";
 }
 
 function formatDuration(open: string, close: string | null): string {

@@ -8,6 +8,7 @@ import { SignalFilters, type SignalFilterValues } from "@/components/SignalFilte
 import { strategies, type StrategyMeta } from "@/lib/strategies";
 
 import type { SignalFilters as ApiFilters } from "@/lib/api";
+import { formatDate } from "@/lib/dates";
 
 import { formatPrice, pipSize } from "@/lib/utils";
 import { RESOLUTION_CONFIG } from "@/lib/signals";
@@ -27,21 +28,6 @@ function getYesterdayUTC(): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
-}
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-  } catch (e) {
-    console.warn("Date parse failed:", e);
-    return "—";
-  }
 }
 
 function formatTime(iso: string): string {

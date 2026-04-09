@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { TradeForm } from "@/components/TradeForm";
 
-import type { Signal } from "@/lib/types";
+import type { Signal, TradeCreateRequest } from "@/lib/types";
 import type { TradeFormData } from "@/components/TradeForm";
 
 import { fetchSignal, createTrade } from "@/lib/api";
@@ -110,12 +110,12 @@ function NewTradeContent() {
   const handleSubmit = async (data: TradeFormData) => {
     setLoading(true);
     try {
-      const body: Record<string, unknown> = {
+      const body: TradeCreateRequest = {
         account_id: data.account_id || null,
         signal_id: data.signal_id || null,
         strategy: data.strategy,
         symbol: data.symbol,
-        direction: data.direction,
+        direction: data.direction as "BUY" | "SELL",
         entry_price: parseFloat(data.entry_price),
         sl_price: parseFloat(data.sl_price),
         tp_price: data.tp_price ? parseFloat(data.tp_price) : null,

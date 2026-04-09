@@ -206,3 +206,57 @@ def test_stats_reflects_closed_trades(client: TestClient, db: Session) -> None:
     assert data["wins"] == 1
     assert data["losses"] == 1
     assert data["total_pnl_pips"] == 10.0
+
+
+# ---------------------------------------------------------------------------
+# State-transition guards (business rule coverage)
+# ---------------------------------------------------------------------------
+
+
+def test_close_trade_requires_exit_price(client: TestClient, db: Session) -> None:
+    """Setting status=closed without exit_price must return 422."""
+    from tests.conftest import TEST_USER
+    trade = make_trade(db, owner=TEST_USER)
+    resp = client.put(f"/api/trades/{trade.id}", json={"status": "closed"})
+    assert resp.status_code == 422
+
+
+def test_close_trade_with_exit_price_calculates_pnl(client: TestClient, db: Session) -> None:
+    """Closing a trade with an exit_price must populate pnl_pips and pnl_usd."""
+    from tests.conftest import TEST_USER
+    trade = make_trade(db, owner=TEST_USER)
+    resp = client.put(f"/api/trades/{trade.id}", json={
+        "status": "closed",
+        "exit_price": 1.09100,
+        "outcome": "win",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["pnl_pips"] is not None
+    assert data["pnl_usd"] is not None
+
+
+def test_reopen_closed_trade_returns_422(client: TestClient, db: Session) -> None:
+    """Trying to set status=open on a closed trade must return 422."""
+    from tests.conftest import TEST_USER
+    trade = make_trade(
+        db,
+        owner=TEST_USER,
+        status="closed",
+        exit_price=1.09100,
+        pnl_pips=60.0,
+        pnl_usd=300.0,
+    )
+    resp = client.put(f"/api/trades/{trade.id}", json={"status": "open"})
+    assert resp.status_code == 422
+
+
+def test_create_trade_and_retrieve(client: TestClient) -> None:
+    """POST /api/trades then GET /api/trades/{id} returns the same trade."""
+    resp = client.post("/api/trades", json=_trade_payload())
+    assert resp.status_code == 201
+    trade_id = resp.json()["id"]
+
+    get_resp = client.get(f"/api/trades/{trade_id}")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["id"] == trade_id

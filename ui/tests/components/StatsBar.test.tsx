@@ -21,9 +21,20 @@ const MOCK_STATS: TradeStats = {
   current_streak: 3,
   profit_factor: 2.1,
   avg_hold_time_hours: 4.5,
+  avg_win_pips: null,
+  avg_loss_pips: null,
+  avg_win_usd: null,
+  avg_loss_usd: null,
+  expectancy_usd: null,
+  expectancy_pips: null,
+  consistency_ratio: null,
   by_strategy: {},
   by_symbol: {},
   by_account: {},
+  by_day_of_week: {},
+  by_session: {},
+  by_confidence: {},
+  by_rating: {},
 };
 
 describe("StatsBar", () => {

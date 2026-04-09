@@ -9,21 +9,25 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TradeCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     signal_id: str | None = None
     account_id: str | None = None
     strategy: str
     symbol: str
     instrument_type: str = "forex"
     direction: str
-    entry_price: float
-    sl_price: float
+    entry_price: float = Field(gt=0)
+    sl_price: float = Field(gt=0)
     tp_price: float | None = None
-    lot_size: float
-    risk_pips: float
+    lot_size: float = Field(gt=0)
+    risk_pips: float = Field(gt=0)
     open_time: datetime
     tags: list[str] = []
     notes: str = ""
@@ -35,20 +39,31 @@ class TradeCreateRequest(BaseModel):
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str) -> str:
+        """Ensure direction is BUY or SELL."""
         if v not in ("BUY", "SELL"):
             raise ValueError("direction must be BUY or SELL")
         return v
 
+    @field_validator("instrument_type")
+    @classmethod
+    def validate_instrument_type(cls, v: str) -> str:
+        """Ensure instrument_type is forex or futures_mnq."""
+        if v not in ("forex", "futures_mnq"):
+            raise ValueError("instrument_type must be forex or futures_mnq")
+        return v
+
 
 class TradeUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     instrument_type: str | None = None
     direction: str | None = None
-    entry_price: float | None = None
-    exit_price: float | None = None
-    sl_price: float | None = None
+    entry_price: float | None = Field(default=None, gt=0)
+    exit_price: float | None = Field(default=None, gt=0)
+    sl_price: float | None = Field(default=None, gt=0)
     tp_price: float | None = None
-    lot_size: float | None = None
-    risk_pips: float | None = None
+    lot_size: float | None = Field(default=None, gt=0)
+    risk_pips: float | None = Field(default=None, gt=0)
     status: str | None = None
     outcome: str | None = None
     close_time: datetime | None = None
@@ -59,9 +74,26 @@ class TradeUpdateRequest(BaseModel):
     screenshot_url: str | None = None
     metadata: dict | None = None
 
+    @field_validator("direction")
+    @classmethod
+    def validate_direction(cls, v: str | None) -> str | None:
+        """Ensure direction is BUY or SELL when provided."""
+        if v is not None and v not in ("BUY", "SELL"):
+            raise ValueError("direction must be BUY or SELL")
+        return v
+
+    @field_validator("instrument_type")
+    @classmethod
+    def validate_instrument_type(cls, v: str | None) -> str | None:
+        """Ensure instrument_type is forex or futures_mnq when provided."""
+        if v is not None and v not in ("forex", "futures_mnq"):
+            raise ValueError("instrument_type must be forex or futures_mnq")
+        return v
+
     @field_validator("status")
     @classmethod
     def validate_status(cls, v: str | None) -> str | None:
+        """Ensure status is a valid trade status when provided."""
         if v is not None and v not in ("open", "closed", "breakeven", "cancelled"):
             raise ValueError("status must be open, closed, breakeven, or cancelled")
         return v
@@ -69,6 +101,7 @@ class TradeUpdateRequest(BaseModel):
     @field_validator("outcome")
     @classmethod
     def validate_outcome(cls, v: str | None) -> str | None:
+        """Ensure outcome is a valid trade outcome when provided."""
         if v is not None and v not in ("win", "loss", "breakeven"):
             raise ValueError("outcome must be win, loss, or breakeven")
         return v
@@ -131,6 +164,17 @@ class TradeStatsResponse(BaseModel):
     current_streak: int
     profit_factor: float | None
     avg_hold_time_hours: float | None
-    by_strategy: dict[str, dict]
-    by_symbol: dict[str, dict]
-    by_account: dict[str, dict]
+    avg_win_pips: float | None = None
+    avg_loss_pips: float | None = None
+    avg_win_usd: float | None = None
+    avg_loss_usd: float | None = None
+    expectancy_usd: float | None = None
+    expectancy_pips: float | None = None
+    consistency_ratio: float | None = None
+    by_strategy: dict[str, dict[str, Any]]
+    by_symbol: dict[str, dict[str, Any]]
+    by_account: dict[str, dict[str, Any]]
+    by_day_of_week: dict[str, dict[str, Any]] = {}
+    by_session: dict[str, dict[str, Any]] = {}
+    by_confidence: dict[str, dict[str, Any]] = {}
+    by_rating: dict[str, dict[str, Any]] = {}

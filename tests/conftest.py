@@ -5,6 +5,7 @@ Shared fixtures: in-memory SQLite DB, FastAPI test client, sample data factories
 """
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import Generator
 from datetime import datetime, timezone
@@ -14,8 +15,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+# Must be set before api.main is imported so the lifespan JWT guard passes.
+os.environ.setdefault("JWT_SECRET", "a" * 32)
+
+from api.auth import get_current_user, reset_login_rate_limits
 from api.db import Base, get_db
 from api.models import AccountModel, SignalModel, TradeModel
+
+TEST_USER = "testuser"
+TEST_USER_2 = "otheruser"
 
 _TEST_ENGINE = create_engine(
     "sqlite://",
@@ -33,9 +41,14 @@ def _override_get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def _override_get_current_user() -> str:
+    return TEST_USER
+
+
 @pytest.fixture(autouse=True)
 def _setup_tables() -> Generator[None, None, None]:
     """Create all tables before each test and drop them after."""
+    reset_login_rate_limits()
     Base.metadata.create_all(bind=_TEST_ENGINE)
     yield
     Base.metadata.drop_all(bind=_TEST_ENGINE)
@@ -53,18 +66,42 @@ def db() -> Generator[Session, None, None]:
 
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
-    """FastAPI test client wired to the in-memory DB."""
+    """FastAPI test client wired to the in-memory DB as TEST_USER."""
     from api.main import app
 
     app.dependency_overrides[get_db] = _override_get_db
-    with TestClient(app) as tc:
+    app.dependency_overrides[get_current_user] = _override_get_current_user
+    with TestClient(app, raise_server_exceptions=True) as tc:
+        yield tc
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def raw_client() -> Generator[TestClient, None, None]:
+    """Test client with real JWT validation (get_current_user NOT overridden)."""
+    from api.main import app
+
+    app.dependency_overrides[get_db] = _override_get_db
+    with TestClient(app, raise_server_exceptions=True) as tc:
+        yield tc
+    app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture()
+def client_other_user() -> Generator[TestClient, None, None]:
+    """FastAPI test client wired to the in-memory DB as TEST_USER_2."""
+    from api.main import app
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = lambda: TEST_USER_2
+    with TestClient(app, raise_server_exceptions=True) as tc:
         yield tc
     app.dependency_overrides.clear()
 
 
 @pytest.fixture()
 def sample_account(db: Session) -> AccountModel:
-    """Insert and return a single demo account."""
+    """Insert and return a single demo account owned by TEST_USER."""
     account = AccountModel(
         id=str(uuid.uuid4()),
         name="Test Demo",
@@ -73,6 +110,7 @@ def sample_account(db: Session) -> AccountModel:
         status="active",
         prop_firm=None,
         phase=None,
+        owner=TEST_USER,
         created_at=datetime.now(timezone.utc),
     )
     db.add(account)
@@ -108,6 +146,7 @@ def sample_signal(db: Session) -> SignalModel:
 def make_trade(
     db: Session,
     *,
+    owner: str = TEST_USER,
     strategy: str = "fvg-impulse",
     symbol: str = "EURUSD",
     direction: str = "BUY",
@@ -133,6 +172,7 @@ def make_trade(
         id=str(uuid.uuid4()),
         signal_id=None,
         account_id=account_id,
+        owner=owner,
         strategy=strategy,
         symbol=symbol,
         instrument_type=instrument_type,

@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DirectionToggle } from "@/components/DirectionToggle";
 import { formatPrice } from "@/lib/utils";
-
 import type { Trade } from "@/lib/types";
 
 export interface TradeEditFields {
