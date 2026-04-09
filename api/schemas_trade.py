@@ -27,14 +27,14 @@ class TradeCreateRequest(BaseModel):
     sl_price: float = Field(gt=0)
     tp_price: float | None = None
     lot_size: float = Field(gt=0)
-    risk_pips: float = Field(gt=0)
+    risk_pips: float | None = Field(default=None, gt=0)
     open_time: datetime
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
     notes: str = ""
     rating: int | None = Field(default=None, ge=1, le=5)
     confidence: int | None = Field(default=None, ge=1, le=5)
     screenshot_url: str | None = None
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
     @field_validator("direction")
     @classmethod
@@ -108,7 +108,7 @@ class TradeUpdateRequest(BaseModel):
 
 
 class TradeResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: str
     signal_id: str | None

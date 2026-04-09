@@ -16,6 +16,16 @@ from api.models import AccountModel, TradeModel
 from shared.calculator import pip_size, pip_value_per_lot
 
 
+def compute_risk_pips(
+    entry_price: float, sl_price: float, symbol: str, instrument_type: str = "forex",
+) -> float:
+    """Derive risk in pips/points from entry and SL prices."""
+    distance = abs(entry_price - sl_price)
+    if instrument_type == "futures_mnq":
+        return round(distance, 2)
+    return round(distance / pip_size(symbol), 1)
+
+
 @dataclass(frozen=True)
 class PnlInput:
     """Parameters needed to calculate trade P&L."""

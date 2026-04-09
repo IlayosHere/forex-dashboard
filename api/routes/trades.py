@@ -35,6 +35,7 @@ from api.services.trade_helpers import (
     apply_trade_filters,
     build_account_lookup,
     calculate_pnl,
+    compute_risk_pips,
     trade_to_response,
 )
 from api.services.trade_stats import (
@@ -120,6 +121,10 @@ def create_trade(
             logger.warning("Linked account not found: %s", req.account_id)
             raise HTTPException(status_code=404, detail="Linked account not found")
 
+    risk_pips = req.risk_pips if req.risk_pips is not None else compute_risk_pips(
+        req.entry_price, req.sl_price, req.symbol, req.instrument_type,
+    )
+
     now = datetime.now(timezone.utc)
     trade = TradeModel(
         id=str(uuid.uuid4()), signal_id=req.signal_id,
@@ -130,7 +135,7 @@ def create_trade(
         exit_price=None, sl_price=req.sl_price, tp_price=req.tp_price,
         lot_size=req.lot_size, status="open", outcome=None,
         pnl_pips=None, pnl_usd=None, rr_achieved=None,
-        risk_pips=req.risk_pips, open_time=req.open_time, close_time=None,
+        risk_pips=risk_pips, open_time=req.open_time, close_time=None,
         tags=req.tags, notes=req.notes, rating=req.rating,
         confidence=req.confidence, screenshot_url=req.screenshot_url,
         trade_metadata=req.metadata, created_at=now, updated_at=now,
@@ -226,6 +231,7 @@ def update_trade(
         raise HTTPException(status_code=404, detail="Trade not found")
 
     update_data = req.model_dump(exclude_unset=True)
+    user_sent_outcome = "outcome" in update_data
 
     # Guard: prevent reopening a terminal trade
     _TERMINAL = {"closed", "breakeven", "cancelled"}
@@ -269,16 +275,16 @@ def update_trade(
         trade.pnl_usd = pnl_usd
         trade.rr_achieved = rr
 
-        # FIX 2: auto-derive outcome from P&L
-        if abs(pnl_pips) < 0.1:
-            trade.outcome = "breakeven"
-            trade.status = "breakeven"
-        elif pnl_pips > 0:
-            trade.outcome = "win"
-            trade.status = "closed"
-        else:
-            trade.outcome = "loss"
-            trade.status = "closed"
+        if not user_sent_outcome:
+            if abs(pnl_pips) < 0.1:
+                trade.outcome = "breakeven"
+                trade.status = "breakeven"
+            elif pnl_pips > 0:
+                trade.outcome = "win"
+                trade.status = "closed"
+            else:
+                trade.outcome = "loss"
+                trade.status = "closed"
 
         # FIX 1: auto-set close_time when closing
         if trade.close_time is None:

@@ -28,7 +28,7 @@ function formatTime(event: CalendarEvent, context: CalendarContext): string {
 
 export function CalendarEventRow({ event, context, isPast }: CalendarEventRowProps) {
   const borderClass = LEFT_BORDER[event.impact] ?? LEFT_BORDER["Low"];
-  const rowBase = `grid grid-cols-[4px_52px_52px_1fr_72px_72px_80px] gap-x-3 items-center px-3 py-1.5 text-xs ${borderClass}`;
+  const rowBase = `overflow-x-auto grid grid-cols-[4px_52px_52px_1fr_72px_72px_80px] gap-x-3 items-center px-3 py-1.5 text-xs ${borderClass}`;
   const rowStateClass = isPast
     ? "opacity-50"
     : "hover:bg-surface-raised transition-colors cursor-default";

@@ -185,8 +185,9 @@ export default function AccountsPage() {
 
   const handleTabChange = (tab: InstrumentType) => {
     setActiveTab(tab);
-    resetForm();
     setForm(makeEmptyForm(tab));
+    setEditingId(null);
+    setShowForm(false);
   };
 
   function getAccountStats(accountId: string) {

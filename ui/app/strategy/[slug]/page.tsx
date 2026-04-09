@@ -62,10 +62,10 @@ function StrategyContent({ params }: StrategyPageProps) {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-full">
       {/* Left panel: signal list — fixed width, scrollable */}
       <div
-        className="w-72 shrink-0 flex flex-col border-r border-border overflow-y-auto bg-sidebar"
+        className="w-72 shrink-0 flex flex-col border-r border-border overflow-y-auto bg-card"
       >
         {/* Back + Strategy header */}
         <div className="px-4 py-3 border-b border-border">

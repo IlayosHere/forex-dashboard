@@ -94,8 +94,8 @@ def find_nova_candle(
 
     # No open-side wick (bullish: open == low, bearish: open == high)
     # Tolerance: 1 point (0.1 pip) — essentially zero wick
-    pip = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
-    wick_tolerance = pip
+    point = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
+    wick_tolerance = point
 
     if is_bullish:
         open_wick = abs(l - o)
@@ -157,7 +157,10 @@ def scan_all_symbols(
         result = find_nova_candle(candles, symbol)
         if result is not None:
             result["symbol"] = symbol
-            result.update(calculate_trade_params(result, candles, result["signal_idx"]))
+            trade_params = calculate_trade_params(result, candles, result["signal_idx"])
+            if trade_params is None:
+                continue
+            result.update(trade_params)
             signals.append(result)
 
     return signals
@@ -196,11 +199,16 @@ def _to_signal(raw: dict[str, Any]) -> Signal:
 
 
 def scan() -> list[Signal]:
-    """Strategy plugin entry point. Called by the runner every 15 minutes.
+    """Strategy plugin entry point. Called by the runner every 5 minutes.
 
+    Skips non-15-minute boundaries since this strategy uses M15 candles.
     Reads NOVA_CANDLE_PAIRS env var (comma-separated) or falls back to
-    the 7 major pairs.
+    the default pairs.
     """
+    now = datetime.now(timezone.utc)
+    if now.minute % 15 >= 5:
+        return []
+
     symbols = [
         p.strip()
         for p in os.getenv("NOVA_CANDLE_PAIRS", DEFAULT_PAIRS).split(",")

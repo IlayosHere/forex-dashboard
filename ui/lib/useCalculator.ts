@@ -87,6 +87,8 @@ export function useCalculator(signal: Signal, slPrice: number, tpPrice: number):
     if (timerRef.current) clearTimeout(timerRef.current);
     setIsPending(true);
 
+    let cancelled = false;
+
     timerRef.current = setTimeout(async () => {
       try {
         const slNum = parseFloat(slPips);
@@ -98,8 +100,10 @@ export function useCalculator(signal: Signal, slPrice: number, tpPrice: number):
           isNaN(slNum) || isNaN(balNum) || isNaN(riskNum) ||
           balNum <= 0 || riskNum <= 0
         ) {
-          setResult(null);
-          setIsPending(false);
+          if (!cancelled) {
+            setResult(null);
+            setIsPending(false);
+          }
           return;
         }
 
@@ -111,15 +115,16 @@ export function useCalculator(signal: Signal, slPrice: number, tpPrice: number):
           account_balance: balNum,
           risk_percent: riskNum,
         });
-        setResult(data);
+        if (!cancelled) setResult(data);
       } catch {
-        setResult(null);
+        if (!cancelled) setResult(null);
       } finally {
-        setIsPending(false);
+        if (!cancelled) setIsPending(false);
       }
     }, DEBOUNCE_MS);
 
     return () => {
+      cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [slPips, tpPips, accountBalance, riskPercent, signal.symbol, signal.entry]);

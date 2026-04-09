@@ -33,14 +33,16 @@ function getColor(pnl: number, maxAbs: number): string {
     : `rgba(239, 83, 80, ${alpha})`;
 }
 
+function toUTCDateKey(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 function buildGrid(data: DailySummaryPoint[]): { cells: DayCell[]; months: { label: string; col: number }[]; maxAbs: number } {
   const today = new Date();
-  const start = new Date(today);
-  start.setMonth(start.getMonth() - MONTHS_TO_SHOW);
-  start.setDate(1);
+  const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - MONTHS_TO_SHOW, 1));
 
-  const dayOfWeek = (start.getDay() + 6) % 7;
-  start.setDate(start.getDate() - dayOfWeek);
+  const dayOfWeek = (start.getUTCDay() + 6) % 7;
+  start.setUTCDate(start.getUTCDate() - dayOfWeek);
 
   const pnlMap = new Map<string, DailySummaryPoint>();
   for (const d of data) pnlMap.set(d.date, d);
@@ -54,15 +56,15 @@ function buildGrid(data: DailySummaryPoint[]): { cells: DayCell[]; months: { lab
   let col = 0;
 
   while (cursor <= today) {
-    const m = cursor.getMonth();
+    const m = cursor.getUTCMonth();
     if (m !== lastMonth) {
-      months.push({ label: cursor.toLocaleDateString("en-US", { month: "short" }), col });
+      months.push({ label: cursor.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }), col });
       lastMonth = m;
     }
 
     for (let row = 0; row < 7; row++) {
       if (cursor > today) break;
-      const key = cursor.toISOString().slice(0, 10);
+      const key = toUTCDateKey(cursor);
       const entry = pnlMap.get(key);
       const pnl = entry?.pnl_usd ?? 0;
       const trades = entry?.trades ?? 0;
@@ -77,7 +79,7 @@ function buildGrid(data: DailySummaryPoint[]): { cells: DayCell[]; months: { lab
         col,
         row,
       });
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
     col++;
   }

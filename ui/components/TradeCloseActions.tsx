@@ -37,7 +37,7 @@ export function TradeCloseActions({
         <Button
           onClick={() => onClose("win")}
           disabled={saving || !exitPrice}
-          className="bg-bull hover:bg-bull/80 text-surface"
+          className="bg-bull hover:bg-bull/80 text-[#0f0f0f]"
         >
           Close as Win
         </Button>

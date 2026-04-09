@@ -85,7 +85,7 @@ export function Calculator({ direction, calculator }: CalculatorProps) {
             value={riskPercent}
             onChange={(e) => setRiskPercent(e.target.value)}
             placeholder="1.0"
-            className={`bg-surface-input border-border text-foreground focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor}`}
+            className={`bg-surface-input border-border text-foreground focus-visible:ring-1 focus-visible:ring-offset-0 ${ringColor} price`}
           />
         </div>
       </div>

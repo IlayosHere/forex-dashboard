@@ -13,6 +13,8 @@ import pkgutil
 import time
 from datetime import datetime, timezone
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from api.models import SignalModel
@@ -48,13 +50,13 @@ def is_market_open() -> bool:
 # Candle timing
 # ---------------------------------------------------------------------------
 
-SCAN_INTERVAL_SECONDS: int = 15 * 60
+SCAN_INTERVAL_SECONDS: int = 5 * 60
 
 
 def wait_for_next_candle() -> None:
-    """Sleep until the next 15-minute candle boundary + 5-second buffer."""
+    """Sleep until the next 5-minute candle boundary + 5-second buffer."""
     now = datetime.now(timezone.utc)
-    elapsed = (now.minute % 15) * 60 + now.second
+    elapsed = (now.minute % 5) * 60 + now.second
     seconds_to_wait = SCAN_INTERVAL_SECONDS - elapsed + 5
     if seconds_to_wait <= 5:
         seconds_to_wait += SCAN_INTERVAL_SECONDS
@@ -102,38 +104,42 @@ def discover_strategies() -> dict[str, object]:
 
 def is_duplicate(db: Session, sig: Signal) -> bool:
     """Return True if a signal for (strategy, symbol, candle_time) already exists."""
-    return (
-        db.query(SignalModel)
-        .filter(
+    return db.scalar(
+        select(SignalModel).where(
             SignalModel.strategy == sig.strategy,
             SignalModel.symbol == sig.symbol,
             SignalModel.direction == sig.direction,
             SignalModel.candle_time == sig.candle_time,
-        )
-        .first()
-        is not None
-    )
+        ),
+    ) is not None
 
 
 def persist(db: Session, sig: Signal) -> None:
-    """Insert a Signal into the DB and commit."""
-    db.add(
-        SignalModel(
-            id=sig.id,
-            strategy=sig.strategy,
-            symbol=sig.symbol,
-            direction=sig.direction,
-            candle_time=sig.candle_time,
-            entry=sig.entry,
-            sl=sig.sl,
-            tp=sig.tp,
-            lot_size=sig.lot_size,
-            risk_pips=sig.risk_pips,
-            spread_pips=sig.spread_pips,
-            signal_metadata=sig.metadata,
-            created_at=sig.created_at,
+    """Insert a Signal into the DB. Skip gracefully on duplicate."""
+    try:
+        db.add(
+            SignalModel(
+                id=sig.id,
+                strategy=sig.strategy,
+                symbol=sig.symbol,
+                direction=sig.direction,
+                candle_time=sig.candle_time,
+                entry=sig.entry,
+                sl=sig.sl,
+                tp=sig.tp,
+                lot_size=sig.lot_size,
+                risk_pips=sig.risk_pips,
+                spread_pips=sig.spread_pips,
+                signal_metadata=sig.metadata,
+                created_at=sig.created_at,
+            )
         )
-    )
-    db.commit()
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        logger.info(
+            "Duplicate signal skipped: %s %s %s",
+            sig.strategy, sig.symbol, sig.candle_time,
+        )
 
 

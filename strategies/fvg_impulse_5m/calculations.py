@@ -9,7 +9,7 @@ Account assumptions
 -------------------
 - Account equity : $50,000
 - Risk per trade : 1% = $500
-- SL buffer      : 3 pips beyond the FVG far edge
+- SL buffer      : 2 pips beyond the FVG far edge
 - RR             : 1:1 (TP = entry +/- effective_risk)
 - Slippage       : 0.2 pips (both entry and stop exits included in risk calc)
 """
@@ -21,7 +21,7 @@ from shared.calculator import pip_size, pip_value_per_lot
 
 from .config import EXCHANGE_TZ, SLIPPAGE_PIPS, get_spread_pips
 
-SL_BUFFER_PIPS: float = 3.0
+SL_BUFFER_PIPS: float = 2.0
 ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
 
 
@@ -69,7 +69,7 @@ def calculate_trade_params(signal: dict[str, Any]) -> dict[str, Any]:
     broker_hour = candle_time.astimezone(EXCHANGE_TZ).hour
     spread_pips = get_spread_pips(symbol, broker_hour)
 
-    # SL price: 3 pips beyond far edge in loss direction
+    # SL price: 2 pips beyond far edge in loss direction
     if direction == "BUY":
         sl = far_edge - SL_BUFFER_PIPS * pip
         raw_risk_pips = (close - sl) / pip
@@ -111,7 +111,7 @@ def calculate_midpoint_sl(signal: dict[str, Any]) -> float | None:
     """Compute the alternative SL price at the FVG midpoint.
 
     Returns None when the FVG is too narrow (<=2 pips) for a midpoint SL to
-    be meaningful — the midpoint would sit too close to the near edge to
+    be meaningful -- the midpoint would sit too close to the near edge to
     provide any buffer above spread + slippage.
 
     Parameters

@@ -66,7 +66,7 @@ def calculate_lot_size(
         rr              : float | None — reward:risk ratio (None when tp_pips not given)
         instrument_type : str    — echoed back for the response
     """
-    if sl_pips == 0:
+    if sl_pips <= 0:
         return {
             "lot_size": 1 if instrument_type == "futures_mnq" else 0.01,
             "risk_usd": 0.0,
@@ -97,6 +97,9 @@ def calculate_lot_size(
     pip_value = pip_value_per_lot(symbol, entry)
     raw_lots = risk_usd / (sl_pips * pip_value)
     lot_size = round(max(raw_lots, 0.01), 2)
+
+    if lot_size > raw_lots:
+        risk_usd = lot_size * sl_pips * pip_value
 
     return {
         "lot_size": lot_size,

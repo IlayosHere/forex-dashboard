@@ -6,7 +6,7 @@ interface AccountBadgeProps {
 }
 
 const typeStyles: Record<string, string> = {
-  demo: "bg-[#1e1e1e] text-[#555555]",
+  demo: "bg-[#1e1e1e] text-[#888888]",
   live: "bg-[#26a69a1a] text-[#26a69a]",
   funded: "bg-[#e6a8001a] text-[#e6a800]",
 };
