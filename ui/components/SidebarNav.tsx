@@ -8,6 +8,17 @@ import { clearToken, tryRefreshToken } from "@/lib/auth";
 import { fetchMe } from "@/lib/api";
 import { strategies } from "@/lib/strategies";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -46,44 +57,64 @@ export function SidebarNav() {
   }
 
   return (
-    <nav className="flex-1 px-2 py-3 space-y-0.5">
-      <NavLink href="/">Dashboard</NavLink>
-      <NavLink href="/journal">Journal</NavLink>
-      <NavLink href="/accounts">Accounts</NavLink>
-      <NavLink href="/statistics">Statistics</NavLink>
+    <div className="flex flex-col h-full">
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
+        <NavLink href="/">Dashboard</NavLink>
+        <NavLink href="/journal">Journal</NavLink>
+        <NavLink href="/accounts">Accounts</NavLink>
+        <NavLink href="/statistics">Statistics</NavLink>
 
-      <div className="pt-3 pb-1 px-3">
-        <span className="label">Strategies</span>
+        <div className="pt-3 pb-1 px-3">
+          <span className="label">Strategies</span>
+        </div>
+
+        {strategies.map((s) => (
+          <NavLink key={s.slug} href={`/strategy/${s.slug}`}>
+            {s.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="flex-shrink-0 border-t border-border px-2 py-2">
+        <Popover>
+          <PopoverTrigger
+            className="flex w-full items-center px-2 py-1.5 rounded text-sm text-text-muted hover:bg-surface-raised hover:text-text-primary transition-colors"
+          >
+            <span className="truncate">{username ?? "User"}</span>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="start"
+            sideOffset={8}
+            className="w-48 p-1"
+          >
+            <button
+              onClick={() => setShowPasswordForm(true)}
+              className="flex w-full items-center px-3 py-2 rounded text-sm text-text-muted hover:bg-surface-raised hover:text-text-primary transition-colors"
+            >
+              Change password
+            </button>
+            <div className="border-t border-border my-1" />
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center px-3 py-2 rounded text-sm text-text-muted hover:bg-surface-raised hover:text-text-primary transition-colors"
+            >
+              Sign out
+            </button>
+          </PopoverContent>
+        </Popover>
+
+        <Sheet open={showPasswordForm} onOpenChange={setShowPasswordForm}>
+          <SheetContent side="right" className="w-[320px]">
+            <SheetHeader>
+              <SheetTitle>Change password</SheetTitle>
+            </SheetHeader>
+            <div className="px-4 pt-4">
+              <ChangePasswordForm onClose={() => setShowPasswordForm(false)} />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
-
-      {strategies.map((s) => (
-        <NavLink key={s.slug} href={`/strategy/${s.slug}`}>
-          {s.label}
-        </NavLink>
-      ))}
-
-      <div className="border-t border-[#2a2a2a] mt-2 pt-2">
-        {username && (
-          <div className="px-3 py-1.5 text-xs text-text-muted truncate">
-            {username}
-          </div>
-        )}
-        <button
-          onClick={() => setShowPasswordForm((v) => !v)}
-          className="flex w-full items-center gap-2 px-3 py-1.5 rounded text-xs transition-colors text-[#777777] hover:bg-[#1a1a1a] hover:text-[#e0e0e0]"
-        >
-          Change password
-        </button>
-        {showPasswordForm && (
-          <ChangePasswordForm onClose={() => setShowPasswordForm(false)} />
-        )}
-        <button
-          onClick={handleSignOut}
-          className="flex w-full items-center gap-2 px-3 py-2 rounded text-sm transition-colors text-[#999999] hover:bg-[#1a1a1a] hover:text-[#e0e0e0]"
-        >
-          Sign out
-        </button>
-      </div>
-    </nav>
+    </div>
   );
 }

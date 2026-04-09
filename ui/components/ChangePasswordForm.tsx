@@ -43,7 +43,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 px-3 pb-2">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
         <p className="text-xs text-bear">{error}</p>
       )}
@@ -56,7 +56,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
         required
-        className="h-7 text-xs bg-surface-input"
+        className="h-8 text-sm bg-surface-input"
       />
       <Input
         type="password"
@@ -65,7 +65,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
         onChange={(e) => setNewPassword(e.target.value)}
         required
         minLength={8}
-        className="h-7 text-xs bg-surface-input"
+        className="h-8 text-sm bg-surface-input"
       />
       <Input
         type="password"
@@ -73,14 +73,14 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         required
-        className="h-7 text-xs bg-surface-input"
+        className="h-8 text-sm bg-surface-input"
       />
       <div className="flex gap-2">
         <Button
           type="submit"
           disabled={loading}
           size="sm"
-          className="h-7 text-xs flex-1 bg-accent-gold text-[#0f0f0f] hover:bg-accent-gold/85"
+          className="h-8 text-sm flex-1 bg-accent-gold text-[#0f0f0f] hover:bg-accent-gold/85"
         >
           {loading ? "Saving..." : "Save"}
         </Button>
@@ -89,7 +89,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           size="sm"
           variant="ghost"
-          className="h-7 text-xs text-text-muted hover:text-text-primary"
+          className="h-8 text-sm text-text-muted hover:text-text-primary"
         >
           Cancel
         </Button>

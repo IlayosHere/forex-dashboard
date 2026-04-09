@@ -14,7 +14,10 @@ from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./signals.db")
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_DEFAULT_DB = f"sqlite:///{os.path.join(_PROJECT_ROOT, 'signals.db')}"
+
+DATABASE_URL: str = os.getenv("DATABASE_URL", _DEFAULT_DB)
 
 # check_same_thread is only valid (and needed) for SQLite
 _connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
