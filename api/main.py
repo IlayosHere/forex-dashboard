@@ -24,6 +24,8 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
+from analytics.routes import router as analytics_router
+from analytics.routes_stats import router as analytics_stats_router
 from api.db import Base, SessionLocal, engine
 from api.models import AccountModel, UserModel
 from api.auth import router as auth_router
@@ -244,3 +246,5 @@ app.include_router(stats_router, prefix="/api", tags=["stats"])
 app.include_router(trades_router, prefix="/api")
 app.include_router(accounts_router, prefix="/api", tags=["accounts"])
 app.include_router(calendar_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api", tags=["analytics"])
+app.include_router(analytics_stats_router, prefix="/api", tags=["analytics"])
