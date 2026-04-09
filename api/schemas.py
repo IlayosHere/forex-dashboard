@@ -164,3 +164,26 @@ class CalculateResponse(BaseModel):
     sl_pips: float
     rr: float | None
     instrument_type: str = "forex"
+
+
+# ---------------------------------------------------------------------------
+# Calendar
+# ---------------------------------------------------------------------------
+
+class CalendarEventResponse(BaseModel):
+    """Pydantic v2 response model for a single economic calendar event."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    currency: str
+    datetime_utc: str
+    datetime_et: str
+    impact: str
+    promoted: bool
+    previous: str | None
+    forecast: str | None
+    actual: str | None
+    beat_miss: str
+    session_bucket: str

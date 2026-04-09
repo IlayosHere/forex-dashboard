@@ -146,6 +146,30 @@ export interface BreakdownEntry {
   name: string;
 }
 
+// ---------------------------------------------------------------------------
+// Economic Calendar
+// ---------------------------------------------------------------------------
+
+export type CalendarImpact = "High" | "Medium" | "Low";
+export type CalendarContext = "forex" | "mnq";
+export type SessionBucket = "pre_market" | "cash_session" | "none";
+export type BeatMiss = "beat" | "miss" | "in_line" | "pending";
+
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  currency: string;
+  datetime_utc: string;    // ISO 8601 UTC
+  datetime_et: string;     // ISO 8601 ET (pre-computed by backend)
+  impact: CalendarImpact;
+  promoted: boolean;       // true = officially Medium but practically High
+  previous: string | null;
+  forecast: string | null;
+  actual: string | null;   // null until released
+  beat_miss: BeatMiss;     // computed by backend from actual vs forecast
+  session_bucket: SessionBucket; // pre_market / cash_session / none
+}
+
 export interface TradeStats {
   total_trades: number;
   open_trades: number;

@@ -29,6 +29,7 @@ from api.models import AccountModel, UserModel
 from api.auth import router as auth_router
 from api.routes.accounts import router as accounts_router
 from api.routes.calculate import router as calculate_router
+from api.routes.calendar import router as calendar_router
 from api.routes.signals import router as signals_router
 from api.routes.stats import router as stats_router
 from api.routes.trades import router as trades_router
@@ -242,3 +243,4 @@ app.include_router(calculate_router, prefix="/api")
 app.include_router(stats_router, prefix="/api", tags=["stats"])
 app.include_router(trades_router, prefix="/api")
 app.include_router(accounts_router, prefix="/api", tags=["accounts"])
+app.include_router(calendar_router, prefix="/api")

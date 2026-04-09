@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
 
 import { clearToken, getToken } from "./auth";
 
@@ -265,4 +265,14 @@ export async function changePassword(currentPassword: string, newPassword: strin
     const body = await res.json().catch(() => null);
     throw new Error(body?.detail ?? `Failed to change password: ${res.status}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Economic Calendar
+// ---------------------------------------------------------------------------
+
+export async function fetchCalendar(week: "current" | "next" = "current"): Promise<CalendarEvent[]> {
+  const res = await authFetch(`${BASE_URL}/api/calendar?week=${week}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch calendar: ${res.status}`);
+  return res.json() as Promise<CalendarEvent[]>;
 }

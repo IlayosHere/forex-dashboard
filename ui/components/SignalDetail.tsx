@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Calculator } from "./Calculator";
 import { MetadataPanel } from "./MetadataPanel";
+import { NewsRiskIndicator } from "./NewsRiskIndicator";
 import { useCalculator } from "@/lib/useCalculator";
 import { formatPrice, pipSize } from "@/lib/utils";
 import { RESOLUTION_CONFIG } from "@/lib/signals";
@@ -153,6 +154,9 @@ export function SignalDetail({ signal }: SignalDetailProps) {
 
       {/* Calculator */}
       <Calculator direction={signal.direction} calculator={calc} />
+
+      {/* News risk for this pair */}
+      <NewsRiskIndicator symbol={signal.symbol} />
 
       {/* Log Trade button */}
       <button
