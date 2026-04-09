@@ -2,7 +2,7 @@
 runner/main.py
 --------------
 Scheduler that discovers all strategy scanners under strategies/, runs them
-every 15 minutes on candle boundaries, persists new signals to the database,
+every 5 minutes on candle boundaries, persists new signals to the database,
 and sends Discord notifications.
 
 Timing and market-hours logic copied from impulse-notifier/main.py.

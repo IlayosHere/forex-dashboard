@@ -16,6 +16,12 @@ export const strategies: StrategyMeta[] = [
     description: "Fair Value Gap detection on M15 with impulse confirmation",
   },
   {
+    slug: "fvg-impulse-5m",
+    label: "FVG Impulse 5M",
+    instrumentType: "forex",
+    description: "FVG wick-test on M5 — SL at far edge + 2 pips",
+  },
+  {
     slug: "nova-candle",
     label: "Nova Candle",
     instrumentType: "forex",

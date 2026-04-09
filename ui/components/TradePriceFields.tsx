@@ -19,7 +19,6 @@ interface TradePriceFieldsProps {
   form: TradeFormData;
   errors: Record<string, boolean>;
   isFutures: boolean;
-  unitLabel: string;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
 }
 
@@ -27,7 +26,6 @@ export function TradePriceFields({
   form,
   errors,
   isFutures,
-  unitLabel,
   onChange,
 }: TradePriceFieldsProps) {
   return (
@@ -57,7 +55,7 @@ export function TradePriceFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="label">SL Price</label>
           <Input
@@ -78,16 +76,6 @@ export function TradePriceFields({
             onChange={(e) => onChange("tp_price", e.target.value)}
             placeholder="Optional"
             className={INPUT_CLASS}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="label">Risk ({unitLabel})</label>
-          <Input
-            type="number"
-            step="0.1"
-            value={form.risk_pips}
-            onChange={(e) => onChange("risk_pips", e.target.value)}
-            className={`${INPUT_CLASS} ${errBorder(errors, "risk_pips")}`}
           />
         </div>
       </div>

@@ -1,14 +1,14 @@
 """
-strategies/fvg_impulse/scanner.py - Virgin FVG wick-test scanner.
+strategies/fvg_impulse_5m/scanner.py - Virgin FVG wick-test scanner (M5).
 
-Fetches 70 M15 candles per symbol, detects FVGs, tracks virginity,
+Fetches 70 M5 candles per symbol, detects FVGs, tracks virginity,
 and checks the last closed candle for wick-test rejection signals.
 
 No gates -- bare-bones: virgin FVG + wick into + close outside.
 
 Plugin interface
 ----------------
-scan() -> list[Signal]   <- called by the runner every 15 minutes
+scan() -> list[Signal]   <- called by the runner every 5 minutes
 """
 from __future__ import annotations
 
@@ -39,10 +39,10 @@ DEFAULT_PAIRS = "EURUSD,AUDUSD,NZDUSD,USDJPY,USDCHF,USDCAD,GBPUSD,EURJPY,GBPJPY,
 # ---------------------------------------------------------------------------
 
 def _find_last_closed_index(candles: pd.DataFrame) -> int | None:
-    """Find index of last closed candle (before current 15-min boundary)."""
+    """Find index of last closed candle (before current 5-min boundary)."""
     now = datetime.now(timezone.utc)
     current_boundary = now.replace(
-        minute=(now.minute // 15) * 15, second=0, microsecond=0,
+        minute=(now.minute // 5) * 5, second=0, microsecond=0,
     )
     for i in range(len(candles) - 1, -1, -1):
         ct = candles.index[i].to_pydatetime()
@@ -67,10 +67,10 @@ def scan_symbol(candles: pd.DataFrame, symbol: str) -> list[dict[str, Any]]:
     if last_idx is None or last_idx < 2:
         return []
 
-    # Only alert on fresh candles (closed within last 20 minutes)
+    # Only alert on fresh candles (closed within last 8 minutes)
     now = datetime.now(timezone.utc)
     candle_time = candles.index[last_idx].to_pydatetime()
-    if now - candle_time > timedelta(minutes=20):
+    if now - candle_time > timedelta(minutes=8):
         return []
 
     # Dedup check
@@ -185,7 +185,7 @@ def scan_all_symbols(symbols: list[str]) -> list[dict[str, Any]]:
     """Scan all symbols for virgin FVG wick-test signals."""
     now = datetime.now(timezone.utc)
     _alerted_candles.difference_update(
-        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=30)}
+        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=15)}
     )
 
     signals: list[dict] = []
@@ -211,7 +211,7 @@ def scan_all_symbols(symbols: list[str]) -> list[dict[str, Any]]:
 def _to_signal(raw: dict[str, Any]) -> Signal:
     """Map a raw signal dict to the shared Signal dataclass."""
     return Signal(
-        strategy="fvg-impulse",
+        strategy="fvg-impulse-5m",
         symbol=raw["symbol"],
         direction=raw["direction"],
         candle_time=raw["candle_time"],
@@ -235,17 +235,12 @@ def _to_signal(raw: dict[str, Any]) -> Signal:
 def scan() -> list[Signal]:
     """Strategy plugin entry point. Called by the runner every 5 minutes.
 
-    Skips non-15-minute boundaries since this strategy uses M15 candles.
-    Reads FVG_IMPULSE_PAIRS env var (comma-separated) or falls back to
-    the default pairs.
+    Reads FVG_IMPULSE_5M_PAIRS env var (comma-separated) or falls back to
+    the 11 default pairs.
     """
-    now = datetime.now(timezone.utc)
-    if now.minute % 15 >= 5:
-        return []
-
     symbols = [
         p.strip()
-        for p in os.getenv("FVG_IMPULSE_PAIRS", DEFAULT_PAIRS).split(",")
+        for p in os.getenv("FVG_IMPULSE_5M_PAIRS", DEFAULT_PAIRS).split(",")
         if p.strip()
     ]
     raw_signals = scan_all_symbols(symbols)

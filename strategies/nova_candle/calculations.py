@@ -104,6 +104,9 @@ def _build_params(
     else:
         tp = entry - raw_risk_pips * pip
 
+    if effective_risk_pips <= 0:
+        return None
+
     pv = pip_value_per_lot(symbol, entry)
     lot_size = ACCOUNT_RISK_USD / (effective_risk_pips * pv)
     lot_size = round(max(lot_size, 0.01), 2)

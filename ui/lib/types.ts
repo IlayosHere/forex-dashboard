@@ -62,7 +62,7 @@ export interface TradeCreateRequest {
   sl_price: number;
   tp_price?: number | null;
   lot_size: number;
-  risk_pips: number;
+  risk_pips?: number;
   open_time: string;
   tags?: string[];
   notes?: string;

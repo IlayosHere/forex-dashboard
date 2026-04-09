@@ -9,7 +9,7 @@ import { TradeAssessmentFields } from "@/components/TradeAssessmentFields";
 import type { Account } from "@/lib/types";
 
 import { useAccounts } from "@/lib/useAccounts";
-import { strategies, getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
+import { strategies, getInstrumentType } from "@/lib/strategies";
 
 export interface TradeFormData {
   account_id: string;
@@ -21,7 +21,6 @@ export interface TradeFormData {
   sl_price: string;
   tp_price: string;
   lot_size: string;
-  risk_pips: string;
   open_time: string;
   tags: string[];
   notes: string;
@@ -45,8 +44,6 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   const { accounts, refetch: refetchAccounts } = useAccounts();
 
   const instrumentType = getInstrumentType(form.strategy);
-  const unitLabel = getUnitLabel(instrumentType);
-  const sizeLabel = getSizeLabel(instrumentType);
   const isFutures = instrumentType === "futures_mnq";
 
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
@@ -131,7 +128,6 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         activeAccounts={filteredAccounts}
         filteredStrategies={filteredStrategies}
         isFutures={isFutures}
-        unitLabel={unitLabel}
         signalLabel={signalLabel}
         onChange={set}
         onAccountChange={handleAccountChange}

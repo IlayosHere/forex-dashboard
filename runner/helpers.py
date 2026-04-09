@@ -48,13 +48,13 @@ def is_market_open() -> bool:
 # Candle timing
 # ---------------------------------------------------------------------------
 
-SCAN_INTERVAL_SECONDS: int = 15 * 60
+SCAN_INTERVAL_SECONDS: int = 5 * 60
 
 
 def wait_for_next_candle() -> None:
-    """Sleep until the next 15-minute candle boundary + 5-second buffer."""
+    """Sleep until the next 5-minute candle boundary + 5-second buffer."""
     now = datetime.now(timezone.utc)
-    elapsed = (now.minute % 15) * 60 + now.second
+    elapsed = (now.minute % 5) * 60 + now.second
     seconds_to_wait = SCAN_INTERVAL_SECONDS - elapsed + 5
     if seconds_to_wait <= 5:
         seconds_to_wait += SCAN_INTERVAL_SECONDS

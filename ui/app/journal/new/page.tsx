@@ -13,38 +13,42 @@ import { fetchSignal, createTrade } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
 import { formatPrice } from "@/lib/utils";
 
-function pipSize(symbol: string): number {
-  return symbol.toUpperCase().includes("JPY") ? 0.01 : 0.0001;
+function toUtcDatetime(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 function toLocalDatetime(iso: string): string {
   try {
-    const d = new Date(iso);
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    return toUtcDatetime(new Date(iso));
   } catch {
     return "";
   }
 }
 
-const emptyForm: TradeFormData = {
-  account_id: "",
-  signal_id: null,
-  strategy: "",
-  symbol: "",
-  direction: "BUY",
-  entry_price: "",
-  sl_price: "",
-  tp_price: "",
-  lot_size: "",
-  risk_pips: "",
-  open_time: "",
-  tags: [],
-  notes: "",
-  rating: null,
-  confidence: null,
-  screenshot_url: "",
-};
+function nowUtcDatetime(): string {
+  return toUtcDatetime(new Date());
+}
+
+function makeEmptyForm(): TradeFormData {
+  return {
+    account_id: "",
+    signal_id: null,
+    strategy: "",
+    symbol: "",
+    direction: "BUY",
+    entry_price: "",
+    sl_price: "",
+    tp_price: "",
+    lot_size: "",
+    open_time: nowUtcDatetime(),
+    tags: [],
+    notes: "",
+    rating: null,
+    confidence: null,
+    screenshot_url: "",
+  };
+}
 
 function NewTradeContent() {
   const router = useRouter();
@@ -59,13 +63,13 @@ function NewTradeContent() {
     if (strategyParam && !signalId) {
       const meta = strategies.find((s) => s.slug === strategyParam);
       return {
-        ...emptyForm,
+        ...makeEmptyForm(),
         account_id: "",
         strategy: strategyParam,
         symbol: meta?.defaultSymbol ?? "",
       };
     }
-    return emptyForm;
+    return makeEmptyForm();
   });
   const [signalLabel, setSignalLabel] = useState<string | null>(null);
   const [signalError, setSignalError] = useState<string | null>(null);
@@ -82,7 +86,6 @@ function NewTradeContent() {
         const sl = slOverride ? parseFloat(slOverride) : signal.sl;
         const tp = tpOverride ? parseFloat(tpOverride) : signal.tp;
         const lotSize = lotOverride ? parseFloat(lotOverride) : signal.lot_size;
-        const riskPips = Math.round(Math.abs(signal.entry - sl) / pipSize(signal.symbol) * 10) / 10;
         setInitial({
           account_id: "",
           signal_id: signal.id,
@@ -93,7 +96,6 @@ function NewTradeContent() {
           sl_price: formatPrice(sl, signal.symbol),
           tp_price: formatPrice(tp, signal.symbol),
           lot_size: String(lotSize),
-          risk_pips: String(riskPips),
           open_time: toLocalDatetime(signal.candle_time),
           tags: [],
           notes: "",
@@ -120,7 +122,6 @@ function NewTradeContent() {
         sl_price: parseFloat(data.sl_price),
         tp_price: data.tp_price ? parseFloat(data.tp_price) : null,
         lot_size: parseFloat(data.lot_size),
-        risk_pips: parseFloat(data.risk_pips),
         open_time: new Date(data.open_time + "Z").toISOString(),
         tags: data.tags,
         notes: data.notes,
