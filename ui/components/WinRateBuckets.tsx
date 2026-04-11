@@ -1,22 +1,9 @@
+import { SignificancePill } from "@/components/SignificancePill";
+
 import type { UnivariateReport } from "@/lib/types";
 
-function formatPValue(p: number): string {
-  if (p < 0.001) return "<0.001";
-  if (p < 0.01) return p.toFixed(3);
-  return p.toFixed(2);
-}
-
-function significanceLabel(report: UnivariateReport): string {
-  if (report.dtype === "categorical" && report.chi_p_value != null) {
-    const sig = report.chi_p_value < 0.05 ? "significant" : "not significant";
-    return `Chi-squared test: p = ${formatPValue(report.chi_p_value)} (${sig})`;
-  }
-  if (report.correlation != null && report.correlation_p_value != null) {
-    const sig = report.correlation_p_value < 0.05 ? "significant" : "not significant";
-    return `Correlation: r = ${report.correlation.toFixed(2)}, p = ${formatPValue(report.correlation_p_value)} (${sig})`;
-  }
-  return "";
-}
+import { formatSignedPp } from "@/lib/analyticsFormat";
+import { prettifyBucketLabel } from "@/lib/analyticsParamMeta";
 
 function testPValue(report: UnivariateReport): number | null {
   if (report.dtype === "categorical") return report.chi_p_value;
@@ -33,9 +20,30 @@ interface WinRateBucketsProps {
   loading?: boolean;
 }
 
+function renderBestBucket(report: UnivariateReport): string | null {
+  // Suppress when the parameter has no meaningful signal.
+  if (report.level === "none") return null;
+  const { best_bucket, delta, ci_lo, ci_hi } = report;
+  if (
+    best_bucket === null ||
+    best_bucket === undefined ||
+    delta === null ||
+    delta === undefined ||
+    ci_lo === null ||
+    ci_lo === undefined ||
+    ci_hi === null ||
+    ci_hi === undefined
+  ) {
+    return null;
+  }
+  const label = prettifyBucketLabel(report.param_name, best_bucket);
+  return `Best bucket: ${label} ${formatSignedPp(delta)} (CI ${formatSignedPp(ci_lo)} to ${formatSignedPp(ci_hi)})`;
+}
+
 export function WinRateBuckets({ report, overallWinRate, loading }: WinRateBucketsProps) {
   const overallPct = overallWinRate * 100;
   const pValue = testPValue(report);
+  const bestBucketText = renderBestBucket(report);
 
   return (
     <div className={`transition-opacity duration-150 ${loading ? "opacity-50" : ""}`}>
@@ -67,9 +75,14 @@ export function WinRateBuckets({ report, overallWinRate, loading }: WinRateBucke
                 aria-label={`${bucket.bucket_label}: ${winPct.toFixed(1)}% win rate, ${bucket.total} samples`}
               >
                 {/* Label */}
-                <span className="text-sm text-text-primary truncate" title={bucket.bucket_label}>
-                  {bucket.bucket_label}
-                </span>
+                {(() => {
+                  const bucketLabel = prettifyBucketLabel(report.param_name, bucket.bucket_label);
+                  return (
+                    <span className="text-sm text-text-primary truncate" title={bucketLabel}>
+                      {bucketLabel}
+                    </span>
+                  );
+                })()}
 
                 {/* Bar area */}
                 <div className="relative h-6">
@@ -140,15 +153,14 @@ export function WinRateBuckets({ report, overallWinRate, loading }: WinRateBucke
             <span className="text-[10px] text-text-dim">Overall rate</span>
           </div>
         </div>
-        {pValue != null && (
-          <span
-            className={`text-xs font-medium ${
-              pValue < 0.05 ? "text-primary" : "text-text-muted"
-            }`}
-          >
-            {significanceLabel(report)}
-          </span>
-        )}
+        <div className="flex items-center">
+          <SignificancePill level={report.level ?? null} pValue={pValue} />
+          {bestBucketText !== null && (
+            <span className="text-xs text-text-muted tabular-nums ml-3">
+              {bestBucketText}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

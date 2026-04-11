@@ -11,18 +11,17 @@ from typing import Any
 
 import pandas as pd
 
-from analytics.params.candle_derived import _atr_pips_at_bar, _find_signal_bar
+from analytics.params.candle_derived import _analytics_pip_size, _atr_pips_at_bar, _find_signal_bar, _signal_meta
 from analytics.registry import register
-from shared.calculator import pip_size
 
 logger = logging.getLogger(__name__)
 
 _FVG_STRATEGIES: frozenset[str] = frozenset({"fvg-impulse", "fvg-impulse-5m"})
+_FVG_5M_STRATEGIES: frozenset[str] = frozenset({"fvg-impulse-5m"})
 
 
-def _meta(signal: Any) -> dict[str, Any]:
-    """Return signal_metadata dict safely."""
-    return getattr(signal, "signal_metadata", {}) or {}
+# _signal_meta imported from candle_derived — canonical safe metadata accessor.
+_meta = _signal_meta
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +82,7 @@ def wick_penetration_ratio(
     if near_edge is None or fvg_width is None or fvg_width == 0:
         return None
     bar = candles.iloc[idx]
-    fvg_height_price = fvg_width * pip_size(signal.symbol)
+    fvg_height_price = fvg_width * _analytics_pip_size(signal.symbol)
     if signal.direction == "BUY":
         ratio = (near_edge - bar["low"]) / fvg_height_price
     else:
@@ -171,8 +170,8 @@ def impulse_size_atr(
     if c1_idx is None:
         return None
     c1 = candles.iloc[c1_idx]
-    c1_range_pips = (c1["high"] - c1["low"]) / pip_size(signal.symbol)
+    c1_range_pips = float(c1["high"] - c1["low"]) / _analytics_pip_size(signal.symbol)
     atr_pips = _atr_pips_at_bar(candles, signal)
     if atr_pips is None or atr_pips == 0:
         return None
-    return c1_range_pips / atr_pips
+    return float(c1_range_pips / atr_pips)

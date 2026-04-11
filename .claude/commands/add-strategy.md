@@ -102,18 +102,87 @@ Add an entry to `ui/lib/strategies.ts`:
 { slug: "$ARGUMENTS", label: "[Human readable name]", description: "[One line description]" },
 ```
 
-### 4. Verify the interface
+### 4. Register the strategy with the analytics TF registry — MANDATORY
+
+**Do not skip this step.** If you skip it, every candle-dependent analytics parameter
+will silently compute against the wrong timeframe for this strategy. This was a real
+production bug (the "M5 bug") before `STRATEGY_INTERVALS` existed.
+
+In [strategies/$ARGUMENTS/scanner.py](../../strategies/$ARGUMENTS/scanner.py), declare a
+module-level constant at the top of the file naming the scanner's native timeframe:
+
+```python
+from tvDatafeed import Interval
+
+# Native timeframe for this strategy. Must match STRATEGY_INTERVALS
+# in analytics/candle_cache.py — test_strategy_intervals_match_scanners
+# enforces this invariant.
+_STRATEGY_INTERVAL: Interval = Interval.in_15_minute   # or in_5_minute, in_1_hour, etc.
+```
+
+Use `_STRATEGY_INTERVAL` in every `get_candles(...)` call inside the scanner body.
+Never hardcode `Interval.in_15_minute` at a call site.
+
+Then add the strategy to the registry in
+[analytics/candle_cache.py](../../analytics/candle_cache.py):
+
+```python
+STRATEGY_INTERVALS: dict[str, Interval] = {
+    "fvg-impulse":    Interval.in_15_minute,
+    "fvg-impulse-5m": Interval.in_5_minute,
+    "nova-candle":    Interval.in_15_minute,
+    "$ARGUMENTS":     Interval.in_15_minute,   # ← add this line
+}
+```
+
+If the strategy uses a timeframe not already present in `_BAR_COUNTS` (e.g. H1), also add
+an entry there so the cache fetches enough bars for HTF resampling:
+
+```python
+_BAR_COUNTS: dict[Interval, int] = {
+    Interval.in_5_minute:  1440,   # ~5 days
+    Interval.in_15_minute:  480,   # ~5 days
+    Interval.in_1_hour:     168,   # ~7 days for H1 strategies
+}
+```
+
+Finally, extend the invariant test in
+[tests/test_enrichment_tf.py](../../tests/test_enrichment_tf.py)::
+`test_strategy_intervals_match_scanner_declarations` to include the new strategy's
+scanner so the registry-scanner agreement is enforced in CI:
+
+```python
+from strategies.$ARGUMENTS import scanner as new_scanner
+
+assert (
+    STRATEGY_INTERVALS["$ARGUMENTS"] == new_scanner._STRATEGY_INTERVAL
+), "STRATEGY_INTERVALS['$ARGUMENTS'] is out of sync with strategies/$ARGUMENTS/scanner.py"
+```
+
+Run the test to confirm:
+
+```
+cd /c/GIT-PROJECT/forex-dashboard
+python -m pytest tests/test_enrichment_tf.py -v --tb=short
+```
+
+### 5. Verify the interface
 
 After creating the files, check:
 - `strategies/$ARGUMENTS/scanner.py` exports a `scan()` function
 - `scan()` returns `list[Signal]` (can be empty)
 - `Signal` is imported from `shared.signal`
 - The strategy slug `$ARGUMENTS` matches the entry added in `ui/lib/strategies.ts`
+- `_STRATEGY_INTERVAL` is declared in the scanner module and used at every `get_candles` call
+- `STRATEGY_INTERVALS["$ARGUMENTS"]` in `analytics/candle_cache.py` matches the scanner's declared interval
+- `test_strategy_intervals_match_scanner_declarations` passes
 
-### 5. Report back
+### 6. Report back
 
 Tell the user:
-- What files were created
+- What files were created or modified
 - What they need to implement in `scan_symbol()`
 - That the runner will pick it up automatically on next start (no runner changes needed)
 - That the UI page `/strategy/$ARGUMENTS` is already available once the strategy is in `strategies.ts`
+- That analytics for the new strategy will automatically compute against the correct
+  timeframe because of the `STRATEGY_INTERVALS` entry — no param code changes needed

@@ -15,6 +15,7 @@ import analytics.params  # noqa: F401 — trigger param registration
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from analytics.candle_cache import CandleCache, get_app_cache
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_params_for_strategy
 from analytics.schemas import (
@@ -80,12 +81,15 @@ def _to_enriched_response(row: dict) -> EnrichedSignalResponse:
 def list_enriched(
     _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    cache: Annotated[CandleCache, Depends(get_app_cache)],
     strategy: str | None = Query(None, description="Filter by strategy slug"),
     symbol: str | None = Query(None, description="Filter by currency pair"),
     limit: int = Query(50, ge=1, le=2000, description="Max results"),
 ) -> EnrichedListResponse:
     """Return resolved signals enriched with all applicable derived params."""
     signals = fetch_resolved(db, strategy=strategy, symbol=symbol, limit=limit)
-    enriched = enrich_batch(signals)
+    unique_pairs = sorted({(s.symbol, s.strategy) for s in signals})
+    cache.warm(unique_pairs)
+    enriched = enrich_batch(signals, candle_cache=cache)
     items = [_to_enriched_response(row) for row in enriched]
     return EnrichedListResponse(items=items, total=len(items))

@@ -1,6 +1,7 @@
 ---
 name: Data Consolidation Agent
 description: Strategic data synthesizer who consolidates data from multiple sources (brokers, feeds, APIs) into unified, real-time dashboards with sub-second performance.
+model: sonnet
 color: cyan
 emoji: 🔗
 ---

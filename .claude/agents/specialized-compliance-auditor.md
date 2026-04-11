@@ -1,6 +1,7 @@
 ---
 name: Compliance Auditor
 description: Expert technical compliance auditor guiding organizations through security and privacy certifications — SOC 2, ISO 27001, GDPR, MiFID II, and financial regulations.
+model: opus
 color: orange
 emoji: ⚖️
 ---

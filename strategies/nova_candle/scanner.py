@@ -18,13 +18,20 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pandas as pd
+from tvDatafeed import Interval
 
+from shared.calculator import pip_size
+from shared.market_data import get_candles
 from shared.signal import Signal
-from strategies.fvg_impulse.data import get_candles
 
 from .calculations import calculate_trade_params
 
 logger = logging.getLogger(__name__)
+
+# Native timeframe for this strategy. Must match STRATEGY_INTERVALS
+# in analytics/candle_cache.py — test_strategy_intervals_match_scanners
+# enforces the invariant.
+_STRATEGY_INTERVAL: Interval = Interval.in_15_minute
 
 # Already-alerted candles: set of (symbol, candle_time) to prevent duplicate alerts
 _alerted_candles: set = set()
@@ -92,10 +99,9 @@ def find_nova_candle(
     if not is_bullish and not is_bearish:
         return None  # doji
 
-    # No open-side wick (bullish: open == low, bearish: open == high)
-    # Tolerance: 1 point (0.1 pip) — essentially zero wick
-    point = 0.001 if "JPY" in symbol.upper().replace("/", "") else 0.00001
-    wick_tolerance = point
+    # No open-side wick (bullish: open == low, bearish: open == high).
+    # Tolerance: 0.1 pip — essentially zero wick.
+    wick_tolerance = pip_size(symbol) / 10
 
     if is_bullish:
         open_wick = abs(l - o)
@@ -150,7 +156,7 @@ def scan_all_symbols(
     for i, symbol in enumerate(symbols):
         if i > 0:
             time.sleep(delay)
-        candles = get_candles(symbol)
+        candles = get_candles(symbol, _STRATEGY_INTERVAL)
         if candles is None:
             continue
 

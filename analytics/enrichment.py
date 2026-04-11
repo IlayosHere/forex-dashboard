@@ -87,7 +87,7 @@ def enrich_batch(
         row = _signal_to_dict(signal)
         candles = None
         if candle_cache is not None:
-            candles = candle_cache.get(signal.symbol)
+            candles = candle_cache.get(signal.symbol, signal.strategy)
         params = resolve_all_params(signal, signal.strategy, candles=candles)
         row["params"] = params
         results.append(row)
@@ -97,8 +97,30 @@ def enrich_batch(
 def enrich_with_candles(
     signals: list[SignalModel],
 ) -> list[dict[str, Any]]:
-    """Enrich signals with candle data (creates a CandleCache automatically)."""
+    """Enrich signals with a fresh per-call ``CandleCache``. Not for routes.
+
+    This convenience helper is for scripts and tests that run outside a
+    FastAPI request scope. Production routes should inject the app-scoped
+    cache via ``Depends(get_app_cache)`` and call ``enrich_batch`` directly.
+
+    Pre-warms the cache per ``(symbol, strategy)`` pair so each strategy's
+    fetches hit its registered timeframe. Logs a single line per call with
+    the count of warmed vs. failed pairs.
+
+    Fetch failures degrade gracefully: ``CandleCache.get()`` returns ``None``
+    for that ``(symbol, strategy)`` and ``resolve_all_params`` skips every
+    candle-dependent param for those signals — the response still ships.
+    """
     cache = CandleCache()
-    unique_symbols = {s.symbol for s in signals}
-    cache.warm(list(unique_symbols))
+    unique_pairs = sorted({(s.symbol, s.strategy) for s in signals})
+    warmed, failed = cache.warm(unique_pairs)
+    logger.info(
+        "CandleCache warmed: %d ok, %d failed (of %d unique pairs)",
+        len(warmed), len(failed), len(unique_pairs),
+    )
+    if failed:
+        logger.warning(
+            "CandleCache failed pairs: %s",
+            ", ".join(f"{sym}/{strat}" for sym, strat in failed),
+        )
     return enrich_batch(signals, candle_cache=cache)

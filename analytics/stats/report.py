@@ -5,9 +5,14 @@ Assemble univariate statistical reports from enriched signals.
 """
 from __future__ import annotations
 
-import logging
 from typing import Any
 
+from analytics.stats.classification import (
+    CI_LEVELS,
+    ECONOMIC_THRESHOLD,
+    Z_CRITICAL,
+    best_bucket_analysis,
+)
 from analytics.stats.filters import (
     category_split,
     filter_min_bucket,
@@ -20,11 +25,27 @@ from analytics.stats.univariate import (
 )
 from analytics.types import LOSS_RESOLUTION, WIN_RESOLUTION
 
-logger = logging.getLogger(__name__)
-
 CATEGORICAL_DTYPES = frozenset({"str", "bool"})
 NUMERIC_DTYPES = frozenset({"float", "int"})
+# p-value alpha for the legacy `significant` boolean. Unrelated to
+# ECONOMIC_THRESHOLD (an effect-size cutoff in win-rate fraction).
 SIGNIFICANCE_THRESHOLD = 0.05
+
+__all__ = [
+    "CI_LEVELS",
+    "ECONOMIC_THRESHOLD",
+    "Z_CRITICAL",
+    "build_summary",
+    "build_univariate_report",
+]
+
+_EMPTY_CI_FIELDS: dict[str, Any] = {
+    "delta": None,
+    "ci_lo": None,
+    "ci_hi": None,
+    "best_bucket": None,
+    "level": None,
+}
 
 
 def build_univariate_report(
@@ -33,32 +54,22 @@ def build_univariate_report(
     strategy: str,
     enriched: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Build a full univariate analysis report for one parameter.
+    """Build a full univariate report for one parameter.
 
-    Parameters
-    ----------
-    param_name : str
-        Parameter key inside each signal's ``params`` dict.
-    dtype : str
-        One of "float", "int", "str", "bool".
-    strategy : str
-        Strategy slug for labelling.
-    enriched : list[dict]
-        Enriched signal dicts with ``params`` and ``resolution``.
-
-    Returns
-    -------
-    dict with buckets, win rates, and significance test results.
+    Returns a dict with buckets, win rates, legacy chi2/point-biserial
+    p-values, and the CI-based classification fields
+    ``delta``, ``ci_lo``, ``ci_hi``, ``best_bucket``, ``level``.
     """
     total_signals = len(enriched)
 
-    buckets = _split_by_dtype(enriched, param_name, dtype)
-    buckets = filter_min_bucket(buckets)
+    raw_buckets = _split_by_dtype(enriched, param_name, dtype)
+    filtered = filter_min_bucket(raw_buckets)
 
-    bucket_stats = win_rate_by_bucket(buckets)
+    bucket_stats = win_rate_by_bucket(filtered)
 
-    chi2, chi_p = _safe_chi_squared(buckets)
+    chi2, chi_p = _safe_chi_squared(filtered)
     corr, corr_p = _safe_point_biserial(enriched, param_name, dtype)
+    ci_fields = best_bucket_analysis(filtered) or _EMPTY_CI_FIELDS
 
     return {
         "param_name": param_name,
@@ -70,6 +81,7 @@ def build_univariate_report(
         "chi_p_value": chi_p,
         "correlation": corr,
         "correlation_p_value": corr_p,
+        **ci_fields,
     }
 
 
@@ -78,21 +90,7 @@ def build_summary(
     enriched: list[dict[str, Any]],
     param_defs: list[dict[str, str]],
 ) -> dict[str, Any]:
-    """Build a summary ranking all params by statistical significance.
-
-    Parameters
-    ----------
-    strategy : str
-        Strategy slug.
-    enriched : list[dict]
-        Enriched signal dicts.
-    param_defs : list[dict]
-        Each entry has ``"name"`` and ``"dtype"`` keys.
-
-    Returns
-    -------
-    dict with overall stats and ranked parameter correlations.
-    """
+    """Build a summary with overall stats + params ranked by CI conclusiveness."""
     wins = sum(1 for s in enriched if s.get("resolution") == WIN_RESOLUTION)
     total = sum(
         1 for s in enriched
@@ -114,6 +112,7 @@ def build_summary(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
 
 def _split_by_dtype(
     enriched: list[dict[str, Any]],
@@ -154,40 +153,61 @@ def _rank_params(
     enriched: list[dict[str, Any]],
     param_defs: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
-    """Compute significance for each param and rank by p-value."""
+    """Rank params by CI conclusiveness; nulls/'none' sort to bottom."""
     rows: list[dict[str, Any]] = []
     for pdef in param_defs:
-        name = pdef["name"]
-        dtype = pdef["dtype"]
-        row = _compute_param_significance(enriched, name, dtype)
+        row = _compute_param_significance(enriched, pdef["name"], pdef["dtype"])
         if row is not None:
             rows.append(row)
-    rows.sort(key=lambda r: r["p_value"])
+    rows.sort(key=_rank_sort_key)
     return rows
+
+
+def _rank_sort_key(row: dict[str, Any]) -> tuple[int, float]:
+    """Sort key: (group, -strength). group=0 for populated rows, 1 for
+    null-level rows; within group, lower -strength sorts first (descending
+    by strength)."""
+    delta = row.get("delta")
+    level = row.get("level")
+    if delta is None or level is None:
+        return (1, 0.0)
+    ci_lo = row.get("ci_lo")
+    ci_hi = row.get("ci_hi")
+    if ci_lo is not None and ci_hi is not None and not (ci_lo < 0 < ci_hi):
+        strength = max(abs(ci_lo), abs(ci_hi))
+    else:
+        strength = abs(delta)
+    return (0, -strength)
 
 
 def _compute_param_significance(
     enriched: list[dict[str, Any]],
     name: str,
     dtype: str,
-) -> dict[str, Any] | None:
-    """Get correlation/p-value for a single param."""
-    if dtype in NUMERIC_DTYPES:
-        result = point_biserial_test(enriched, name)
-        if result is None:
-            return None
-        corr, p_val = result
-    else:
-        buckets = category_split(enriched, name)
-        buckets = filter_min_bucket(buckets)
-        result = chi_squared_test(buckets)
-        if result is None:
-            return None
-        corr, p_val = result
+) -> dict[str, Any]:
+    """Compute CI analysis + legacy p-value for a single param."""
+    raw_buckets = _split_by_dtype(enriched, name, dtype)
+    filtered = filter_min_bucket(raw_buckets)
+
+    corr, p_val = _legacy_significance(enriched, filtered, name, dtype)
+    ci_fields = best_bucket_analysis(filtered) or _EMPTY_CI_FIELDS
 
     return {
         "param_name": name,
         "correlation": corr,
         "p_value": p_val,
-        "significant": p_val < SIGNIFICANCE_THRESHOLD,
+        "significant": p_val is not None and p_val < SIGNIFICANCE_THRESHOLD,
+        **ci_fields,
     }
+
+
+def _legacy_significance(
+    enriched: list[dict[str, Any]],
+    filtered: dict[str, list[dict[str, Any]]],
+    name: str,
+    dtype: str,
+) -> tuple[float | None, float | None]:
+    """Dispatch to the dtype-appropriate legacy test (chi2 or point-biserial)."""
+    if dtype in NUMERIC_DTYPES:
+        return _safe_point_biserial(enriched, name, dtype)
+    return _safe_chi_squared(filtered)

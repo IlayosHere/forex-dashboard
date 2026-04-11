@@ -102,6 +102,50 @@ def chi_squared_test(
     return (float(chi2), float(p_val))
 
 
+def two_proportion_ci(
+    wins_a: int,
+    n_a: int,
+    wins_b: int,
+    n_b: int,
+    z: float = 1.96,
+) -> tuple[float, float, float] | None:
+    """Two-proportion z-test confidence interval for (p_a - p_b).
+
+    Uses the unpooled standard error:
+
+        p_a    = wins_a / n_a
+        p_b    = wins_b / n_b
+        delta  = p_a - p_b
+        SE     = sqrt( p_a*(1-p_a)/n_a + p_b*(1-p_b)/n_b )
+        ci_lo  = delta - z * SE
+        ci_hi  = delta + z * SE
+
+    Parameters
+    ----------
+    wins_a : int
+        Wins in group A.
+    n_a : int
+        Total signals in group A.
+    wins_b : int
+        Wins in group B.
+    n_b : int
+        Total signals in group B.
+    z : float
+        Critical value (default 1.96 for 95% CI).
+
+    Returns
+    -------
+    (delta, ci_lo, ci_hi) or None if either ``n_a`` or ``n_b`` is zero.
+    """
+    if n_a <= 0 or n_b <= 0:
+        return None
+    p_a = wins_a / n_a
+    p_b = wins_b / n_b
+    delta = p_a - p_b
+    se = math.sqrt(p_a * (1 - p_a) / n_a + p_b * (1 - p_b) / n_b)
+    return (delta, delta - z * se, delta + z * se)
+
+
 def point_biserial_test(
     enriched: list[dict[str, Any]],
     param_name: str,

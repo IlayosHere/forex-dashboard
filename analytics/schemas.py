@@ -86,15 +86,25 @@ class UnivariateReportResponse(BaseModel):
     chi_p_value: float | None = None
     correlation: float | None = None
     correlation_p_value: float | None = None
+    delta: float | None = None
+    ci_lo: float | None = None
+    ci_hi: float | None = None
+    best_bucket: str | None = None
+    level: str | None = None
 
 
 class CorrelationItem(BaseModel):
     """Single parameter correlation result."""
 
     param_name: str
-    correlation: float
-    p_value: float
-    significant: bool
+    correlation: float | None = None
+    p_value: float | None = None
+    significant: bool = False
+    delta: float | None = None
+    ci_lo: float | None = None
+    ci_hi: float | None = None
+    best_bucket: str | None = None
+    level: str | None = None
 
 
 class SummaryResponse(BaseModel):

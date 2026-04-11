@@ -217,18 +217,31 @@ All major decisions are already made and written down. Do not re-debate them.
 
 ## Build Phases — Current Status
 
-| Phase | What | Files | Status |
-|-------|------|-------|--------|
-| 1 | Shared Signal contract + calculator | `shared/signal.py`, `shared/calculator.py` | ✅ Done |
-| 2 | Move fvg-impulse, adapt to Signal interface | `strategies/fvg_impulse/scanner.py` | ✅ Done |
-| 3 | Database layer + FastAPI app | `api/` | ✅ Done |
-| 4 | Runner (scheduler, all strategies) | `runner/main.py` | ✅ Done |
-| 5 | Next.js frontend | `ui/` | ✅ Done |
-| 6 | Docker + deployment | `docker-compose.yml`, Dockerfiles | ✅ Done |
-| 7 | Trade Journal — backend | `api/models.py`, `api/schemas.py`, `api/routes/trades.py` | ✅ Done |
-| 8 | Trade Journal — frontend | `ui/app/journal/`, `ui/components/Trade*.tsx`, `ui/components/Stats*.tsx` | ✅ Done |
+All 8 foundation phases complete. See `git log` for history. Add new phases here when starting a major feature.
 
-**Update this table as phases complete.**
+---
+
+## Model Routing — Token Efficiency
+
+To control costs, use **Opus for planning** and **Sonnet for execution**. This applies to
+all agents spawned via the `Agent` tool and to manual `/model` switches.
+
+| Task type | Model | Rationale |
+|-----------|-------|-----------|
+| Architecture decisions, ADRs, design review | `opus` | High reasoning, low volume |
+| Planning a multi-file feature (Plan agent) | `opus` | Complex synthesis |
+| Writing/editing code, tests, config | `sonnet` | Fast, cheap, sufficient |
+| Exploring / searching the codebase | `sonnet` | Mechanical, low-stakes |
+| UI/UX design consultation | `opus` | Nuanced judgment needed |
+| Debugging a specific error | `sonnet` | Mechanical diagnosis |
+
+**How to apply:**
+- When spawning a sub-agent via the `Agent` tool, set `model: "opus"` for planning/design
+  agents and `model: "sonnet"` for execution agents.
+- In interactive sessions: `/model opus` before planning a feature, `/model sonnet` before
+  implementing it.
+- Slash commands (`/add-strategy`, `/add-analytics-param`, etc.) run on whatever model is
+  active — switch to `sonnet` before invoking them.
 
 ---
 
@@ -236,17 +249,27 @@ All major decisions are already made and written down. Do not re-debate them.
 
 See `.claude/agents/` for the full roster. Key ones by phase:
 
-| Phase | Agent to use |
-|-------|-------------|
-| Architecture decisions | `engineering-software-architect` |
-| Python/FastAPI backend | `engineering-python-fastapi` |
-| Next.js frontend | `engineering-rapid-prototyper` |
-| DB schema & queries | `engineering-database-optimizer` |
-| Docker & deployment | `engineering-devops-automator` |
-| Security review | `engineering-security-engineer` |
-| New strategy scaffold | `/add-strategy` slash command |
-| Backend tests | `/test-backend` — run, write, find gaps, fix failures |
-| Frontend tests | `/test-client` — run, write, find gaps, fix failures |
+| Phase | Agent to use | Model |
+|-------|-------------|-------|
+| Architecture decisions | `engineering-software-architect` | opus |
+| Python/FastAPI backend | `engineering-python-fastapi` | sonnet |
+| Next.js frontend | `engineering-rapid-prototyper` | sonnet |
+| DB schema & queries | `engineering-database-optimizer` | sonnet |
+| Docker & deployment | `engineering-devops-automator` | sonnet |
+| Security review | `engineering-security-engineer` | opus |
+| New strategy scaffold | `/add-strategy` slash command | sonnet |
+| New analytics parameter | `/add-analytics-param <name>` — scaffold param, tests, UI metadata | sonnet |
+| Debug an analytics parameter | `/debug-analytics-param <name>` — diagnose None / level="none" / 500 | sonnet |
+| Backend tests | `/test-backend` — run, write, find gaps, fix failures | sonnet |
+| Frontend tests | `/test-client` — run, write, find gaps, fix failures | sonnet |
+
+## Analytics workflow
+
+When working inside `analytics/`, read [analytics/AGENTS.md](analytics/AGENTS.md) first.
+It documents the parameter registry contract, the `STRATEGY_INTERVALS` single-source-of-truth
+for timeframe routing, the `df.attrs` memoization helpers (`cached_atr`, `cached_h1`),
+the 9-level CI classifier, and the common mistakes (numpy scalar leaks, missing UI metadata,
+bypassing memoization). That file is auto-loaded by agents that touch the analytics package.
 
 ---
 
@@ -260,8 +283,8 @@ component looks bad, unclear feedback, etc.), you MUST consult the specialist ag
 
 1. Read the relevant component(s) to understand the current state
 2. Spawn **both** agents in parallel — always consult both together:
-   - `UI Designer` — visual design, color, spacing, component patterns
-   - `UX Architect` — interaction model, information architecture, affordance
+   - `UI Designer` (`model: "sonnet"`) — visual design, color, spacing, component patterns
+   - `UX Architect` (`model: "opus"`) — interaction model, information architecture, affordance
 3. Synthesize their responses — identify where they agree (implement it) and where
    they diverge (present the trade-off to the user or pick the more conservative option)
 4. Implement the agreed solution

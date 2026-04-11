@@ -4,13 +4,9 @@ import { useRouter } from "next/navigation";
 
 import type { AnalyticsSummary } from "@/lib/types";
 
+import { SAMPLE_THRESHOLD, formatWinRate } from "@/lib/analyticsFormat";
+import { getParamLabel } from "@/lib/analyticsParamMeta";
 import { strategies } from "@/lib/strategies";
-
-const SAMPLE_THRESHOLD = 150;
-
-function formatWinRate(rate: number): string {
-  return `${(rate * 100).toFixed(1)}%`;
-}
 
 function winRateColorClass(rate: number): string {
   const pct = rate * 100;
@@ -78,7 +74,7 @@ export function StrategyReadinessTable({ summaries, loading }: StrategyReadiness
             </div>
             <span className={resolved >= SAMPLE_THRESHOLD && topParam ? "text-text-primary" : "text-text-dim"}>
               {resolved >= SAMPLE_THRESHOLD && topParam
-                ? topParam.param_name
+                ? getParamLabel(topParam.param_name)
                 : resolved > 0
                   ? "Need 150+ signals"
                   : "No data"}

@@ -1,48 +1,28 @@
 """
 strategies/fvg_impulse_5m/data.py
 ---------------------------------
-TradingView data-fetching, the FVG dataclass, and FVG lifecycle helpers,
-extracted from scanner.py to keep the scanner module under the 200-line limit.
+FVG dataclass and lifecycle helpers for the M5 FVG-impulse variant, plus a
+thin ``get_candles`` wrapper that delegates to ``shared.market_data`` with the
+strategy's native timeframe baked in.
 
-Uses M5 candles for the fvg_impulse_5m strategy variant.
+All TvDatafeed connection and retry logic lives in ``shared/market_data.py`` —
+see that module for the single source of truth.
 """
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from tvDatafeed import Interval, TvDatafeed
+from tvDatafeed import Interval
 
-from .config import EXCHANGE_TZ
+from shared.market_data import get_candles as _fetch_candles
 
 logger = logging.getLogger(__name__)
 
-_tv: TvDatafeed | None = None
-
-
-# ---------------------------------------------------------------------------
-# TradingView connection
-# ---------------------------------------------------------------------------
-
-def get_tv() -> TvDatafeed:
-    """Get or create the TvDatafeed connection (lazy singleton)."""
-    global _tv
-    if _tv is None:
-        _tv = TvDatafeed()
-        _tv._TvDatafeed__ws_timeout = 15
-        logger.info("TvDatafeed connection established")
-    return _tv
-
-
-def reset_tv() -> None:
-    """Force reconnection on next call."""
-    global _tv
-    _tv = None
-    logger.warning("TvDatafeed connection reset, will reconnect on next call")
+_STRATEGY_INTERVAL: Interval = Interval.in_5_minute
 
 
 # ---------------------------------------------------------------------------
@@ -50,38 +30,8 @@ def reset_tv() -> None:
 # ---------------------------------------------------------------------------
 
 def get_candles(symbol: str, count: int = 70) -> pd.DataFrame | None:
-    """Fetch M5 candles from TradingView. Returns DataFrame or None."""
-    df = None
-    for attempt in range(2):
-        try:
-            tv = get_tv()
-            df = tv.get_hist(
-                symbol=symbol,
-                exchange="PEPPERSTONE",
-                interval=Interval.in_5_minute,
-                n_bars=count,
-            )
-        except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-            logger.error("TradingView request failed for %s (attempt %d): %s",
-                         symbol, attempt + 1, exc)
-
-        if df is not None and not df.empty:
-            break
-
-        if attempt == 0:
-            reset_tv()
-            time.sleep(2)
-
-    if df is None or df.empty:
-        logger.error("No data returned for %s", symbol)
-        return None
-
-    df = df[["open", "high", "low", "close"]].copy()
-    if df.index.tz is None:
-        df.index = df.index.tz_localize(EXCHANGE_TZ).tz_convert(timezone.utc)
-    else:
-        df.index = df.index.tz_convert(timezone.utc)
-    return df
+    """Fetch M5 candles for this strategy via the shared fetcher."""
+    return _fetch_candles(symbol, _STRATEGY_INTERVAL, count)
 
 
 # ---------------------------------------------------------------------------

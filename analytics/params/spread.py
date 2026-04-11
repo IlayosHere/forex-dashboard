@@ -20,6 +20,12 @@ _MAJORS: frozenset[str] = frozenset({
     "USDCAD", "AUDUSD", "NZDUSD",
 })
 
+# Precious metals — pip/ATR scaling is different from forex.
+_METALS: frozenset[str] = frozenset({"XAUUSD", "XAGUSD", "XPTUSD"})
+
+# Equity indices / futures — not currency pairs.
+_INDICES: frozenset[str] = frozenset({"MNQ", "NQ", "ES", "MES", "SPX", "NDX"})
+
 
 @register("spread_risk_ratio", dtype="float")
 def spread_risk_ratio(
@@ -34,10 +40,14 @@ def spread_risk_ratio(
 
 @register("pair_category", dtype="str")
 def pair_category(signal: Any, _candles: pd.DataFrame | None) -> str:
-    """Classify the symbol as MAJOR, JPY_CROSS, or MINOR_CROSS."""
+    """Classify the symbol into one of five categories."""
     symbol: str = signal.symbol
     if symbol in _MAJORS:
         return PairCategory.MAJOR.value
+    if symbol in _METALS:
+        return PairCategory.METALS.value
+    if symbol in _INDICES:
+        return PairCategory.INDICES.value
     if symbol.endswith("JPY"):
         return PairCategory.JPY_CROSS.value
     return PairCategory.MINOR_CROSS.value

@@ -22,33 +22,33 @@ export function useUnivariateReport(
   const [error, setError] = useState<string | null>(null);
   const cancelRef = useRef(0);
 
+  // Single fetch path used by both the initial effect and manual refetch.
+  // Owns the cancelRef stale-request guard so concurrent calls cannot race.
   const load = useCallback(async () => {
-    if (!paramName) return;
-    setLoading(true);
-    try {
-      const data = await fetchUnivariateReport(paramName, strategy);
-      setReport(data);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [paramName, strategy]);
-
-  useEffect(() => {
     if (!paramName) {
       setReport(null);
       return;
     }
     const id = ++cancelRef.current;
     setLoading(true);
-    fetchUnivariateReport(paramName, strategy)
-      .then((data) => { if (cancelRef.current === id) { setReport(data); setError(null); } })
-      .catch((e) => { if (cancelRef.current === id) setError(e instanceof Error ? e.message : "Unknown error"); })
-      .finally(() => { if (cancelRef.current === id) setLoading(false); });
-    return () => { cancelRef.current++; };
+    try {
+      const data = await fetchUnivariateReport(paramName, strategy);
+      if (cancelRef.current !== id) return;
+      setReport(data);
+      setError(null);
+    } catch (e) {
+      if (cancelRef.current !== id) return;
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      if (cancelRef.current === id) setLoading(false);
+    }
   }, [paramName, strategy]);
+
+  useEffect(() => {
+    load();
+    // Cancel any in-flight request when paramName/strategy changes or component unmounts.
+    return () => { cancelRef.current++; };
+  }, [load]);
 
   return { report, loading, error, refetch: load };
 }

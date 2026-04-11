@@ -29,6 +29,8 @@ class PairCategory(Enum):
     MAJOR = "MAJOR"
     JPY_CROSS = "JPY_CROSS"
     MINOR_CROSS = "MINOR_CROSS"
+    METALS = "METALS"       # e.g. XAUUSD, XAGUSD
+    INDICES = "INDICES"     # e.g. MNQ, NQ, SPX
 
 
 WIN_RESOLUTION = "TP_HIT"

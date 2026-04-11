@@ -237,11 +237,20 @@ export interface DailySummaryPoint {
 // Analytics
 // ---------------------------------------------------------------------------
 
+export type { AnalyticsLevel } from "./analyticsLevels";
+
+import type { AnalyticsLevel } from "./analyticsLevels";
+
 export interface AnalyticsCorrelation {
   param_name: string;
-  correlation: number;
-  p_value: number;
+  correlation: number | null;
+  p_value: number | null;
   significant: boolean;
+  delta: number | null;
+  ci_lo: number | null;
+  ci_hi: number | null;
+  best_bucket: string | null;
+  level: AnalyticsLevel | null;
 }
 
 export interface AnalyticsSummary {
@@ -272,6 +281,11 @@ export interface UnivariateReport {
   chi_p_value: number | null;
   correlation: number | null;
   correlation_p_value: number | null;
+  delta: number | null;
+  ci_lo: number | null;
+  ci_hi: number | null;
+  best_bucket: string | null;
+  level: AnalyticsLevel | null;
 }
 
 export interface AnalyticsParameter {
