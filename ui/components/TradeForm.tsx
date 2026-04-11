@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { TradeSetupFields } from "@/components/TradeSetupFields";
 import { TradeAssessmentFields } from "@/components/TradeAssessmentFields";
+import { IctTradeFields } from "@/components/IctTradeFields";
 
 import type { Account } from "@/lib/types";
 
@@ -28,6 +29,12 @@ export interface TradeFormData {
   confidence: number | null;
   screenshot_url: string;
   instrument_type?: string;
+  ict_setup_type: string;
+  ict_setup_detail: string;
+  ict_tp_target: string;
+  ict_ifvg_timeframe: string;
+  ict_smt_present: boolean | null;
+  ict_tdo_aligned: boolean | null;
 }
 
 interface TradeFormProps {
@@ -104,6 +111,14 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     if (!form.sl_price || isNaN(Number(form.sl_price))) errs.sl_price = true;
     if (!form.lot_size || isNaN(Number(form.lot_size))) errs.lot_size = true;
     if (!form.open_time) errs.open_time = true;
+    if (isFutures) {
+      if (!form.ict_setup_type) errs.ict_setup_type = true;
+      if (form.ict_setup_type && form.ict_setup_type !== "other" && !form.ict_setup_detail) errs.ict_setup_detail = true;
+      if (!form.ict_tp_target) errs.ict_tp_target = true;
+      if (!form.ict_ifvg_timeframe) errs.ict_ifvg_timeframe = true;
+      if (form.ict_smt_present === null || form.ict_smt_present === undefined) errs.ict_smt_present = true;
+      if (form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined) errs.ict_tdo_aligned = true;
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -133,6 +148,10 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         onAccountChange={handleAccountChange}
         onAccountCreated={handleAccountCreated}
       />
+
+      {isFutures && (
+        <IctTradeFields form={form} errors={errors} onChange={set} />
+      )}
 
       <TradeAssessmentFields form={form} onChange={set} />
 

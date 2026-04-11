@@ -142,6 +142,14 @@ class TradeModel(Base):
     confidence: Mapped[int | None] = mapped_column(Integer, nullable=True)
     screenshot_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # ICT trade params (MNQ only — nullable for all other strategies)
+    ict_setup_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    ict_setup_detail: Mapped[str | None] = mapped_column(String, nullable=True)
+    ict_tp_target: Mapped[str | None] = mapped_column(String, nullable=True)
+    ict_ifvg_timeframe: Mapped[str | None] = mapped_column(String, nullable=True)
+    ict_smt_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    ict_tdo_aligned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 

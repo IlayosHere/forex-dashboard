@@ -21,6 +21,7 @@ per underlying DataFrame instance, not once per signal.
 """
 from __future__ import annotations
 
+import functools
 import logging
 import threading
 import weakref
@@ -132,33 +133,63 @@ class CandleCache:
         self._h1_cache: dict[CacheKey, pd.DataFrame] = {}
         self._d1_cache: dict[CacheKey, pd.DataFrame] = {}
         self._lock = threading.Lock()
+        # Single-flight: maps a key to an Event that the in-progress fetch will
+        # set when done.  Any other thread that races in during the fetch waits
+        # on this event instead of issuing a duplicate network call.
+        self._inflight: dict[CacheKey, threading.Event] = {}
 
     def get(
         self, symbol: str, strategy: str,
     ) -> pd.DataFrame | None:
-        """Return cached candles for a (symbol, strategy), fetching on miss or expiry."""
+        """Return cached candles for a (symbol, strategy), fetching on miss or expiry.
+
+        Uses a single-flight guard so concurrent callers for the same key share
+        one network fetch rather than each issuing their own, which avoids
+        duplicate requests to tvDatafeed and eliminates the race that could
+        produce an error on the first analytics load.
+        """
         interval = interval_for_strategy(strategy)
         key: CacheKey = (symbol, interval)
-        now = datetime.now(timezone.utc)
 
-        with self._lock:
-            entry = self._cache.get(key)
-            if entry is not None and now < entry.expires_at:
-                return entry.df
-            # Expired or missing — evict derived caches keyed off this entry.
-            self._atr_cache = {
-                k: v for k, v in self._atr_cache.items() if k[0] != key
-            }
-            self._h1_cache.pop(key, None)
-            self._d1_cache.pop(key, None)
+        while True:
+            now = datetime.now(timezone.utc)  # refresh on every iteration (incl. after wait)
+            with self._lock:
+                entry = self._cache.get(key)
+                if entry is not None and now < entry.expires_at:
+                    return entry.df
 
-        # Fetch outside the lock — network I/O must not serialize other keys.
-        df = self._fetch(symbol, interval)
-        expires_at = _next_bar_close(interval, now)
+                # Another thread is already fetching this key — grab its event
+                # and wait outside the lock so we don't block other keys.
+                if key in self._inflight:
+                    event = self._inflight[key]
+                else:
+                    # We are the designated fetcher for this key.
+                    event = threading.Event()
+                    self._inflight[key] = event
+                    # Evict stale derived caches before we overwrite the entry.
+                    self._atr_cache = {
+                        k: v for k, v in self._atr_cache.items() if k[0] != key
+                    }
+                    self._h1_cache.pop(key, None)
+                    self._d1_cache.pop(key, None)
+                    break  # proceed to fetch below
 
-        with self._lock:
-            self._cache[key] = _CacheEntry(df=df, expires_at=expires_at)
-        return df
+            # Wait for the in-progress fetch to finish, then re-check the cache.
+            event.wait()
+
+        # We are the designated fetcher — perform network I/O outside the lock.
+        try:
+            df = self._fetch(symbol, interval)
+            # Capture time AFTER the fetch so the bar-aligned TTL is computed
+            # from the actual completion time, not the pre-fetch timestamp.
+            expires_at = _next_bar_close(interval, datetime.now(timezone.utc))
+            with self._lock:
+                self._cache[key] = _CacheEntry(df=df, expires_at=expires_at)
+            return df
+        finally:
+            with self._lock:
+                self._inflight.pop(key, None)
+            event.set()  # wake all waiters regardless of success or exception
 
     def warm(
         self, pairs: list[tuple[str, str]],
@@ -214,7 +245,7 @@ class CandleCache:
         return warmed, failed
 
     def clear(self) -> None:
-        """Clear all caches."""
+        """Clear all caches. In-flight fetches are not interrupted."""
         with self._lock:
             self._cache.clear()
             self._atr_cache.clear()
@@ -236,19 +267,17 @@ class CandleCache:
 # ---------------------------------------------------------------------------
 # App-scoped singleton
 # ---------------------------------------------------------------------------
-_APP_CACHE: CandleCache | None = None
 
-
+@functools.lru_cache(maxsize=None)
 def get_app_cache() -> CandleCache:
     """Return the process-wide singleton ``CandleCache``.
 
     Intended as a FastAPI ``Depends`` target for the analytics routes.
-    The singleton is lazily constructed on first access.
+    ``lru_cache`` guarantees the constructor runs exactly once even under
+    concurrent first calls (Python's import lock serialises the decorator
+    application; subsequent calls return the cached result atomically).
     """
-    global _APP_CACHE
-    if _APP_CACHE is None:
-        _APP_CACHE = CandleCache()
-    return _APP_CACHE
+    return CandleCache()
 
 
 # ---------------------------------------------------------------------------
