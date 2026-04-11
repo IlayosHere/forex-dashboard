@@ -40,8 +40,15 @@ def test_next_public_api_url_baked(
       2. No chunk contains the literal 'localhost:8000' (which would
          mean the build-arg was missed and the default leaked through).
     """
+    # Cloud Run serves each service under TWO host formats:
+    #   - projectnum style: forex-api-674856048643.europe-west1.run.app
+    #   - legacy hash style: forex-api-hsogimk2jq-ew.a.run.app
+    # The deploy workflow reads one via `gcloud run services describe` and
+    # bakes it as NEXT_PUBLIC_API_URL, but we don't know which one. Accept
+    # either by matching any forex-api-*.run.app hostname in chunks.
     api_host = urlparse(api_url).hostname
     assert api_host, f"could not parse hostname from api_url={api_url!r}"
+    api_host_pattern = re.compile(r"forex-api-[a-z0-9-]+\.[a-z0-9.-]+\.run\.app")
 
     # Start with the login page - it's guaranteed to reference the api.
     page_sources: list[str] = []
@@ -62,7 +69,7 @@ def test_next_public_api_url_baked(
         f"{page_sources[0][:500]}"
     )
 
-    found_api_host = False
+    found_api_host: str | None = None
     localhost_hits: list[str] = []
     for chunk in sorted(chunk_paths):
         url = f"{ui_url}{chunk}"
@@ -70,8 +77,10 @@ def test_next_public_api_url_baked(
         if resp.status_code != 200:
             continue
         body = resp.text
-        if api_host in body:
-            found_api_host = True
+        if found_api_host is None:
+            match = api_host_pattern.search(body)
+            if match:
+                found_api_host = match.group(0)
         if "localhost:8000" in body:
             localhost_hits.append(chunk)
 
@@ -80,8 +89,8 @@ def test_next_public_api_url_baked(
         f"NEXT_PUBLIC_API_URL was not baked correctly. Offending "
         f"chunks: {localhost_hits}"
     )
-    assert found_api_host, (
-        f"no compiled ui chunk referenced the api hostname {api_host!r}. "
+    assert found_api_host is not None, (
+        f"no compiled ui chunk referenced a forex-api-*.run.app hostname. "
         f"NEXT_PUBLIC_API_URL may not have been passed as a Docker build "
         f"arg. Checked {len(chunk_paths)} chunks."
     )

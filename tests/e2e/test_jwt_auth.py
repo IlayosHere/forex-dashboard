@@ -70,8 +70,13 @@ def test_authorized_signals_list(
         f"GET /api/signals returned {response.status_code}: {response.text}"
     )
     body = response.json()
-    assert isinstance(body, list), (
-        f"expected a list from /api/signals, got {type(body).__name__}: {body!r}"
+    # /api/signals returns a paginated envelope: {"items": [...], "total": N}.
+    assert isinstance(body, dict) and "items" in body, (
+        f"expected paginated envelope {{items, total}} from /api/signals, "
+        f"got {type(body).__name__}: {body!r}"
+    )
+    assert isinstance(body["items"], list), (
+        f"/api/signals.items is not a list: {body['items']!r}"
     )
 
 

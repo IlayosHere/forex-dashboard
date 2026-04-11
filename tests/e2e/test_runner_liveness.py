@@ -10,6 +10,7 @@ Run with:
 """
 from __future__ import annotations
 
+import os
 import time
 
 import httpx
@@ -21,6 +22,10 @@ _WAIT_SECONDS = 16 * 60
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    not os.getenv("RUN_SLOW_E2E"),
+    reason="slow test (16 min wait); set RUN_SLOW_E2E=1 to enable",
+)
 def test_runner_scheduling(
     api_url: str,
     auth_headers: dict[str, str],
@@ -45,13 +50,15 @@ def test_runner_scheduling(
             f"GET /api/signals returned {resp.status_code}: {resp.text}"
         )
         data = resp.json()
+        # /api/signals is paginated: {"items": [...], "total": N}.
+        items = data["items"] if isinstance(data, dict) else data
         latest = None
-        if data:
+        if items:
             latest = max(
                 (row.get("created_at") or row.get("candle_time") or "")
-                for row in data
+                for row in items
             ) or None
-        return len(data), latest
+        return len(items), latest
 
     before_count, before_latest = _snapshot()
     time.sleep(_WAIT_SECONDS)
