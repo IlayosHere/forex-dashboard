@@ -21,7 +21,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 # Tell Next.js standalone server to bind on all interfaces
 ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
 
 # standalone/ already contains its own node_modules copy
 COPY --from=builder /app/.next/standalone ./

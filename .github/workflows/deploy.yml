@@ -1,0 +1,169 @@
+# Deploy forex-dashboard (api, ui, runner) to Cloud Run on every push to main.
+#
+# Required repository secrets (set by operator after Terraform bootstrap):
+#   GCP_PROJECT_ID    - GCP project ID that owns Cloud Run + Artifact Registry
+#   GCP_REGION        - GCP region (europe-west1)
+#   GCP_WIF_PROVIDER  - Full WIF provider resource name, e.g.
+#                       projects/<num>/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+#   GCP_DEPLOYER_SA   - Deployer service account email (github-deployer@<project>.iam.gserviceaccount.com)
+#
+# Authentication uses Workload Identity Federation (no JSON keys).
+# id-token: write is REQUIRED for google-github-actions/auth@v2 to mint a GitHub OIDC token.
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'infra/**'
+      - 'docs/**'
+      - '**.md'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+          token_format: access_token
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
+
+      - name: Compute short SHA
+        run: echo "SHA=${GITHUB_SHA::12}" >> $GITHUB_ENV
+
+      # Read the already-deployed forex-api URL so we can bake NEXT_PUBLIC_API_URL
+      # into the ui bundle at build time. Fail fast if this is a first-ever deploy
+      # where Terraform hasn't provisioned the placeholder forex-api service yet.
+      - name: Read forex-api URL
+        run: |
+          API_URL=$(gcloud run services describe forex-api \
+            --region=${{ secrets.GCP_REGION }} \
+            --format='value(status.url)' 2>/dev/null || true)
+          if [ -z "$API_URL" ]; then
+            echo "ERROR: forex-api Cloud Run service not found in region ${{ secrets.GCP_REGION }}."
+            echo "Run the Terraform bootstrap first (see infra/README.md) so the"
+            echo "placeholder forex-api service exists before the first CI deploy."
+            exit 1
+          fi
+          echo "API_URL=$API_URL" >> $GITHUB_ENV
+          echo "Resolved forex-api URL: $API_URL"
+
+      # Build api image. Context = repo root so the Dockerfile can COPY shared/, api/, strategies/.
+      - name: Build api image
+        run: |
+          docker build \
+            -f api/Dockerfile \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:${{ env.SHA }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:latest \
+            .
+
+      # Build ui image. Context = ui/ because ui/Dockerfile does `COPY package.json package-lock.json* ./`
+      # which assumes the build context is the ui/ directory (matches docker-compose.yml).
+      # NEXT_PUBLIC_API_URL is baked into the client bundle here — cannot be changed at runtime.
+      - name: Build ui image
+        run: |
+          docker build \
+            -f ui/Dockerfile \
+            --build-arg NEXT_PUBLIC_API_URL=${{ env.API_URL }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:${{ env.SHA }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:latest \
+            ui
+
+      # Build runner image. Context = repo root (runner Dockerfile copies shared/, api/, strategies/, runner/).
+      - name: Build runner image
+        run: |
+          docker build \
+            -f runner/Dockerfile \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }} \
+            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:latest \
+            .
+
+      - name: Push api image
+        run: |
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:${{ env.SHA }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:latest
+
+      - name: Push ui image
+        run: |
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:${{ env.SHA }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:latest
+
+      - name: Push runner image
+        run: |
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }}
+          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:latest
+
+      # Deploy sequentially — keeps the log output readable for a solo operator and
+      # avoids subtle failures where a background `&` masks a non-zero exit code.
+      - name: Deploy forex-api
+        run: |
+          gcloud run deploy forex-api \
+            --image=europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:${{ env.SHA }} \
+            --region=${{ secrets.GCP_REGION }} \
+            --quiet
+
+      - name: Deploy forex-ui
+        run: |
+          gcloud run deploy forex-ui \
+            --image=europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:${{ env.SHA }} \
+            --region=${{ secrets.GCP_REGION }} \
+            --quiet
+
+      - name: Deploy forex-runner
+        run: |
+          gcloud run deploy forex-runner \
+            --image=europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }} \
+            --region=${{ secrets.GCP_REGION }} \
+            --quiet
+
+      # Smoke test: /docs is the FastAPI auto-generated OpenAPI UI. It's always
+      # present when the app has booted successfully, no custom health endpoint needed.
+      - name: Smoke test forex-api /docs
+        run: |
+          CODE=$(curl -fsS -o /dev/null -w '%{http_code}' "$API_URL/docs" || true)
+          echo "GET $API_URL/docs -> $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "ERROR: forex-api /docs smoke test failed (expected 200, got $CODE)"
+            exit 1
+          fi
+
+      - name: Write job summary
+        run: |
+          UI_URL=$(gcloud run services describe forex-ui \
+            --region=${{ secrets.GCP_REGION }} \
+            --format='value(status.url)')
+          RUNNER_URL=$(gcloud run services describe forex-runner \
+            --region=${{ secrets.GCP_REGION }} \
+            --format='value(status.url)')
+          {
+            echo "## Deployment complete"
+            echo ""
+            echo "| Service | URL | Image tag |"
+            echo "|---------|-----|-----------|"
+            echo "| forex-api | $API_URL | \`${{ env.SHA }}\` |"
+            echo "| forex-ui | $UI_URL | \`${{ env.SHA }}\` |"
+            echo "| forex-runner | $RUNNER_URL | \`${{ env.SHA }}\` |"
+          } >> $GITHUB_STEP_SUMMARY
