@@ -24,6 +24,7 @@ from __future__ import annotations
 import logging
 import threading
 import weakref
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 
@@ -162,21 +163,54 @@ class CandleCache:
     def warm(
         self, pairs: list[tuple[str, str]],
     ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-        """Pre-fetch candles for a list of (symbol, strategy) pairs.
+        """Pre-fetch candles for a list of (symbol, strategy) pairs in parallel.
+
+        Already-valid cache entries are skipped immediately. Missing or expired
+        entries are fetched concurrently (one thread per pair, up to 8). This
+        reduces cold-cache time from N × fetch_duration to ~1 × fetch_duration.
 
         Returns ``(warmed, failed)`` — pairs that succeeded vs. those where
         the fetch returned ``None``. Failures are handled gracefully by
         ``resolve_all_params`` (candle-dependent params are skipped when
         candles are ``None``).
         """
+        if not pairs:
+            return [], []
+
         warmed: list[tuple[str, str]] = []
         failed: list[tuple[str, str]] = []
+
+        # Separate already-cached pairs from those that need a fetch.
+        now = datetime.now(timezone.utc)
+        to_fetch: list[tuple[str, str]] = []
         for symbol, strategy in pairs:
-            df = self.get(symbol, strategy)
-            if df is None:
-                failed.append((symbol, strategy))
-            else:
+            key: CacheKey = (symbol, interval_for_strategy(strategy))
+            with self._lock:
+                entry = self._cache.get(key)
+            if entry is not None and now < entry.expires_at:
                 warmed.append((symbol, strategy))
+            else:
+                to_fetch.append((symbol, strategy))
+
+        if not to_fetch:
+            return warmed, failed
+
+        # Fetch missing pairs in parallel. self.get() already performs network
+        # I/O outside the lock, so concurrent calls for different keys are safe.
+        with ThreadPoolExecutor(max_workers=min(len(to_fetch), 8)) as pool:
+            future_to_pair = {
+                pool.submit(self.get, sym, strat): (sym, strat)
+                for sym, strat in to_fetch
+            }
+            for future in as_completed(future_to_pair):
+                pair = future_to_pair[future]
+                try:
+                    df = future.result()
+                    (warmed if df is not None else failed).append(pair)
+                except Exception:
+                    logger.exception("Unexpected error warming %s/%s", *pair)
+                    failed.append(pair)
+
         return warmed, failed
 
     def clear(self) -> None:

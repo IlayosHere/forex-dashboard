@@ -16,7 +16,13 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from analytics.candle_cache import CandleCache
+from analytics.candle_cache import (
+    CandleCache,
+    cached_atr,
+    cached_d1,
+    cached_ema20_h1,
+    cached_h1,
+)
 from analytics.registry import resolve_all_params
 from api.models import SignalModel
 
@@ -82,6 +88,28 @@ def enrich_batch(
     candle_cache : CandleCache | None
         Optional candle cache for params that need OHLC history.
     """
+    # Pre-compute and hold strong references to all derived series before the
+    # signal loop.  The module-level WeakValueDictionary memos evict entries
+    # the moment refcount drops to zero — which happens at the end of each
+    # param function call when the local variable goes out of scope.  By
+    # storing the results here, we keep refcount > 0 for the entire batch so
+    # the memos remain valid for every subsequent lookup.
+    _derived_hold: dict[tuple[str, str], tuple] = {}
+    if candle_cache is not None:
+        unique_pairs = {(s.symbol, s.strategy) for s in signals}
+        for symbol, strategy in unique_pairs:
+            df = candle_cache.get(symbol, strategy)
+            if df is not None:
+                h1 = cached_h1(df)
+                _derived_hold[(symbol, strategy)] = (
+                    df,
+                    h1,
+                    cached_atr(df),
+                    cached_atr(h1),      # h1_trend_strength_bucket uses cached_atr(h1)
+                    cached_d1(df),
+                    cached_ema20_h1(h1),
+                )
+
     results: list[dict[str, Any]] = []
     for signal in signals:
         row = _signal_to_dict(signal)
