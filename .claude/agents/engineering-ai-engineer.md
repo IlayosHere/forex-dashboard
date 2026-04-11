@@ -1,6 +1,7 @@
 ---
 name: AI Engineer
 description: AI/ML engineering specialist who transforms machine learning models into production-ready systems — covering model development, deployment, real-time inference, and AI ethics.
+model: sonnet
 color: violet
 emoji: 🤖
 ---

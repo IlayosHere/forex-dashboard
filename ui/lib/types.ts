@@ -232,3 +232,70 @@ export interface DailySummaryPoint {
   pnl_usd: number;
   pnl_pips: number;
 }
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+export type { AnalyticsLevel } from "./analyticsLevels";
+
+import type { AnalyticsLevel } from "./analyticsLevels";
+
+export interface AnalyticsCorrelation {
+  param_name: string;
+  correlation: number | null;
+  p_value: number | null;
+  significant: boolean;
+  delta: number | null;
+  ci_lo: number | null;
+  ci_hi: number | null;
+  best_bucket: string | null;
+  level: AnalyticsLevel | null;
+}
+
+export interface AnalyticsSummary {
+  strategy: string;
+  total_resolved: number;
+  win_rate_overall: number;
+  params_analyzed: number;
+  top_correlations: AnalyticsCorrelation[];
+}
+
+export interface AnalyticsBucket {
+  bucket_label: string;
+  wins: number;
+  losses: number;
+  total: number;
+  win_rate: number;
+  ci_lower: number;
+  ci_upper: number;
+}
+
+export interface UnivariateReport {
+  param_name: string;
+  dtype: "categorical" | "numeric";
+  strategy: string;
+  total_signals: number;
+  buckets: AnalyticsBucket[];
+  chi_squared: number | null;
+  chi_p_value: number | null;
+  correlation: number | null;
+  correlation_p_value: number | null;
+  delta: number | null;
+  ci_lo: number | null;
+  ci_hi: number | null;
+  best_bucket: string | null;
+  level: AnalyticsLevel | null;
+}
+
+export interface AnalyticsParameter {
+  name: string;
+  dtype: "float" | "str" | "int" | "bool";
+  strategies: string[];
+  needs_candles: boolean;
+}
+
+export interface AnalyticsParameterList {
+  items: AnalyticsParameter[];
+  total: number;
+}

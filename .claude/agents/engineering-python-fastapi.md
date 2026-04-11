@@ -1,6 +1,7 @@
 ---
 name: Python FastAPI Engineer
 description: Senior Python engineer specializing in FastAPI, SQLAlchemy, Pydantic v2, and async Python. Builds clean, typed, production-ready backend APIs with SQLite/PostgreSQL.
+model: sonnet
 color: blue
 emoji: 🐍
 ---

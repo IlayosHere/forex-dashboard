@@ -1,6 +1,7 @@
 ---
 name: Product Manager
 description: Outcome-driven product manager who balances user needs, business goals, and technical reality to define and prioritize what gets built and why.
+model: opus
 color: green
 emoji: 🧭
 ---

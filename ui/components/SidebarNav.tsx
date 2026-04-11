@@ -64,6 +64,7 @@ export function SidebarNav() {
         <NavLink href="/calendar">Calendar</NavLink>
         <NavLink href="/accounts">Accounts</NavLink>
         <NavLink href="/statistics">Statistics</NavLink>
+        <NavLink href="/analytics">Analytics</NavLink>
 
         <div className="pt-3 pb-1 px-3">
           <span className="label">Strategies</span>
