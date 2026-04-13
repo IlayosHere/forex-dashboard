@@ -8,6 +8,48 @@ You are writing and running backend Python tests for the forex dashboard.
 - **Existing tests**: Check `tests/` before writing — do not duplicate coverage
 - **Coding standards**: Read `docs/coding-standards.md` for size limits and style rules
 
+## HARD LIMITS — verify before every test file write
+
+Do not write or submit any test file until every item below passes:
+
+```
+FILE SIZE
+[ ] Test file ≤ 200 non-blank, non-comment lines
+    (if longer, split into test_<module>_<area>.py files)
+
+FUNCTION SIZE
+[ ] Every test function ≤ 50 lines
+
+IMPORTS
+[ ] from __future__ import annotations is the very first line
+[ ] Module docstring naming what's tested (second line)
+[ ] Imports in 4 groups with a blank line between each:
+    1. from __future__ import annotations
+    2. stdlib  (alphabetized)
+    3. third-party  (alphabetized)
+    4. project-local  (alphabetized)
+
+TEST STYLE
+[ ] No test classes — flat functions only
+[ ] Every test function has -> None return type
+[ ] All float comparisons use pytest.approx()
+[ ] Section headers: # --- GET /api/trades --- between sections
+[ ] Fixture params annotated: db: Session, client: TestClient
+[ ] make_trade() from tests.conftest used for trade data (not manual TradeModel())
+[ ] No DB mocking — real in-memory SQLite only
+[ ] Each test is independent (relies on autouse _setup_tables fixture)
+
+COVERAGE (per endpoint type)
+[ ] GET list: empty, populated, each filter, pagination
+[ ] GET by ID: 200 success, 404 not found
+[ ] POST: 201 success, 422 validation error, 404 bad ref
+[ ] PUT: 200 success, 404 not found, side effects (P&L recalc)
+[ ] DELETE: 204 success, 404 not found
+[ ] Stats: empty data, mixed outcomes, filter pass-through
+```
+
+If any item fails, fix it before writing the file. No exceptions.
+
 ## What to do
 
 $ARGUMENTS determines the scope:

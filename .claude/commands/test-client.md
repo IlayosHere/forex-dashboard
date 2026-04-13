@@ -8,6 +8,37 @@ You are writing frontend tests for the forex dashboard.
 - **Existing tests**: `ui/tests/` — check what already exists before writing duplicates
 - **Strategy doc**: Read `docs/frontend-testing-strategy.md` for priorities, patterns, and rules
 
+## HARD LIMITS — verify before every test file write
+
+Do not write or submit any test file until every item below passes:
+
+```
+FILE SIZE
+[ ] Test file ≤ 300 non-blank, non-comment lines
+    (if longer, split by area or behavior group)
+
+TEST STYLE
+[ ] Imports from vitest: describe, it, expect, vi, beforeEach, afterEach
+[ ] No snapshot tests
+[ ] No assertions on CSS class names — assert on visible text or behavior
+[ ] No testing of shadcn/ui primitives (Button, Input, Sheet)
+[ ] No testing of type definitions
+[ ] Always afterEach(() => { vi.restoreAllMocks(); })
+[ ] One clear behavior per it() block
+
+MOCKING
+[ ] API calls mocked via vi.stubGlobal("fetch", ...)
+[ ] Debounce/interval tests use vi.useFakeTimers()
+[ ] next/navigation mocked at file top when component uses useRouter
+[ ] No MSW (not in the stack)
+
+TYPING
+[ ] No any types in test files
+[ ] All mock objects typed to match the actual interface
+```
+
+If any item fails, fix it before writing the file. No exceptions.
+
 ## What to do
 
 $ARGUMENTS determines the scope:

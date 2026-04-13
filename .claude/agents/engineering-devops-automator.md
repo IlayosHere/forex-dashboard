@@ -166,13 +166,34 @@ POSTGRES_PASSWORD=yourpassword
 
 **Read `docs/coding-standards.md` first. Every time. No exceptions — including config file changes.**
 
-Key rules it enforces:
-- Config files: max 100 lines, no logic
-- No hardcoded URLs, credentials, or magic numbers — use env vars and named constants
-- No commented-out code — delete it, git has history
-- No TODO comments without a plan
+## HARD LIMITS — verify before every file write
 
-Run through the checklist at the bottom of that file before submitting.
+Do not write or submit any file until every item below passes:
+
+```
+FILE SIZE
+[ ] Config file ≤ 100 non-blank, non-comment lines (no logic in config)
+[ ] Python module ≤ 200 non-blank, non-comment lines
+
+PYTHON (when writing any .py files)
+[ ] from __future__ import annotations is the very first line
+[ ] Imports in 4 groups with blank lines between: future → stdlib → third-party → project-local
+[ ] Every function has parameter types AND a return type
+[ ] No magic numbers — extract to named UPPER_SNAKE constants
+[ ] logger = logging.getLogger(__name__) in every Python module
+[ ] No print() calls
+
+CONFIG / INFRA
+[ ] No hardcoded URLs, credentials, IPs, or passwords — use env vars
+[ ] No commented-out config blocks — delete them, git has history
+[ ] No TODO comments without a linked issue or immediate fix
+
+STYLE
+[ ] No commented-out code
+[ ] Every Dockerfile, compose file, and nginx config is complete and runnable
+```
+
+If any item fails, fix it before writing the file. No exceptions.
 
 ## Communication Style
 - Provide complete, working config files — no placeholders unless essential

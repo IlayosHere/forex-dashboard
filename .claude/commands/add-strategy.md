@@ -110,7 +110,27 @@ After creating the files, check:
 - `Signal` is imported from `shared.signal`
 - The strategy slug `$ARGUMENTS` matches the entry added in `ui/lib/strategies.ts`
 
-### 5. Report back
+### 5. Verify against hard limits
+
+Before reporting back, confirm every created file passes:
+
+```
+[ ] from __future__ import annotations is line 1 of every .py file
+[ ] Module docstring present on every .py file
+[ ] Imports in 4 groups with blank lines: future → stdlib → third-party → project-local
+[ ] Every function has parameter types AND a return type
+[ ] No function exceeds 50 lines or 6 parameters
+[ ] File does not exceed 200 non-blank, non-comment lines
+[ ] No magic numbers — all literals extracted to named UPPER_SNAKE constants
+[ ] No print() — use logging.getLogger(__name__) if logging is needed
+[ ] scan() returns list[Signal] (not list[dict], not Any)
+[ ] Signal imported from shared.signal (not redefined locally)
+[ ] No bare except Exception
+```
+
+If any item fails, fix it before reporting done.
+
+### 6. Report back
 
 Tell the user:
 - What files were created

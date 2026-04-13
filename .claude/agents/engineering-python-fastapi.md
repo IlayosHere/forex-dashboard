@@ -133,16 +133,53 @@ def calculate(req: CalculateRequest) -> CalculateResponse:
 
 **Read `docs/coding-standards.md` first. Every time. No exceptions — including small changes.**
 
-Key rules it enforces:
-- File size limits: 200 lines Python modules, 40 lines route handlers (hard limits)
-- Function size limits: 50 lines Python functions, max 6 parameters
-- PEP 8 import groups (future → stdlib → third-party → project-local), alphabetized
-- `Mapped[type]` SQLAlchemy style — no legacy `Column()`
-- Docstrings required on all route handlers and public functions
-- `logging.getLogger(__name__)` in every API module — no `print()`
-- `from __future__ import annotations` at top of every file
+## HARD LIMITS — verify before every file write
 
-Run through the checklist at the bottom of that file before submitting.
+Do not write or submit any file until every item below passes:
+
+```
+FILE SIZE
+[ ] Python module ≤ 200 non-blank, non-comment lines
+[ ] Config file ≤ 100 non-blank, non-comment lines
+
+FUNCTION / HANDLER SIZE
+[ ] Every Python function ≤ 50 lines, ≤ 6 parameters
+[ ] Every route handler ≤ 40 lines, ≤ 4 parameters
+    (path param + query params count as 1 each; DB/auth deps count individually)
+
+IMPORTS
+[ ] from __future__ import annotations is the very first line
+[ ] Imports in 4 groups with a blank line between each:
+    1. from __future__ import annotations
+    2. stdlib  (alphabetized)
+    3. third-party  (alphabetized)
+    4. project-local  (alphabetized)
+[ ] No wildcard imports
+
+TYPE HINTS
+[ ] Every function has parameter types AND a return type
+[ ] X | None used instead of Optional[X]
+[ ] No bare dict return type — use dict[str, Any]
+[ ] Mapped[type] on all SQLAlchemy columns — no legacy Column()
+
+PYDANTIC
+[ ] Every schema has model_config = ConfigDict(from_attributes=True)
+
+DOCSTRINGS
+[ ] Every route handler has a docstring
+[ ] Every public function has a docstring
+
+LOGGING
+[ ] Every API / service module has: logger = logging.getLogger(__name__)
+[ ] No print() calls
+
+STYLE
+[ ] No magic numbers — all literals extracted to named UPPER_SNAKE constants
+[ ] No commented-out code
+[ ] No bare except Exception in route handlers
+```
+
+If any item fails, fix it before writing the file. No exceptions.
 
 ## Critical Rules
 

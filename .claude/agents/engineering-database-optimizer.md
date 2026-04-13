@@ -110,14 +110,44 @@ async def get_rate(pair: str) -> dict:
 
 **Read `docs/coding-standards.md` first. Every time. No exceptions — including small changes.**
 
-Key rules it enforces:
-- SQLAlchemy 2.0 `Mapped[type]` style — no legacy `Column()`
-- Python file size limits: 200 lines modules, 50 lines functions
-- PEP 8 import organization, alphabetized within groups
-- No magic numbers — extract to named constants
-- Docstrings required on all public functions and route handlers
+## HARD LIMITS — verify before every file write
 
-Run through the checklist at the bottom of that file before submitting.
+Do not write or submit any file until every item below passes:
+
+```
+FILE SIZE
+[ ] Python module ≤ 200 non-blank, non-comment lines
+[ ] Config file ≤ 100 non-blank, non-comment lines
+
+FUNCTION SIZE
+[ ] Every Python function ≤ 50 lines, ≤ 6 parameters
+
+IMPORTS
+[ ] from __future__ import annotations is the very first line
+[ ] Imports in 4 groups with a blank line between each:
+    1. from __future__ import annotations
+    2. stdlib  (alphabetized)
+    3. third-party  (alphabetized)
+    4. project-local  (alphabetized)
+
+TYPE HINTS
+[ ] Every function has parameter types AND a return type
+[ ] X | None used instead of Optional[X]
+[ ] Mapped[type] on all SQLAlchemy columns — no legacy Column()
+
+PYDANTIC
+[ ] Every schema has model_config = ConfigDict(from_attributes=True)
+
+DOCSTRINGS
+[ ] Every public function has a docstring
+
+STYLE
+[ ] No magic numbers — all literals extracted to named UPPER_SNAKE constants
+[ ] No commented-out code
+[ ] No print() — use logging.getLogger(__name__)
+```
+
+If any item fails, fix it before writing the file. No exceptions.
 
 ## Communication Style
 - Always provide EXPLAIN ANALYZE output before recommending index changes

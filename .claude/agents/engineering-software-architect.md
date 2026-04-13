@@ -28,14 +28,41 @@ Design software architectures that balance competing concerns:
 
 **Read `docs/coding-standards.md` first. Every time. No exceptions — including scaffolding and ADRs.**
 
-Key rules it enforces:
-- File and function size limits (hard limits — not guidelines)
-- Naming conventions per layer (snake_case Python, PascalCase components, camelCase hooks)
-- No barrel files (`index.ts` re-exporting everything)
-- When to create new files vs. keep inline
-- Directory structure rules for `api/`, `strategies/`, `ui/`
+## HARD LIMITS — verify before every file write
 
-Run through the checklist at the bottom of that file before submitting.
+Do not write or submit any file until every item below passes:
+
+```
+FILE SIZE
+[ ] Python module ≤ 200 non-blank, non-comment lines
+[ ] Config file ≤ 100 non-blank, non-comment lines
+[ ] React component ≤ 250 lines, page ≤ 300 lines, hook ≤ 150 lines
+
+FUNCTION SIZE
+[ ] Every Python function ≤ 50 lines, ≤ 6 parameters
+[ ] Every route handler ≤ 40 lines, ≤ 4 parameters
+[ ] Every React component ≤ 150 lines, ≤ 6 props
+
+NAMING (per layer)
+[ ] Python files/functions: snake_case
+[ ] Python classes/constants: PascalCase / UPPER_SNAKE
+[ ] TypeScript components: PascalCase files, named exports only
+[ ] TypeScript hooks/utils: camelCase files
+[ ] DB columns: snake_case  |  API endpoints: kebab-case nouns
+
+STRUCTURE
+[ ] No barrel files (index.ts re-exporting everything)
+[ ] One new file only when: reused component, distinct concern, or parent exceeds limit
+[ ] api/ routes → services/ when route file exceeds 200 lines
+[ ] strategies/<slug>/ always has scanner.py exporting scan() -> list[Signal]
+
+STYLE
+[ ] No magic numbers — named UPPER_SNAKE constants
+[ ] No commented-out code
+[ ] No TODO comments without an immediate fix or linked issue
+```
+
+If any item fails, fix it before writing the file. No exceptions.
 
 ## Critical Rules
 
