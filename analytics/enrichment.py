@@ -11,6 +11,7 @@ Three entry points:
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import select
@@ -29,7 +30,10 @@ from api.models import SignalModel
 logger = logging.getLogger(__name__)
 
 _MAX_LIMIT = 2000
-_DEFAULT_LIMIT = 500
+_DEFAULT_LIMIT = 2000
+_DEFAULT_LOOKBACK_DAYS = 365
+
+_UNSET = object()  # three-state: unset → rolling default, None → no filter, datetime → explicit floor
 
 _SIGNAL_FIELDS: list[str] = [
     "id", "strategy", "symbol", "direction", "candle_time",
@@ -44,6 +48,8 @@ def fetch_resolved(
     strategy: str | None = None,
     symbol: str | None = None,
     limit: int = _DEFAULT_LIMIT,
+    from_date: datetime | None = _UNSET,  # type: ignore[assignment]
+    order_by_recent: bool = False,
 ) -> list[SignalModel]:
     """Query resolved signals (TP_HIT or SL_HIT) with optional filters.
 
@@ -56,8 +62,19 @@ def fetch_resolved(
     symbol : str | None
         Optional currency pair filter.
     limit : int
-        Max rows to return (default 500, max 2000).
+        Max rows to return (default 2000, hard cap 2000).
+    from_date : datetime | None
+        Lower bound on candle_time. When not passed, defaults to a rolling
+        window of ``_DEFAULT_LOOKBACK_DAYS`` days from now. Pass an explicit
+        ``datetime`` to set a precise lower bound. Pass ``None`` explicitly
+        to disable the date filter entirely (returns all history).
+    order_by_recent : bool
+        When ``True``, apply ``ORDER BY candle_time DESC`` so the most-recent
+        signals are returned first. Analytics callers should leave this
+        ``False`` to avoid recency bias when the limit is hit.
     """
+    if from_date is _UNSET:
+        from_date = datetime.now(timezone.utc) - timedelta(days=_DEFAULT_LOOKBACK_DAYS)
     clamped = min(max(limit, 1), _MAX_LIMIT)
     stmt = select(SignalModel).where(
         SignalModel.resolution.in_(["TP_HIT", "SL_HIT"]),
@@ -66,7 +83,11 @@ def fetch_resolved(
         stmt = stmt.where(SignalModel.strategy == strategy)
     if symbol is not None:
         stmt = stmt.where(SignalModel.symbol == symbol)
-    stmt = stmt.order_by(SignalModel.candle_time.desc()).limit(clamped)
+    if from_date is not None:
+        stmt = stmt.where(SignalModel.candle_time >= from_date)
+    if order_by_recent:
+        stmt = stmt.order_by(SignalModel.candle_time.desc())
+    stmt = stmt.limit(clamped)
     return list(db.scalars(stmt).all())
 
 

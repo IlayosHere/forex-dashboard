@@ -21,7 +21,6 @@ per underlying DataFrame instance, not once per signal.
 """
 from __future__ import annotations
 
-import functools
 import logging
 import threading
 import weakref
@@ -175,7 +174,9 @@ class CandleCache:
                     break  # proceed to fetch below
 
             # Wait for the in-progress fetch to finish, then re-check the cache.
-            event.wait()
+            # timeout=30 prevents an indefinite hang if the fetcher thread is
+            # killed before reaching its finally block (e.g. KeyboardInterrupt).
+            event.wait(timeout=30)
 
         # We are the designated fetcher — perform network I/O outside the lock.
         try:
@@ -228,7 +229,10 @@ class CandleCache:
 
         # Fetch missing pairs in parallel. self.get() already performs network
         # I/O outside the lock, so concurrent calls for different keys are safe.
-        with ThreadPoolExecutor(max_workers=min(len(to_fetch), 8)) as pool:
+        # Cap at 4 threads — the global _tv_semaphore in market_data limits
+        # actual concurrent TradingView requests to 2 regardless, so extra
+        # threads beyond that just queue inside the semaphore without benefit.
+        with ThreadPoolExecutor(max_workers=min(len(to_fetch), 4)) as pool:
             future_to_pair = {
                 pool.submit(self.get, sym, strat): (sym, strat)
                 for sym, strat in to_fetch
@@ -268,16 +272,24 @@ class CandleCache:
 # App-scoped singleton
 # ---------------------------------------------------------------------------
 
-@functools.lru_cache(maxsize=None)
+_app_cache: CandleCache | None = None
+_app_cache_lock = threading.Lock()
+
+
 def get_app_cache() -> CandleCache:
     """Return the process-wide singleton ``CandleCache``.
 
     Intended as a FastAPI ``Depends`` target for the analytics routes.
-    ``lru_cache`` guarantees the constructor runs exactly once even under
-    concurrent first calls (Python's import lock serialises the decorator
-    application; subsequent calls return the cached result atomically).
+    Uses an explicit module-level variable so tests can reset the singleton
+    by assigning ``cache_mod._app_cache = None``.
     """
-    return CandleCache()
+    global _app_cache
+    if _app_cache is not None:
+        return _app_cache
+    with _app_cache_lock:
+        if _app_cache is None:
+            _app_cache = CandleCache()
+    return _app_cache
 
 
 # ---------------------------------------------------------------------------

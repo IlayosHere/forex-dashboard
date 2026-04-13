@@ -69,6 +69,7 @@ class SignalModel(Base):
         Index("ix_signals_candle_time", "candle_time"),
         Index("ix_signals_symbol", "symbol"),
         Index("ix_signals_resolution", "resolution"),
+        Index("ix_signals_resolution_strategy_candle", "resolution", "strategy", "candle_time"),
         UniqueConstraint("strategy", "symbol", "candle_time", name="uq_signal_dedup"),
     )
 

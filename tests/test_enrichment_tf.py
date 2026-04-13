@@ -99,7 +99,12 @@ def test_enrich_batch_passes_strategy_to_cache() -> None:
 
 
 def test_enrich_batch_m5_signal_receives_m5_candles() -> None:
-    """An M5 signal must not be enriched with M15 candles."""
+    """An M5 signal must not be enriched with M15 candles.
+
+    enrich_batch calls cache.get() twice per unique (symbol, strategy) pair:
+    once in the _derived_hold pre-computation loop and once in the main
+    signal loop. Both calls must use the signal's strategy, never M15.
+    """
     cache = _StrategyRecordingStub()
     m5_frame = cache.frames["fvg-impulse-5m"]
     m15_frame = cache.frames["fvg-impulse"]
@@ -112,7 +117,9 @@ def test_enrich_batch_m5_signal_receives_m5_candles() -> None:
         "fvg-impulse-5m", datetime(2025, 3, 10, 1, 0, tzinfo=timezone.utc),
     )
     enrich_batch([sig], candle_cache=cache)
-    assert cache.calls == [("EURUSD", "fvg-impulse-5m")]
+    # All calls must be for the M5 strategy, never M15.
+    assert all(strategy == "fvg-impulse-5m" for _, strategy in cache.calls)
+    assert len(cache.calls) >= 1
 
 
 def test_unknown_strategy_defaults_to_m15() -> None:

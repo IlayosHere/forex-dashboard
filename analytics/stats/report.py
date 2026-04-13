@@ -27,9 +27,6 @@ from analytics.types import LOSS_RESOLUTION, WIN_RESOLUTION
 
 CATEGORICAL_DTYPES = frozenset({"str", "bool"})
 NUMERIC_DTYPES = frozenset({"float", "int"})
-# p-value alpha for the legacy `significant` boolean. Unrelated to
-# ECONOMIC_THRESHOLD (an effect-size cutoff in win-rate fraction).
-SIGNIFICANCE_THRESHOLD = 0.05
 
 __all__ = [
     "CI_LEVELS",
@@ -196,7 +193,6 @@ def _compute_param_significance(
         "param_name": name,
         "correlation": corr,
         "p_value": p_val,
-        "significant": p_val is not None and p_val < SIGNIFICANCE_THRESHOLD,
         **ci_fields,
     }
 

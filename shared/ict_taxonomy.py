@@ -73,6 +73,14 @@ TP_TARGETS: Final[list[str]] = [
     "other",
 ]
 
+# Mapping from setup_type -> valid detail values (used for cross-validation)
+SETUP_DETAIL_MAP: Final[dict[str, list[str]]] = {
+    "liquidity_sweep": LIQUIDITY_SWEEP_DETAILS,
+    "unmitigated_fvg": UNMITIGATED_FVG_DETAILS,
+    "continuation": CONTINUATION_DETAILS,
+    "other": [],  # no detail required for "other"
+}
+
 # IFVG confirmation timeframe
 IFVG_TIMEFRAMES: Final[list[str]] = [
     "1m",

@@ -91,11 +91,16 @@ def test_quintile_split_empty() -> None:
     assert quintile_split([], "ratio") == {}
 
 
+def _make_resolved_signals(n: int, resolution: str = "TP_HIT") -> list[dict]:
+    """Build minimal enriched signal dicts with a resolution field."""
+    return [{"resolution": resolution} for _ in range(n)]
+
+
 def test_filter_min_bucket_removes_small() -> None:
     buckets = {
-        "A": list(range(50)),
-        "B": list(range(10)),
-        "C": list(range(35)),
+        "A": _make_resolved_signals(50),
+        "B": _make_resolved_signals(10),
+        "C": _make_resolved_signals(35),
     }
     filtered = filter_min_bucket(buckets, min_size=30)
     assert "A" in filtered

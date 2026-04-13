@@ -18,7 +18,12 @@ from sqlalchemy.orm import Session
 
 import analytics.params  # noqa: F401 — triggers @register side-effects for all params
 
-from analytics.candle_cache import CandleCache, _next_bar_close, _DEFAULT_INTERVAL, get_app_cache
+from analytics.candle_cache import (
+    CandleCache,
+    _next_bar_close,
+    get_app_cache,
+    interval_for_strategy,
+)
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
 from analytics.schemas import SummaryResponse, UnivariateReportResponse
@@ -48,7 +53,32 @@ _enriched_cache: dict[str, _EnrichedEntry] = {}
 _enriched_lock = threading.Lock()
 
 
-def _get_enriched(
+def filter_by_symbol(
+    enriched: list[dict[str, Any]],
+    symbol: str | None,
+) -> list[dict[str, Any]]:
+    """Return enriched signals filtered to a single symbol, or all if symbol is None."""
+    if symbol is None:
+        return enriched
+    return [r for r in enriched if r["symbol"] == symbol]
+
+
+def prewarm_enriched_cache(
+    strategies: list[str],
+    db: Session,
+    candle_cache: CandleCache,
+) -> None:
+    """Pre-warm the enriched signal cache for a list of strategy slugs.
+
+    Intended to be called from the startup background task so the first
+    analytics request hits a warm cache rather than blocking for several
+    seconds. Skips strategies whose cache is still valid.
+    """
+    for strategy in strategies:
+        get_enriched(strategy, db, candle_cache)
+
+
+def get_enriched(
     strategy: str,
     db: Session,
     candle_cache: CandleCache,
@@ -64,11 +94,10 @@ def _get_enriched(
 
     logger.info("Enriched cache miss for strategy=%s — recomputing", strategy)
     signals = fetch_resolved(db, strategy=strategy)
-    unique_pairs = sorted({(s.symbol, s.strategy) for s in signals})
-    candle_cache.warm(unique_pairs)
+    candle_cache.warm({(s.symbol, s.strategy) for s in signals})
     enriched = enrich_batch(signals, candle_cache=candle_cache)
 
-    expires_at = _next_bar_close(_DEFAULT_INTERVAL, now)
+    expires_at = _next_bar_close(interval_for_strategy(strategy), now)
     with _enriched_lock:
         _enriched_cache[strategy] = _EnrichedEntry(enriched=enriched, expires_at=expires_at)
 
@@ -85,6 +114,7 @@ def get_univariate_report(
     db: Annotated[Session, Depends(get_db)],
     cache: Annotated[CandleCache, Depends(get_app_cache)],
     strategy: str = Query(..., description="Strategy slug (required)"),
+    symbol: str | None = Query(None, description="Filter by currency pair"),
 ) -> UnivariateReportResponse:
     """Return per-bucket win-rate analysis for a single parameter."""
     param_def = get_param_def(param_name)
@@ -94,7 +124,7 @@ def get_univariate_report(
             status_code=404,
             detail=f"Parameter '{param_name}' is not registered",
         )
-    enriched = _get_enriched(strategy, db, cache)
+    enriched = filter_by_symbol(get_enriched(strategy, db, cache), symbol)
     report = build_univariate_report(
         param_name, param_def.dtype, strategy, enriched,
     )
@@ -107,6 +137,7 @@ def get_summary(
     db: Annotated[Session, Depends(get_db)],
     _cache: Annotated[CandleCache, Depends(get_app_cache)],
     strategy: str = Query(..., description="Strategy slug (required)"),
+    symbol: str | None = Query(None, description="Filter by currency pair"),
 ) -> SummaryResponse:
     """Return overall analytics summary for a strategy.
 
@@ -117,10 +148,17 @@ def get_summary(
     available in the per-param univariate endpoint where the user explicitly waits.
     """
     signals = fetch_resolved(db, strategy=strategy)
-    enriched = enrich_batch(signals, candle_cache=None)
+    enriched = filter_by_symbol(enrich_batch(signals, candle_cache=None), symbol)
+    all_params = get_params_for_strategy(strategy)
+    excluded = [p.name for p in all_params if p.needs_candles]
     param_defs = [
         {"name": p.name, "dtype": p.dtype}
-        for p in get_params_for_strategy(strategy)
+        for p in all_params
+        if not p.needs_candles
     ]
     result = build_summary(strategy, enriched, param_defs)
-    return SummaryResponse(**result)
+    return SummaryResponse(
+        **result,
+        partial=bool(excluded),
+        excluded_params=excluded,
+    )

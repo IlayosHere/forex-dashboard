@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from tvDatafeed import Interval
 
 import analytics.params  # noqa: F401 — trigger param registration
+import api.main as main_mod
 from analytics import candle_cache as cache_mod
 from api.models import SignalModel
 
@@ -65,7 +66,7 @@ def _insert_resolved_signal(
         strategy=strategy,
         symbol=symbol,
         direction="BUY",
-        candle_time=datetime(2025, 3, 11, candle_hour, 0, tzinfo=timezone.utc),
+        candle_time=datetime(2026, 3, 11, candle_hour, 0, tzinfo=timezone.utc),
         entry=1.08500,
         sl=1.08200,
         tp=1.08800,
@@ -86,15 +87,29 @@ def _insert_resolved_signal(
 
 
 @pytest.fixture(autouse=True)
-def _reset_app_cache() -> None:
-    """Reset the app-scoped CandleCache singleton between tests.
+def _reset_app_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reset the app-scoped CandleCache singleton and enriched-signal cache.
 
-    Without this, cache entries from one test leak into the next and fetch
-    counts become non-deterministic.
+    Without this, entries from one test (or the startup prewarm loop) leak
+    into the next and fetch counts / signal totals become non-deterministic.
+
+    Also patches _prewarm_loop to a no-op so background startup tasks do not
+    issue real-DB sessions or network fetches that pollute the fetch recorder.
     """
-    cache_mod._APP_CACHE = None
+    from analytics.routes_stats import _enriched_cache, _enriched_lock
+
+    async def _noop_prewarm() -> None:  # pragma: no cover
+        pass
+
+    monkeypatch.setattr(main_mod, "_prewarm_loop", _noop_prewarm)
+
+    cache_mod._app_cache = None
+    with _enriched_lock:
+        _enriched_cache.clear()
     yield
-    cache_mod._APP_CACHE = None
+    cache_mod._app_cache = None
+    with _enriched_lock:
+        _enriched_cache.clear()
 
 
 @pytest.fixture()

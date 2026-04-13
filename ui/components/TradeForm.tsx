@@ -81,6 +81,21 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     }
   }, [filteredAccounts, form.account_id]);
 
+  // Clear ICT fields when switching away from a futures strategy
+  useEffect(() => {
+    if (!isFutures) {
+      setForm((prev) => ({
+        ...prev,
+        ict_setup_type: "",
+        ict_setup_detail: "",
+        ict_tp_target: "",
+        ict_ifvg_timeframe: "",
+        ict_smt_present: null,
+        ict_tdo_aligned: null,
+      }));
+    }
+  }, [isFutures]);
+
   const set = <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 

@@ -8,14 +8,7 @@ Usage:
 """
 from __future__ import annotations
 
-from zoneinfo import ZoneInfo
-
-
-# ---------------------------------------------------------------------------
-# Exchange timezone — tvDatafeed returns naive timestamps in the system's
-# local timezone.  Set this to match the machine running the scanner.
-# ---------------------------------------------------------------------------
-EXCHANGE_TZ = ZoneInfo("Asia/Jerusalem")
+from shared.market_data import EXCHANGE_TZ  # noqa: F401 — re-exported for strategy-local imports
 
 
 # ---------------------------------------------------------------------------

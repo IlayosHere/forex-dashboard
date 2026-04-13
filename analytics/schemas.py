@@ -99,7 +99,6 @@ class CorrelationItem(BaseModel):
     param_name: str
     correlation: float | None = None
     p_value: float | None = None
-    significant: bool = False
     delta: float | None = None
     ci_lo: float | None = None
     ci_hi: float | None = None
@@ -115,3 +114,5 @@ class SummaryResponse(BaseModel):
     win_rate_overall: float
     params_analyzed: int
     top_correlations: list[CorrelationItem]
+    partial: bool = False
+    excluded_params: list[str] = []

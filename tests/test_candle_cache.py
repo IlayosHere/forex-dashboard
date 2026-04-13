@@ -20,6 +20,9 @@ from analytics.candle_cache import (
     STRATEGY_INTERVALS,
     CandleCache,
     _next_bar_close,
+    cached_atr,
+    cached_d1,
+    cached_h1,
     get_app_cache,
     interval_for_strategy,
 )
@@ -166,7 +169,9 @@ def test_get_h1_returns_resampled_hourly_bars(
     patched_fetch: list[tuple[str, Interval, int]],
 ) -> None:
     cache = CandleCache()
-    h1 = cache.get_h1("EURUSD", "fvg-impulse")
+    df = cache.get("EURUSD", "fvg-impulse")
+    assert df is not None
+    h1 = cached_h1(df)
     assert h1 is not None
     assert set(h1.columns) == {"open", "high", "low", "close"}
     # 300 M15 bars spanning 75 hours → exactly 75 H1 bars
@@ -177,8 +182,11 @@ def test_get_h1_cache_reused(
     patched_fetch: list[tuple[str, Interval, int]],
 ) -> None:
     cache = CandleCache()
-    cache.get_h1("EURUSD", "fvg-impulse")
-    cache.get_h1("EURUSD", "fvg-impulse")
+    df = cache.get("EURUSD", "fvg-impulse")
+    assert df is not None
+    cached_h1(df)
+    cached_h1(df)
+    # Only one network fetch — H1 memoization is per-DataFrame instance
     assert len(patched_fetch) == 1
 
 
@@ -186,7 +194,9 @@ def test_get_d1_returns_broker_day_bars(
     patched_fetch: list[tuple[str, Interval, int]],
 ) -> None:
     cache = CandleCache()
-    d1 = cache.get_d1("EURUSD", "fvg-impulse")
+    df = cache.get("EURUSD", "fvg-impulse")
+    assert df is not None
+    d1 = cached_d1(df)
     assert d1 is not None
     assert str(d1.index.tz) == "UTC"
     # 300 M15 bars ≈ 75 hours → 3 broker days (± boundary day)
@@ -197,8 +207,10 @@ def test_get_d1_cache_reused(
     patched_fetch: list[tuple[str, Interval, int]],
 ) -> None:
     cache = CandleCache()
-    cache.get_d1("EURUSD", "fvg-impulse")
-    cache.get_d1("EURUSD", "fvg-impulse")
+    df = cache.get("EURUSD", "fvg-impulse")
+    assert df is not None
+    cached_d1(df)
+    cached_d1(df)
     assert len(patched_fetch) == 1
 
 
@@ -345,26 +357,26 @@ def test_get_refetches_after_expiry(
     assert len(patched_fetch) == 2
 
 
-def test_expired_entry_evicts_derived_caches(
+def test_expired_entry_refetches_on_next_get(
     patched_fetch: list[tuple[str, Interval, int]],
     frozen_time: Callable[[datetime], None],
 ) -> None:
+    """Expired cache entry triggers a new network fetch on next get()."""
     frozen_time(datetime(2025, 3, 10, 14, 2, 0, tzinfo=timezone.utc))
     cache = CandleCache()
-    cache.get("EURUSD", "fvg-impulse")
-    cache.get_atr("EURUSD", "fvg-impulse")
-    cache.get_h1("EURUSD", "fvg-impulse")
-    # Internal caches populated.
-    key = ("EURUSD", Interval.in_15_minute)
-    assert any(k[0] == key for k in cache._atr_cache)
-    assert key in cache._h1_cache
+    df1 = cache.get("EURUSD", "fvg-impulse")
+    assert df1 is not None
+    h1_before = cached_h1(df1)
 
-    # Advance past expiry and re-fetch the underlying entry.
+    # Advance past expiry.
     frozen_time(datetime(2025, 3, 10, 14, 16, 0, tzinfo=timezone.utc))
-    cache.get("EURUSD", "fvg-impulse")
-    # Derived caches for this key must be evicted.
-    assert not any(k[0] == key for k in cache._atr_cache)
-    assert key not in cache._h1_cache
+    df2 = cache.get("EURUSD", "fvg-impulse")
+    # A new fetch happened.
+    assert len(patched_fetch) == 2
+    # New DataFrame → cached_h1 returns a different object.
+    assert df2 is not df1
+    h1_after = cached_h1(df2)
+    assert h1_after is not h1_before
 
 
 # ---------------------------------------------------------------------------
@@ -410,7 +422,7 @@ def test_concurrent_get_same_key_races_but_converges(
 def test_get_app_cache_returns_singleton(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(cache_mod, "_APP_CACHE", None)
+    monkeypatch.setattr(cache_mod, "_app_cache", None)
     a = get_app_cache()
     b = get_app_cache()
     assert a is b

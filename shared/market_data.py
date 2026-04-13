@@ -17,23 +17,34 @@ This is the single source of truth for:
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from datetime import timezone
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from tvDatafeed import Interval, TvDatafeed
 
-from strategies.fvg_impulse.config import EXCHANGE_TZ
-
 __all__ = ["EXCHANGE_TZ", "get_candles", "get_tv", "reset_tv"]
+
+# Broker timezone: tvDatafeed returns naive timestamps in Asia/Jerusalem
+# (the machine's local timezone on the production server).
+EXCHANGE_TZ = ZoneInfo("Asia/Jerusalem")
 
 logger = logging.getLogger(__name__)
 
 _tv: TvDatafeed | None = None
+_tv_lock = threading.Lock()
+
+# Global semaphore: caps concurrent TradingView WebSocket requests across all
+# threads and callers. TradingView rate-limits aggressive parallel connections
+# (HTTP 429). Two concurrent fetches is safe; more risks rejection.
+_tv_semaphore = threading.Semaphore(2)
 
 _EXCHANGE = "PEPPERSTONE"
 _MAX_ATTEMPTS = 2
 _RETRY_SLEEP_SECONDS = 2
+_RATE_LIMIT_SLEEP_SECONDS = 15  # back-off when TV returns 429
 _BASE_COLUMNS = ["open", "high", "low", "close"]
 _VOLUME_COLUMN = "volume"
 
@@ -45,17 +56,19 @@ _VOLUME_COLUMN = "volume"
 def get_tv() -> TvDatafeed:
     """Return the lazy TvDatafeed singleton, creating it on first access."""
     global _tv
-    if _tv is None:
-        _tv = TvDatafeed()
-        _tv._TvDatafeed__ws_timeout = 15
-        logger.info("TvDatafeed connection established")
-    return _tv
+    with _tv_lock:
+        if _tv is None:
+            _tv = TvDatafeed()
+            _tv._TvDatafeed__ws_timeout = 15
+            logger.info("TvDatafeed connection established")
+        return _tv
 
 
 def reset_tv() -> None:
     """Drop the cached TvDatafeed so the next call reconnects."""
     global _tv
-    _tv = None
+    with _tv_lock:
+        _tv = None
     logger.warning("TvDatafeed connection reset, will reconnect on next call")
 
 
@@ -84,21 +97,42 @@ def _fetch_once(
     interval: Interval,
     count: int,
 ) -> pd.DataFrame | None:
-    """Perform a single TvDatafeed fetch, returning None on failure."""
-    try:
-        tv = get_tv()
-        return tv.get_hist(
-            symbol=symbol,
-            exchange=_EXCHANGE,
-            interval=interval,
-            n_bars=count,
-        )
-    except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-        logger.error(
-            "TradingView request failed for %s @ %s: %s",
-            symbol, interval, exc,
-        )
-        return None
+    """Perform a single TvDatafeed fetch, returning None on failure.
+
+    Acquires the global ``_tv_semaphore`` before touching the WebSocket so
+    that at most 2 concurrent requests reach TradingView at any time.
+    """
+    with _tv_semaphore:
+        try:
+            tv = get_tv()
+            return tv.get_hist(
+                symbol=symbol,
+                exchange=_EXCHANGE,
+                interval=interval,
+                n_bars=count,
+            )
+        except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
+            logger.error(
+                "TradingView request failed for %s @ %s: %s",
+                symbol, interval, exc,
+            )
+            return None
+        except Exception as exc:
+            # Catch 429 rate-limit responses and other unexpected errors from
+            # the tvDatafeed WebSocket layer.
+            if "429" in str(exc):
+                logger.warning(
+                    "TradingView rate-limited (429) for %s @ %s — "
+                    "backing off %ds",
+                    symbol, interval, _RATE_LIMIT_SLEEP_SECONDS,
+                )
+                time.sleep(_RATE_LIMIT_SLEEP_SECONDS)
+            else:
+                logger.error(
+                    "Unexpected TradingView error for %s @ %s: %s",
+                    symbol, interval, exc,
+                )
+            return None
 
 
 def get_candles(

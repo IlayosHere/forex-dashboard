@@ -10,6 +10,8 @@ from typing import Any
 
 import numpy as np
 
+from analytics.types import LOSS_RESOLUTION, WIN_RESOLUTION
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,12 +81,20 @@ def category_split(
     return buckets
 
 
+def _resolved_count(signals: list[dict[str, Any]]) -> int:
+    """Count signals with a terminal resolution (WIN or LOSS)."""
+    return sum(
+        1 for s in signals
+        if s.get("resolution") in (WIN_RESOLUTION, LOSS_RESOLUTION)
+    )
+
+
 def filter_min_bucket(
     buckets: dict[str, list[dict[str, Any]]],
     min_size: int = 30,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Remove buckets with fewer than *min_size* signals."""
-    filtered = {k: v for k, v in buckets.items() if len(v) >= min_size}
+    """Remove buckets with fewer than *min_size* resolved (WIN/LOSS) signals."""
+    filtered = {k: v for k, v in buckets.items() if _resolved_count(v) >= min_size}
     removed = len(buckets) - len(filtered)
     if removed:
         logger.debug("Filtered out %d buckets below min_size=%d", removed, min_size)

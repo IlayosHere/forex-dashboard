@@ -32,7 +32,7 @@ def _insert_signal(
         strategy=strategy,
         symbol=symbol,
         direction="BUY",
-        candle_time=datetime(2025, 3, 10, candle_hour, 0, tzinfo=timezone.utc),
+        candle_time=datetime(2026, 3, 10, candle_hour, 0, tzinfo=timezone.utc),
         entry=1.08500,
         sl=1.08200,
         tp=1.08800,

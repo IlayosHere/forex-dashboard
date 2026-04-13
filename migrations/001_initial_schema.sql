@@ -1,0 +1,4 @@
+-- Migration 001: Initial schema
+-- Applied: at project creation (signals.db created by SQLAlchemy Base.metadata.create_all)
+-- This file documents the baseline schema as of the initial deployment.
+-- No SQL to run — the schema was created automatically by SQLAlchemy on first startup.
