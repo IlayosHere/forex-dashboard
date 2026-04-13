@@ -89,9 +89,13 @@ def compute_bucket_ci(
 def best_bucket_analysis(
     buckets: dict[str, list[dict[str, Any]]],
 ) -> dict[str, Any] | None:
-    """Pick the driver bucket (largest |delta|) and classify.
+    """Pick the driver bucket (largest CI boundary) and classify.
 
-    Rule 2 tie-breaker: when two buckets have identical |delta|, pick
+    Uses ``max(|ci_lo|, |ci_hi|)`` as the selection key so Bonferroni
+    correction is accounted for; raw ``|delta|`` would favour larger buckets
+    even when their Bonferroni-widened CI carries weaker evidence.
+
+    Rule 2 tie-breaker: when two buckets have identical boundary, pick
     the one with the smaller ``n_b`` (more uncertain, more conservative).
 
     Returns
@@ -155,18 +159,23 @@ def _select_best(
     n_total: int,
     z: float,
 ) -> tuple[str, float, float, float] | None:
-    """Find bucket with largest |delta|, tie-break by smaller n_b."""
+    """Find bucket with largest CI boundary, tie-break by smaller n_b.
+
+    Uses ``max(|ci_lo|, |ci_hi|)`` instead of raw ``|delta|`` so that
+    Bonferroni-widened CIs (from smaller buckets) do not bias selection
+    toward larger buckets with weaker evidence.
+    """
     best: tuple[str, float, float, float] | None = None
-    best_abs = -1.0
+    best_boundary = -1.0
     best_n = 0
     for label, (wins_b, n_b) in counts.items():
         ci = compute_bucket_ci(wins_b, n_b, wins_total, n_total, z)
         if ci is None:
             continue
         delta, ci_lo, ci_hi = ci
-        abs_delta = abs(delta)
-        if abs_delta > best_abs or (abs_delta == best_abs and n_b < best_n):
+        boundary = max(abs(ci_lo), abs(ci_hi))
+        if boundary > best_boundary or (boundary == best_boundary and n_b < best_n):
             best = (label, delta, ci_lo, ci_hi)
-            best_abs = abs_delta
+            best_boundary = boundary
             best_n = n_b
     return best

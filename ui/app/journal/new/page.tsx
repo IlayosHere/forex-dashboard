@@ -47,6 +47,12 @@ function makeEmptyForm(): TradeFormData {
     rating: null,
     confidence: null,
     screenshot_url: "",
+    ict_setup_type: "",
+    ict_setup_detail: "",
+    ict_tp_target: "",
+    ict_ifvg_timeframe: "",
+    ict_smt_present: null,
+    ict_tdo_aligned: null,
   };
 }
 
@@ -102,6 +108,12 @@ function NewTradeContent() {
           rating: null,
           confidence: null,
           screenshot_url: "",
+          ict_setup_type: "",
+          ict_setup_detail: "",
+          ict_tp_target: "",
+          ict_ifvg_timeframe: "",
+          ict_smt_present: null,
+          ict_tdo_aligned: null,
         });
         setSignalLabel(`${signal.symbol} ${signal.direction} — ${signal.strategy}`);
       })
@@ -130,6 +142,12 @@ function NewTradeContent() {
         screenshot_url: data.screenshot_url || null,
         instrument_type: data.instrument_type ?? getInstrumentType(data.strategy),
         metadata: {},
+        ict_setup_type: data.ict_setup_type || null,
+        ict_setup_detail: data.ict_setup_detail || null,
+        ict_tp_target: data.ict_tp_target || null,
+        ict_ifvg_timeframe: data.ict_ifvg_timeframe || null,
+        ict_smt_present: data.ict_smt_present,
+        ict_tdo_aligned: data.ict_tdo_aligned,
       };
       const trade = await createTrade(body);
       router.push(`/journal/${trade.id}`);

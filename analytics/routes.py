@@ -16,8 +16,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from analytics.candle_cache import CandleCache, get_app_cache
-from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_params_for_strategy
+from analytics.routes_stats import filter_by_symbol, get_enriched
 from analytics.schemas import (
     EnrichedListResponse,
     EnrichedSignalResponse,
@@ -82,14 +82,16 @@ def list_enriched(
     _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     cache: Annotated[CandleCache, Depends(get_app_cache)],
-    strategy: str | None = Query(None, description="Filter by strategy slug"),
+    strategy: str = Query(..., description="Strategy slug (required)"),
     symbol: str | None = Query(None, description="Filter by currency pair"),
     limit: int = Query(50, ge=1, le=2000, description="Max results"),
 ) -> EnrichedListResponse:
-    """Return resolved signals enriched with all applicable derived params."""
-    signals = fetch_resolved(db, strategy=strategy, symbol=symbol, limit=limit)
-    unique_pairs = sorted({(s.symbol, s.strategy) for s in signals})
-    cache.warm(unique_pairs)
-    enriched = enrich_batch(signals, candle_cache=cache)
-    items = [_to_enriched_response(row) for row in enriched]
-    return EnrichedListResponse(items=items, total=len(items))
+    """Return resolved signals enriched with all applicable derived params.
+
+    Routes through the shared enriched-signal cache so signal counts are
+    consistent with /univariate and /summary for the same strategy.
+    Symbol filter and limit are applied as post-cache slices.
+    """
+    enriched = filter_by_symbol(get_enriched(strategy, db, cache), symbol)
+    items = [_to_enriched_response(row) for row in enriched[:limit]]
+    return EnrichedListResponse(items=items, total=len(enriched))

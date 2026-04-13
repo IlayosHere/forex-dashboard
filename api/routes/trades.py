@@ -139,6 +139,12 @@ def create_trade(
         tags=req.tags, notes=req.notes, rating=req.rating,
         confidence=req.confidence, screenshot_url=req.screenshot_url,
         trade_metadata=req.metadata, created_at=now, updated_at=now,
+        ict_setup_type=req.ict_setup_type,
+        ict_setup_detail=req.ict_setup_detail,
+        ict_tp_target=req.ict_tp_target,
+        ict_ifvg_timeframe=req.ict_ifvg_timeframe,
+        ict_smt_present=req.ict_smt_present,
+        ict_tdo_aligned=req.ict_tdo_aligned,
     )
     db.add(trade)
     db.commit()
@@ -249,6 +255,8 @@ def update_trade(
         "sl_price", "tp_price", "lot_size", "risk_pips", "status",
         "outcome", "close_time", "tags", "notes", "rating",
         "confidence", "screenshot_url", "metadata",
+        "ict_setup_type", "ict_setup_detail", "ict_tp_target",
+        "ict_ifvg_timeframe", "ict_smt_present", "ict_tdo_aligned",
     }
     for field, value in update_data.items():
         if field not in _ALLOWED_UPDATE_FIELDS:

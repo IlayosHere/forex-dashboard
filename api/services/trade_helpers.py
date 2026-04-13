@@ -145,6 +145,12 @@ def trade_to_response(
         "confidence": trade.confidence,
         "screenshot_url": trade.screenshot_url,
         "trade_metadata": trade.trade_metadata,
+        "ict_setup_type": trade.ict_setup_type,
+        "ict_setup_detail": trade.ict_setup_detail,
+        "ict_tp_target": trade.ict_tp_target,
+        "ict_ifvg_timeframe": trade.ict_ifvg_timeframe,
+        "ict_smt_present": trade.ict_smt_present,
+        "ict_tdo_aligned": trade.ict_tdo_aligned,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }

@@ -3,6 +3,18 @@
 This file is read by all agents automatically. It contains the decisions already made,
 the patterns to follow, and the context behind the work. Do not re-debate these decisions.
 
+## Response Style
+
+Match response length to task complexity.
+
+- **Simple tasks** (single edit, quick question, config change): lead with the action or answer directly. No preamble ("I'll now..."), no trailing summary ("I've updated...").
+- **Multi-step tasks**: short status at natural milestones only. No narration between tool calls.
+- **Plans and design reviews**: full output is the point — don't compress these.
+
+Never restate what the user said. Never explain what you're about to do before doing it.
+
+---
+
 **MANDATORY**: Before writing or modifying any code, read `docs/coding-standards.md`.
 All code must comply with the file size limits, function size limits, naming conventions,
 import organization, type safety, and style rules defined there. Non-compliant code

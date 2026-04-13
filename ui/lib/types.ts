@@ -1,4 +1,23 @@
 export type InstrumentType = "forex" | "futures_mnq";
+
+// ICT trade params — MNQ only
+export type IctSetupType = "liquidity_sweep" | "unmitigated_fvg" | "continuation" | "other";
+export type IctLiquiditySweepDetail =
+  | "london_high" | "london_low" | "asia_high" | "asia_low"
+  | "data_high" | "data_low"
+  | "1m_high" | "1m_low" | "5m_high" | "5m_low"
+  | "15m_high" | "15m_low" | "1h_high" | "1h_low"
+  | "4h_high" | "4h_low" | "other";
+export type IctUnmitigatedFvgDetail = "15m" | "1h" | "4h" | "other";
+export type IctContinuationDetail = "3m" | "5m" | "15m" | "other";
+export type IctSetupDetail = IctLiquiditySweepDetail | IctUnmitigatedFvgDetail | IctContinuationDetail;
+export type IctTpTarget =
+  | "london_high" | "london_low" | "asia_high" | "asia_low"
+  | "data_high" | "data_low"
+  | "1m_high" | "1m_low" | "5m_high" | "5m_low" | "15m_high" | "15m_low"
+  | "unmitigated_5m_fvg" | "unmitigated_15m_fvg" | "unmitigated_1h_fvg" | "unmitigated_4h_fvg"
+  | "other";
+export type IctIfvgTimeframe = "1m" | "2m" | "3m" | "4m" | "5m" | "6m" | "7m" | "8m" | "9m" | "10m" | "15m" | "other";
 export type AccountType = "demo" | "live" | "funded";
 export type AccountStatus = "active" | "passed" | "failed" | "closed";
 
@@ -70,6 +89,12 @@ export interface TradeCreateRequest {
   confidence?: number | null;
   screenshot_url?: string | null;
   metadata?: Record<string, unknown>;
+  ict_setup_type?: string | null;
+  ict_setup_detail?: string | null;
+  ict_tp_target?: string | null;
+  ict_ifvg_timeframe?: string | null;
+  ict_smt_present?: boolean | null;
+  ict_tdo_aligned?: boolean | null;
 }
 
 export interface TradeUpdateRequest {
@@ -90,6 +115,12 @@ export interface TradeUpdateRequest {
   confidence?: number | null;
   screenshot_url?: string | null;
   metadata?: Record<string, unknown> | null;
+  ict_setup_type?: string | null;
+  ict_setup_detail?: string | null;
+  ict_tp_target?: string | null;
+  ict_ifvg_timeframe?: string | null;
+  ict_smt_present?: boolean | null;
+  ict_tdo_aligned?: boolean | null;
 }
 
 export interface Trade {
@@ -120,6 +151,12 @@ export interface Trade {
   account_id: string | null;
   account_name: string | null;
   metadata: Record<string, unknown>;
+  ict_setup_type: IctSetupType | null;
+  ict_setup_detail: IctSetupDetail | null;
+  ict_tp_target: IctTpTarget | null;
+  ict_ifvg_timeframe: IctIfvgTimeframe | null;
+  ict_smt_present: boolean | null;
+  ict_tdo_aligned: boolean | null;
   created_at: string;
   updated_at: string;
 }
