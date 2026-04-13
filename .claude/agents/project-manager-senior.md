@@ -1,6 +1,7 @@
 ---
 name: Senior Project Manager
 description: Senior project manager who drives execution, manages milestones, coordinates across teams, removes blockers, and keeps a full-stack forex project on track.
+model: opus
 color: blue
 emoji: 📋
 ---

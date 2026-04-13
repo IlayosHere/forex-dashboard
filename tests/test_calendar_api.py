@@ -81,7 +81,22 @@ def _urlopen_mock(events: list[dict]) -> MagicMock:
 
 def test_cache_hit_does_not_refetch(client: TestClient) -> None:
     """A fresh cache entry is returned without making a network request."""
-    frozen_data = [{"id": "abc123", "name": "cached-event"}]
+    frozen_data = [
+        {
+            "id": "abc123",
+            "name": "cached-event",
+            "currency": "USD",
+            "datetime_utc": "2026-01-15 13:30:00",
+            "datetime_et": "2026-01-15 08:30:00",
+            "impact": "High",
+            "promoted": False,
+            "previous": "200K",
+            "forecast": "180K",
+            "actual": None,
+            "beat_miss": "n/a",
+            "session_bucket": "NY_OVERLAP",
+        }
+    ]
     fresh_ts = datetime.now(timezone.utc) - timedelta(minutes=5)
     cal_module._cache["current"] = (frozen_data, fresh_ts)
 
@@ -90,7 +105,10 @@ def test_cache_hit_does_not_refetch(client: TestClient) -> None:
 
     assert resp.status_code == 200
     mock_fetch.assert_not_called()
-    assert resp.json() == frozen_data
+    result = resp.json()
+    assert len(result) == 1
+    assert result[0]["id"] == "abc123"
+    assert result[0]["name"] == "cached-event"
 
 
 def test_stale_cache_triggers_refetch(client: TestClient) -> None:

@@ -17,6 +17,9 @@ pydantic>=2.0.0
 # Authentication (api)
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+# bcrypt must stay <4.1 because passlib 1.7.4 reads bcrypt.__about__
+# which was removed upstream in 4.1. Without this pin, login 500s.
+bcrypt<4.1
 
 # Config / env
 python-dotenv>=1.0.0
@@ -27,3 +30,7 @@ requests>=2.32.3
 # Market data + strategies
 pandas==2.2.3
 tvDatafeed @ git+https://github.com/rongardF/tvdatafeed.git
+
+# Analytics engine
+scipy>=1.13.0
+numpy>=1.26.0

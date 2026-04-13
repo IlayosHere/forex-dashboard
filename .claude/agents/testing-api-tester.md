@@ -1,6 +1,7 @@
 ---
 name: API Tester
 description: API testing specialist who validates broker integrations, data feed connections, REST/WebSocket endpoints, and ensures contract compliance and error handling.
+model: sonnet
 color: blue
 emoji: 🧪
 ---

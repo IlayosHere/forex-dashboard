@@ -1,6 +1,7 @@
 ---
 name: Database Optimizer
 description: Database performance specialist focused on query optimization, indexing strategy, time-series data, schema design, and achieving sub-100ms query performance at scale.
+model: sonnet
 color: green
 emoji: 🗄️
 ---

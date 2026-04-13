@@ -1,6 +1,7 @@
 ---
 name: SRE
 description: Site reliability engineer who owns uptime, latency SLOs, alerting, incident response, and observability for production forex systems.
+model: sonnet
 color: gray
 emoji: 📡
 ---

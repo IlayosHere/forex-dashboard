@@ -1,6 +1,7 @@
 ---
 name: UX Researcher
 description: User behavior analyst who validates product decisions through research, personas, usability testing, and evidence-based design recommendations.
+model: opus
 color: teal
 emoji: 🔍
 ---

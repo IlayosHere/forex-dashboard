@@ -5,8 +5,9 @@ Integration tests for /api/signals endpoints.
 """
 from __future__ import annotations
 
+import itertools
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,15 +15,25 @@ from sqlalchemy.orm import Session
 
 from api.models import SignalModel
 
+# Monotonic counter ensures every _insert_signal call gets a unique candle_time,
+# avoiding the (strategy, symbol, candle_time) UNIQUE constraint when multiple
+# signals are inserted in the same test.
+_signal_counter = itertools.count()
+
 
 def _insert_signal(db: Session, **overrides: object) -> SignalModel:
-    """Insert a signal with sensible defaults and optional overrides."""
+    """Insert a signal with sensible defaults and optional overrides.
+
+    candle_time advances by 15 minutes per call so no two signals share the
+    same (strategy, symbol, candle_time) tuple within a test.
+    """
+    offset = next(_signal_counter)
     defaults: dict = {
         "id": str(uuid.uuid4()),
         "strategy": "fvg-impulse",
         "symbol": "EURUSD",
         "direction": "BUY",
-        "candle_time": datetime(2025, 1, 15, 12, 0, tzinfo=timezone.utc),
+        "candle_time": datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc) + timedelta(minutes=15 * offset),
         "entry": 1.08500,
         "sl": 1.08200,
         "tp": 1.09100,

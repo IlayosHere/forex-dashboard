@@ -1,0 +1,6 @@
+# E2E test dependencies.
+# Kept separate from the main requirements.txt so the unit-test loop
+# isn't polluted by anything only the deployed-environment suite needs.
+httpx>=0.27
+pytest>=8
+python-jose[cryptography]>=3.3

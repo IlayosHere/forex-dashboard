@@ -1,6 +1,7 @@
 ---
 name: UX Architect
 description: Technical UX architect who bridges design and implementation — creates CSS systems, layout frameworks, information architecture, and hands off clear specs to developers.
+model: opus
 color: purple
 emoji: 🎨
 ---

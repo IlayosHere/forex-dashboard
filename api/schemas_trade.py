@@ -11,7 +11,28 @@ from datetime import datetime, timezone
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from shared.ict_taxonomy import (
+    IFVG_TIMEFRAMES,
+    SETUP_DETAIL_MAP,
+    SETUP_TYPES,
+    TP_TARGETS,
+)
+
+
+def _validate_ict_detail_for_type(
+    setup_type: str | None, setup_detail: str | None,
+) -> None:
+    """Cross-validate that ict_setup_detail belongs to ict_setup_type's allowed list."""
+    if setup_type is None or setup_detail is None:
+        return
+    allowed = SETUP_DETAIL_MAP.get(setup_type, [])
+    if allowed and setup_detail not in allowed:
+        raise ValueError(
+            f"ict_setup_detail '{setup_detail}' is not valid for "
+            f"ict_setup_type '{setup_type}'. Must be one of {allowed}",
+        )
 
 
 class TradeCreateRequest(BaseModel):
@@ -36,6 +57,14 @@ class TradeCreateRequest(BaseModel):
     screenshot_url: str | None = None
     metadata: dict = Field(default_factory=dict)
 
+    # ICT params — required when instrument_type is futures_mnq
+    ict_setup_type: str | None = None
+    ict_setup_detail: str | None = None
+    ict_tp_target: str | None = None
+    ict_ifvg_timeframe: str | None = None
+    ict_smt_present: bool | None = None
+    ict_tdo_aligned: bool | None = None
+
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str) -> str:
@@ -51,6 +80,40 @@ class TradeCreateRequest(BaseModel):
         if v not in ("forex", "futures_mnq"):
             raise ValueError("instrument_type must be forex or futures_mnq")
         return v
+
+    @field_validator("ict_setup_type")
+    @classmethod
+    def validate_ict_setup_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in SETUP_TYPES:
+            raise ValueError(f"ict_setup_type must be one of {SETUP_TYPES}")
+        return v
+
+    @field_validator("ict_setup_detail")
+    @classmethod
+    def validate_ict_setup_detail(cls, v: str | None) -> str | None:
+        all_details = [d for details in SETUP_DETAIL_MAP.values() for d in details]
+        if v is not None and v not in all_details:
+            raise ValueError(f"ict_setup_detail is not a recognised value")
+        return v
+
+    @field_validator("ict_tp_target")
+    @classmethod
+    def validate_ict_tp_target(cls, v: str | None) -> str | None:
+        if v is not None and v not in TP_TARGETS:
+            raise ValueError(f"ict_tp_target must be one of {TP_TARGETS}")
+        return v
+
+    @field_validator("ict_ifvg_timeframe")
+    @classmethod
+    def validate_ict_ifvg_timeframe(cls, v: str | None) -> str | None:
+        if v is not None and v not in IFVG_TIMEFRAMES:
+            raise ValueError(f"ict_ifvg_timeframe must be one of {IFVG_TIMEFRAMES}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
+        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        return self
 
 
 class TradeUpdateRequest(BaseModel):
@@ -73,6 +136,14 @@ class TradeUpdateRequest(BaseModel):
     confidence: int | None = Field(default=None, ge=1, le=5)
     screenshot_url: str | None = None
     metadata: dict | None = None
+
+    # ICT params — optional on update
+    ict_setup_type: str | None = None
+    ict_setup_detail: str | None = None
+    ict_tp_target: str | None = None
+    ict_ifvg_timeframe: str | None = None
+    ict_smt_present: bool | None = None
+    ict_tdo_aligned: bool | None = None
 
     @field_validator("direction")
     @classmethod
@@ -106,6 +177,40 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError("outcome must be win, loss, or breakeven")
         return v
 
+    @field_validator("ict_setup_type")
+    @classmethod
+    def validate_ict_setup_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in SETUP_TYPES:
+            raise ValueError(f"ict_setup_type must be one of {SETUP_TYPES}")
+        return v
+
+    @field_validator("ict_setup_detail")
+    @classmethod
+    def validate_ict_setup_detail(cls, v: str | None) -> str | None:
+        all_details = [d for details in SETUP_DETAIL_MAP.values() for d in details]
+        if v is not None and v not in all_details:
+            raise ValueError(f"ict_setup_detail is not a recognised value")
+        return v
+
+    @field_validator("ict_tp_target")
+    @classmethod
+    def validate_ict_tp_target(cls, v: str | None) -> str | None:
+        if v is not None and v not in TP_TARGETS:
+            raise ValueError(f"ict_tp_target must be one of {TP_TARGETS}")
+        return v
+
+    @field_validator("ict_ifvg_timeframe")
+    @classmethod
+    def validate_ict_ifvg_timeframe(cls, v: str | None) -> str | None:
+        if v is not None and v not in IFVG_TIMEFRAMES:
+            raise ValueError(f"ict_ifvg_timeframe must be one of {IFVG_TIMEFRAMES}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
+        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        return self
+
 
 class TradeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -137,6 +242,12 @@ class TradeResponse(BaseModel):
     confidence: int | None
     screenshot_url: str | None
     metadata: dict = Field(validation_alias="trade_metadata")
+    ict_setup_type: str | None = None
+    ict_setup_detail: str | None = None
+    ict_tp_target: str | None = None
+    ict_ifvg_timeframe: str | None = None
+    ict_smt_present: bool | None = None
+    ict_tdo_aligned: bool | None = None
     created_at: datetime
     updated_at: datetime
 

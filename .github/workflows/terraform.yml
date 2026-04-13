@@ -1,0 +1,64 @@
+# Terraform plan/apply for infra/terraform/.
+#
+# - On push to main affecting infra/terraform/**: runs fmt + init + validate + plan (NO apply).
+# - On workflow_dispatch with apply=true: runs plan AND apply.
+# - Auto-apply on push is intentionally disabled because Cloud SQL and IAM
+#   changes are dangerous enough to warrant a human click.
+#
+# Uses the same Workload Identity Federation setup as deploy.yml. Required secrets:
+#   GCP_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA
+
+name: terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/terraform/**'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Run terraform apply (true/false)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SA }}
+          token_format: access_token
+
+      - name: Terraform fmt
+        run: terraform -chdir=infra/terraform fmt -check
+
+      - name: Terraform init
+        run: terraform -chdir=infra/terraform init
+
+      - name: Terraform validate
+        run: terraform -chdir=infra/terraform validate
+
+      - name: Terraform plan
+        run: terraform -chdir=infra/terraform plan -no-color -out=tfplan
+
+      # Apply only runs under manual workflow_dispatch with apply=true.
+      # Push-triggered runs stop after plan so a human reviews infra changes.
+      - name: Terraform apply
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == 'true' }}
+        run: terraform -chdir=infra/terraform apply -auto-approve tfplan

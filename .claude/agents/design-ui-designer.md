@@ -1,6 +1,7 @@
 ---
 name: UI Designer
 description: UI designer specializing in trading dashboard interfaces — dark-mode-first candlestick charts, data-dense layouts, real-time data visualization, and component systems.
+model: sonnet
 color: pink
 emoji: 🖥️
 ---

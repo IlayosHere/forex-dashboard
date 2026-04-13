@@ -8,6 +8,7 @@ accounts. CORS is restricted to localhost:3000 (Next.js dev server).
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -24,6 +25,10 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
+from analytics.candle_cache import STRATEGY_INTERVALS, get_app_cache
+from analytics.enrichment import fetch_resolved
+from analytics.routes import router as analytics_router
+from analytics.routes_stats import prewarm_enriched_cache, router as analytics_stats_router
 from api.db import Base, SessionLocal, engine
 from api.models import AccountModel, UserModel
 from api.auth import router as auth_router
@@ -198,6 +203,63 @@ def seed_users_from_env(db: Session) -> str:
     return first_username
 
 
+_PREWARM_INTERVAL_SECONDS = 14 * 60  # slightly under 15 min to stay ahead of bar close
+
+
+async def _prewarm_loop() -> None:
+    """Background task: warm the candle cache and enriched-signal cache.
+
+    Runs immediately at startup so the first analytics request hits a warm
+    cache rather than blocking for several seconds. Repeats every 14 minutes
+    to stay ahead of the 15-min bar boundary.
+
+    Two-phase warm per cycle:
+      1. Candle cache — fetches live OHLC from TradingView for every active
+         (symbol, strategy) pair. Network-bound; run in a thread executor.
+      2. Enriched cache — runs all analytics params for each strategy and
+         stores the result in _enriched_cache. CPU-bound; also off the event
+         loop. Skips strategies whose enriched cache is still valid.
+
+    Failures are caught per-phase and logged. Candle-dependent params degrade
+    gracefully to None when candles are unavailable.
+    """
+    loop = asyncio.get_running_loop()
+    cache = get_app_cache()
+    known_strategies = list(STRATEGY_INTERVALS.keys())
+
+    while True:
+        db = SessionLocal()
+        try:
+            try:
+                signals = fetch_resolved(db, limit=2000)
+                pairs = sorted({(s.symbol, s.strategy) for s in signals})
+                if pairs:
+                    logger.info("Pre-warming candle cache for %d pair(s)", len(pairs))
+                    warmed, failed = await loop.run_in_executor(None, cache.warm, pairs)
+                    logger.info(
+                        "Candle cache warm done — %d ok, %d failed",
+                        len(warmed), len(failed),
+                    )
+                    if failed:
+                        logger.warning("Candle cache warm failed for: %s", failed)
+            except Exception:
+                logger.exception("Error in candle cache pre-warm")
+
+            try:
+                logger.info(
+                    "Pre-warming enriched cache for strategies: %s", known_strategies,
+                )
+                await loop.run_in_executor(
+                    None, prewarm_enriched_cache, known_strategies, db, cache,
+                )
+                logger.info("Enriched cache warm done")
+            except Exception:
+                logger.exception("Error in enriched cache pre-warm")
+        finally:
+            db.close()
+        await asyncio.sleep(_PREWARM_INTERVAL_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Create tables, run migrations, seed defaults on startup."""
@@ -221,7 +283,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     finally:
         db.close()
     logger.info("Startup complete")
-    yield
+    task = asyncio.create_task(_prewarm_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
@@ -244,3 +314,5 @@ app.include_router(stats_router, prefix="/api", tags=["stats"])
 app.include_router(trades_router, prefix="/api")
 app.include_router(accounts_router, prefix="/api", tags=["accounts"])
 app.include_router(calendar_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api", tags=["analytics"])
+app.include_router(analytics_stats_router, prefix="/api", tags=["analytics"])

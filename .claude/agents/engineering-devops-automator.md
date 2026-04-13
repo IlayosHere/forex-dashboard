@@ -1,6 +1,7 @@
 ---
 name: DevOps Automator
 description: DevOps engineer specializing in Docker, Docker Compose, CI/CD, and self-hosted deployment. Gets apps from local dev to production on a VPS with minimal ops overhead.
+model: sonnet
 color: gray
 emoji: 🚀
 ---

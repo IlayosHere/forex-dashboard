@@ -1,6 +1,7 @@
 ---
 name: Frontend Developer
 description: Expert frontend developer specializing in modern web technologies, React/Vue/Angular frameworks, UI implementation, and performance optimization. Builds responsive, accessible web apps with pixel-perfect precision.
+model: sonnet
 color: yellow
 emoji: 💻
 ---
