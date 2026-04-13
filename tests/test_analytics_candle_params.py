@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from analytics.candle_cache import _compute_atr
+from analytics.candle_helpers import _compute_atr
 from analytics.params.candle_derived import (
     _atr_pips_at_bar,
     _find_signal_bar,

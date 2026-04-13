@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from api.models import TradeModel
+from api.services.trade_filters import TradeFilterParams
 from api.services.trade_helpers import (
     PnlInput,
     apply_trade_filters,
@@ -20,6 +21,29 @@ from api.services.trade_helpers import (
     trade_to_response,
 )
 from tests.conftest import make_trade
+
+
+def _filters(
+    strategy: str | None = None,
+    symbol: str | None = None,
+    status: str | None = None,
+    outcome: str | None = None,
+    instrument_type: str | None = None,
+    account_id: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> TradeFilterParams:
+    """Build a TradeFilterParams bypassing FastAPI Query defaults."""
+    f = object.__new__(TradeFilterParams)
+    f.strategy = strategy
+    f.symbol = symbol
+    f.status = status
+    f.outcome = outcome
+    f.instrument_type = instrument_type
+    f.account_id = account_id
+    f.date_from = date_from
+    f.date_to = date_to
+    return f
 
 
 # ---------------------------------------------------------------------------
@@ -117,9 +141,7 @@ def test_filter_by_strategy(db: Session) -> None:
     make_trade(db, strategy="strat-a")
     make_trade(db, strategy="strat-b")
     stmt = select(TradeModel)
-    stmt = apply_trade_filters(stmt, strategy="strat-a", symbol=None,
-                                status=None, outcome=None,
-                                date_from=None, date_to=None)
+    stmt = apply_trade_filters(stmt, _filters(strategy="strat-a"))
     results = list(db.scalars(stmt).all())
     assert len(results) == 1
     assert results[0].strategy == "strat-a"
@@ -132,8 +154,7 @@ def test_filter_by_date_range(db: Session) -> None:
     make_trade(db, open_time=late)
     stmt = select(TradeModel)
     stmt = apply_trade_filters(
-        stmt, strategy=None, symbol=None, status=None, outcome=None,
-        date_from=date(2025, 5, 1), date_to=date(2025, 7, 1),
+        stmt, _filters(date_from=date(2025, 5, 1), date_to=date(2025, 7, 1)),
     )
     results = list(db.scalars(stmt).all())
     assert len(results) == 1
@@ -143,7 +164,7 @@ def test_filter_no_filters_returns_all(db: Session) -> None:
     make_trade(db)
     make_trade(db)
     stmt = select(TradeModel)
-    stmt = apply_trade_filters(stmt, None, None, None, None, None, None)
+    stmt = apply_trade_filters(stmt, _filters())
     results = list(db.scalars(stmt).all())
     assert len(results) == 2
 
@@ -152,10 +173,7 @@ def test_filter_by_instrument_type(db: Session) -> None:
     make_trade(db, instrument_type="forex")
     make_trade(db, instrument_type="futures_mnq")
     stmt = select(TradeModel)
-    stmt = apply_trade_filters(
-        stmt, None, None, None, None, None, None,
-        instrument_type="futures_mnq",
-    )
+    stmt = apply_trade_filters(stmt, _filters(instrument_type="futures_mnq"))
     results = list(db.scalars(stmt).all())
     assert len(results) == 1
     assert results[0].instrument_type == "futures_mnq"

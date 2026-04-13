@@ -15,13 +15,13 @@ import pytest
 from sqlalchemy.orm import Session
 
 from api.models import SignalModel
+from runner.resolution_strategies import check_bar as _check_bar
+from runner.resolution_strategies import check_fill as _check_fill
+from runner.resolution_strategies import resolve_price as _resolve_price
 from runner.resolver import (
     NOVA_FILL_CANDLES,
     _bars_needed,
-    _check_bar,
-    _check_fill,
     _resolve_nova,
-    _resolve_price,
     _resolve_signal,
     _signal_candle_idx,
     resolve_pending_signals,
@@ -230,7 +230,11 @@ def test_resolve_nova_fill_window_not_closed_returns_false() -> None:
 
 def test_resolve_nova_expired_after_tp_sl_window() -> None:
     sig = _signal(strategy="nova-candle")
-    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 3):
+    # MAX_RESOLUTION_CANDLES is defined in resolution_strategies and imported by name into
+    # resolver — both namespaces must be patched or the constant in resolution_strategies
+    # keeps its original value when resolve_nova is called through the production path.
+    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 3), \
+         patch("runner.resolution_strategies.MAX_RESOLUTION_CANDLES", 3):
         bars = [_NEUTRAL, _FILL_BAR] + [_NEUTRAL] * 3
         assert _resolve_nova(sig, _df(bars), start_idx=0) is True
     assert sig.resolution == "EXPIRED"
@@ -258,14 +262,22 @@ def test_resolve_signal_sell_sl_hit() -> None:
 
 def test_resolve_signal_expired() -> None:
     sig = _signal(direction="BUY")
-    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 3):
+    # MAX_RESOLUTION_CANDLES is defined in resolution_strategies and imported by name into
+    # resolver — both namespaces must be patched or the constant in resolution_strategies
+    # keeps its original value when resolve_nova is called through the production path.
+    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 3), \
+         patch("runner.resolution_strategies.MAX_RESOLUTION_CANDLES", 3):
         assert _resolve_signal(sig, _df([_NEUTRAL] * 5)) is True
     assert sig.resolution == "EXPIRED"
 
 
 def test_resolve_signal_not_enough_candles_returns_false() -> None:
     sig = _signal(direction="BUY")
-    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 5):
+    # MAX_RESOLUTION_CANDLES is defined in resolution_strategies and imported by name into
+    # resolver — both namespaces must be patched or the constant in resolution_strategies
+    # keeps its original value when resolve_nova is called through the production path.
+    with patch("runner.resolver.MAX_RESOLUTION_CANDLES", 5), \
+         patch("runner.resolution_strategies.MAX_RESOLUTION_CANDLES", 5):
         assert _resolve_signal(sig, _df([_NEUTRAL] * 2)) is False
     assert sig.resolution is None
 

@@ -9,13 +9,18 @@ no side effects.
 """
 from __future__ import annotations
 
+import logging
+from typing import Any
+
 from api.models import AccountModel, TradeModel
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_trade_metrics(
     trades: list[TradeModel],
     closed: list[TradeModel],
-) -> dict:
+) -> dict[str, Any]:
     """Compute top-level performance metrics from a list of trades.
 
     Parameters
@@ -118,7 +123,7 @@ def _compute_avg_hold_time(closed: list[TradeModel]) -> float | None:
 def aggregate_by_field(
     closed: list[TradeModel],
     field: str,
-) -> dict[str, dict]:
+) -> dict[str, dict[str, Any]]:
     """Group closed trades by a model field and compute per-group stats.
 
     Parameters
@@ -132,7 +137,7 @@ def aggregate_by_field(
     -------
     dict mapping field values to {total, wins, losses, win_rate, total_pnl_pips}.
     """
-    buckets: dict[str, dict] = {}
+    buckets: dict[str, dict[str, Any]] = {}
     for t in closed:
         key = getattr(t, field)
         if key not in buckets:
@@ -161,7 +166,7 @@ def aggregate_by_field(
 def aggregate_by_account(
     closed: list[TradeModel],
     account_lookup: dict[str, AccountModel],
-) -> dict[str, dict]:
+) -> dict[str, dict[str, Any]]:
     """Group closed trades by account_id with account metadata.
 
     Parameters
@@ -175,7 +180,7 @@ def aggregate_by_account(
     -------
     dict mapping account_id to stats dict including account_name and account_type.
     """
-    buckets: dict[str, dict] = {}
+    buckets: dict[str, dict[str, Any]] = {}
     for t in closed:
         aid = t.account_id or "__none__"
         if aid not in buckets:

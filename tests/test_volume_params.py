@@ -2,7 +2,7 @@
 tests/test_volume_params.py
 ---------------------------
 Unit tests for the tick-count volume parameters exposed by
-``analytics.params.candle_derived``: ``relative_volume``,
+``analytics.params.volume``: ``relative_volume``,
 ``volume_percentile``, and ``volume_regime``.
 
 Volume here is TradingView tick count (activity proxy), not traded lot
@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 
-from analytics.params.candle_derived import (
+from analytics.params.volume import (
     relative_volume,
     volume_percentile,
     volume_regime,
@@ -186,7 +186,17 @@ def test_relative_volume_returns_none_when_column_missing() -> None:
     df = _make_candles(n=60, volume=None)
     sig = _signal(candle_time=df.index[25].to_pydatetime())
     assert relative_volume(sig, df) is None
+
+
+def test_volume_percentile_returns_none_when_column_missing() -> None:
+    df = _make_candles(n=60, volume=None)
+    sig = _signal(candle_time=df.index[25].to_pydatetime())
     assert volume_percentile(sig, df) is None
+
+
+def test_volume_regime_returns_none_when_column_missing() -> None:
+    df = _make_candles(n=60, volume=None)
+    sig = _signal(candle_time=df.index[25].to_pydatetime())
     assert volume_regime(sig, df) is None
 
 
@@ -223,3 +233,42 @@ def test_volume_params_return_none_when_bar_volume_is_nan() -> None:
     assert relative_volume(sig, df) is None
     assert volume_percentile(sig, df) is None
     assert volume_regime(sig, df) is None
+
+
+# ---------------------------------------------------------------------------
+# Boundary — exact guard conditions
+# ---------------------------------------------------------------------------
+
+
+def test_relative_volume_boundary_at_exactly_20_bars() -> None:
+    """Signal at index 19 with 20 bars total: guard is idx < 20, so idx==19 returns None."""
+    df = _make_candles(n=20, volume=100.0)
+    sig = _signal(candle_time=df.index[19].to_pydatetime())
+    assert relative_volume(sig, df) is None
+
+
+def test_volume_percentile_boundary_at_exactly_50_bars() -> None:
+    """Signal at index 49 with 50 bars total: window length == 50, so result is a float."""
+    df = _make_candles(n=50, volume=100.0)
+    sig = _signal(candle_time=df.index[49].to_pydatetime())
+    result = volume_percentile(sig, df)
+    assert result is not None
+    assert isinstance(result, float)
+
+
+# ---------------------------------------------------------------------------
+# NaN inside baseline window
+# ---------------------------------------------------------------------------
+
+
+def test_relative_volume_returns_none_when_nan_in_baseline() -> None:
+    """NaN inside the 20-bar baseline window must cause None.
+
+    Signal is at index 39.  Baseline window is iloc[19:39] (bars 19–38).
+    NaN is injected at positional index 25, which falls inside that window.
+    """
+    vols = [100.0] * 40
+    df = _make_candles(n=40, volume=vols)
+    df.loc[df.index[25], "volume"] = np.nan
+    sig = _signal(candle_time=df.index[39].to_pydatetime())
+    assert relative_volume(sig, df) is None

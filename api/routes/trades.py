@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date, datetime, timezone
-from typing import Annotated
+from datetime import datetime, timezone
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -30,13 +30,17 @@ from api.schemas import (
     TradeStatsResponse,
     TradeUpdateRequest,
 )
+from api.services.trade_filters import StatsFilterParams, TradeFilterParams
 from api.services.trade_helpers import (
-    PnlInput,
     apply_trade_filters,
     build_account_lookup,
-    calculate_pnl,
     compute_risk_pips,
     trade_to_response,
+)
+from api.services.trade_update import (
+    apply_update_fields,
+    guard_terminal_status,
+    recalculate_pnl_on_close,
 )
 from api.services.trade_stats import (
     aggregate_by_account,
@@ -55,61 +59,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ---------------------------------------------------------------------------
-# Query filter dependency — groups filter params for list_trades / trade_stats
-# ---------------------------------------------------------------------------
-
-
-class _TradeFilterParams:
-    """Dependency that collects trade filter query parameters."""
-
-    def __init__(
-        self,
-        strategy: str | None = Query(default=None),
-        symbol: str | None = Query(default=None),
-        status: str | None = Query(default=None),
-        outcome: str | None = Query(default=None),
-        instrument_type: str | None = Query(default=None),
-        account_id: str | None = Query(default=None),
-        date_from: date | None = Query(default=None, alias="from"),
-        date_to: date | None = Query(default=None, alias="to"),
-    ) -> None:
-        self.strategy = strategy
-        self.symbol = symbol
-        self.status = status
-        self.outcome = outcome
-        self.instrument_type = instrument_type
-        self.account_id = account_id
-        self.date_from = date_from
-        self.date_to = date_to
-
-
-class _StatsFilterParams:
-    """Dependency for stats — excludes status/outcome (stats compute their own breakdown)."""
-
-    def __init__(
-        self,
-        strategy: str | None = Query(default=None),
-        symbol: str | None = Query(default=None),
-        instrument_type: str | None = Query(default=None),
-        account_id: str | None = Query(default=None),
-        date_from: date | None = Query(default=None, alias="from"),
-        date_to: date | None = Query(default=None, alias="to"),
-    ) -> None:
-        self.strategy = strategy
-        self.symbol = symbol
-        self.instrument_type = instrument_type
-        self.account_id = account_id
-        self.date_from = date_from
-        self.date_to = date_to
-
 
 @router.post("/trades", response_model=TradeResponse, status_code=201)
 def create_trade(
     req: TradeCreateRequest,
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Create a new trade journal entry."""
     if req.signal_id is not None:
         if db.get(SignalModel, req.signal_id) is None:
@@ -157,18 +113,14 @@ def create_trade(
 def list_trades(
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    filters: Annotated[_TradeFilterParams, Depends()],
+    filters: Annotated[TradeFilterParams, Depends()],
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """List trades with optional filters, newest first."""
     stmt = select(TradeModel).order_by(TradeModel.open_time.desc())
     stmt = stmt.where(TradeModel.owner == current_user)
-    stmt = apply_trade_filters(
-        stmt, filters.strategy, filters.symbol, filters.status,
-        filters.outcome, filters.date_from, filters.date_to,
-        filters.instrument_type, filters.account_id,
-    )
+    stmt = apply_trade_filters(stmt, filters)
     if filters.status is None:
         stmt = stmt.where(TradeModel.status != "cancelled")
     stmt = stmt.offset(offset).limit(limit)
@@ -181,16 +133,12 @@ def list_trades(
 def trade_stats(
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    filters: Annotated[_StatsFilterParams, Depends()],
-) -> dict:
+    filters: Annotated[StatsFilterParams, Depends()],
+) -> dict[str, Any]:
     """Return aggregated performance statistics for filtered trades."""
     stmt = select(TradeModel)
     stmt = stmt.where(TradeModel.owner == current_user)
-    stmt = apply_trade_filters(
-        stmt, filters.strategy, filters.symbol, None, None,
-        filters.date_from, filters.date_to,
-        filters.instrument_type, filters.account_id,
-    )
+    stmt = apply_trade_filters(stmt, filters)
     stmt = stmt.where(TradeModel.status != "cancelled")
     trades = list(db.scalars(stmt).all())
     closed = [t for t in trades if t.status in ("closed", "breakeven")]
@@ -214,7 +162,7 @@ def get_trade(
     trade_id: str,
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Fetch a single trade by ID, return 404 if not found."""
     trade = db.get(TradeModel, trade_id)
     if trade is None or trade.owner != current_user:
@@ -229,7 +177,7 @@ def update_trade(
     req: TradeUpdateRequest,
     current_user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-) -> dict:
+) -> dict[str, Any]:
     """Update a trade (close it, edit notes, tags, etc.)."""
     trade = db.get(TradeModel, trade_id)
     if trade is None or trade.owner != current_user:
@@ -238,67 +186,9 @@ def update_trade(
 
     update_data = req.model_dump(exclude_unset=True)
     user_sent_outcome = "outcome" in update_data
-
-    # Guard: prevent reopening a terminal trade
-    _TERMINAL = {"closed", "breakeven", "cancelled"}
-    current_status = trade.status
-    new_status = update_data.get("status", current_status)
-    if current_status in _TERMINAL and new_status not in _TERMINAL:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Cannot change status from '{current_status}' to '{new_status}'",
-        )
-
-    # FIX 6: only allow fields defined in TradeUpdateRequest
-    _ALLOWED_UPDATE_FIELDS = {
-        "instrument_type", "direction", "entry_price", "exit_price",
-        "sl_price", "tp_price", "lot_size", "risk_pips", "status",
-        "outcome", "close_time", "tags", "notes", "rating",
-        "confidence", "screenshot_url", "metadata",
-        "ict_setup_type", "ict_setup_detail", "ict_tp_target",
-        "ict_ifvg_timeframe", "ict_smt_present", "ict_tdo_aligned",
-    }
-    for field, value in update_data.items():
-        if field not in _ALLOWED_UPDATE_FIELDS:
-            continue
-        if field == "metadata":
-            setattr(trade, "trade_metadata", value)
-        else:
-            setattr(trade, field, value)
-
-    # Recalculate P&L when closing
-    if trade.status in ("closed", "breakeven"):
-        if trade.exit_price is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="exit_price is required to close or mark a trade as breakeven",
-            )
-        pnl_pips, pnl_usd, rr = calculate_pnl(PnlInput(
-            symbol=trade.symbol, direction=trade.direction,
-            entry_price=trade.entry_price, exit_price=trade.exit_price,
-            lot_size=trade.lot_size, risk_pips=trade.risk_pips,
-            instrument_type=trade.instrument_type,
-        ))
-        trade.pnl_pips = pnl_pips
-        trade.pnl_usd = pnl_usd
-        trade.rr_achieved = rr
-
-        if not user_sent_outcome:
-            if abs(pnl_pips) < 0.1:
-                trade.outcome = "breakeven"
-                trade.status = "breakeven"
-            elif pnl_pips > 0:
-                trade.outcome = "win"
-                trade.status = "closed"
-            else:
-                trade.outcome = "loss"
-                trade.status = "closed"
-
-        # FIX 1: auto-set close_time when closing
-        if trade.close_time is None:
-            trade.close_time = datetime.now(timezone.utc)
-
-        logger.info("Trade closed: %s pnl_pips=%s outcome=%s", trade_id, pnl_pips, trade.outcome)
+    guard_terminal_status(trade, update_data.get("status", trade.status))
+    apply_update_fields(trade, update_data)
+    recalculate_pnl_on_close(trade, user_sent_outcome, trade_id)
 
     trade.updated_at = datetime.now(timezone.utc)
     db.commit()

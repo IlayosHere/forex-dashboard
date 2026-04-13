@@ -12,6 +12,7 @@ for backward-compatible imports.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -42,7 +43,7 @@ class SignalResponse(BaseModel):
     risk_pips: float
     spread_pips: float
     # DB column is signal_metadata; expose as metadata in JSON
-    metadata: dict = Field(validation_alias="signal_metadata")
+    metadata: dict[str, Any] = Field(validation_alias="signal_metadata")
     created_at: datetime
 
     # Resolution fields — populated by runner/resolver.py
@@ -149,6 +150,8 @@ class AccountResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CalculateRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     symbol: str
     entry: float
     sl_pips: float = Field(gt=0)
@@ -159,6 +162,8 @@ class CalculateRequest(BaseModel):
 
 
 class CalculateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     lot_size: float
     risk_usd: float
     sl_pips: float

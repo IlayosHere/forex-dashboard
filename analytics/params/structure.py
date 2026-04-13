@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from analytics.candle_cache import cached_h1
@@ -141,5 +142,14 @@ def bars_since_h1_extreme(signal: Any, candles: pd.DataFrame | None) -> int | No
         extreme_pos = window["low"].idxmin()
     else:
         extreme_pos = window["high"].idxmax()
-    extreme_idx = window.index.get_loc(extreme_pos)
+    # get_loc returns a slice or boolean array when the index has duplicate
+    # timestamps; take the last matching position to keep the result an int.
+    loc = window.index.get_loc(extreme_pos)
+    if isinstance(loc, int):
+        extreme_idx = loc
+    elif isinstance(loc, slice):
+        extreme_idx = (loc.stop - 1) if loc.stop is not None else len(window) - 1
+    else:
+        # Boolean array
+        extreme_idx = int(np.where(loc)[0][-1])
     return int(len(window) - 1 - extreme_idx)

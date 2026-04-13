@@ -16,3 +16,4 @@ from analytics.params import regime  # noqa: F401
 from analytics.params import spread  # noqa: F401
 from analytics.params import structure  # noqa: F401
 from analytics.params import temporal  # noqa: F401
+from analytics.params import volume  # noqa: F401

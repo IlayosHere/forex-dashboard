@@ -11,6 +11,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 
 def generate_id() -> str:
@@ -30,7 +31,7 @@ class Signal:
     lot_size: float     # pre-calculated at default account settings
     risk_pips: float
     spread_pips: float
-    metadata: dict      # strategy-specific extras — free-form, rendered as key-value
+    metadata: dict[str, Any]  # strategy-specific extras — free-form, rendered as key-value
 
     id: str = field(default_factory=generate_id)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

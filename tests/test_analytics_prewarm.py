@@ -134,6 +134,12 @@ class TestFetchResolvedFromDate:
 # ---------------------------------------------------------------------------
 
 class TestPrewarmEnrichedCache:
+    @pytest.fixture(autouse=True)
+    def _auto_clear_enriched_cache(self) -> None:
+        """Clear _enriched_cache before each test to prevent state leaks."""
+        with _enriched_lock:
+            _enriched_cache.clear()
+
     def _clear_enriched_cache(self) -> None:
         with _enriched_lock:
             _enriched_cache.clear()

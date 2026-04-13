@@ -81,7 +81,7 @@ def volatility_percentile_long(signal: Any, candles: pd.DataFrame | None) -> flo
     if pd.isna(current):
         return None
     count_le = int((window <= current).sum())
-    return count_le / len(window) * 100
+    return float(count_le / len(window) * 100)
 
 
 @register("signal_wick_pips", strategies=_FVG_5M_STRATEGIES, needs_candles=True, dtype="float")

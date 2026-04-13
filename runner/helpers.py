@@ -50,13 +50,14 @@ def is_market_open() -> bool:
 # Candle timing
 # ---------------------------------------------------------------------------
 
-SCAN_INTERVAL_SECONDS: int = 5 * 60
+SCAN_INTERVAL_SECONDS: int = int(os.getenv("SCAN_INTERVAL_SECONDS", str(5 * 60)))
 
 
 def wait_for_next_candle() -> None:
-    """Sleep until the next 5-minute candle boundary + 5-second buffer."""
+    """Sleep until the next candle boundary + 5-second buffer."""
+    interval_minutes: int = max(1, SCAN_INTERVAL_SECONDS // 60)
     now = datetime.now(timezone.utc)
-    elapsed = (now.minute % 5) * 60 + now.second
+    elapsed = (now.minute % interval_minutes) * 60 + now.second
     seconds_to_wait = SCAN_INTERVAL_SECONDS - elapsed + 5
     if seconds_to_wait <= 5:
         seconds_to_wait += SCAN_INTERVAL_SECONDS
@@ -103,12 +104,17 @@ def discover_strategies() -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 def is_duplicate(db: Session, sig: Signal) -> bool:
-    """Return True if a signal for (strategy, symbol, candle_time) already exists."""
+    """Return True if a signal for (strategy, symbol, candle_time) already exists.
+
+    Matches the DB unique constraint on (strategy, symbol, candle_time).
+    direction is intentionally excluded: if a strategy emits BUY and SELL for
+    the same candle, the second insert would violate the constraint regardless
+    of direction, so we catch it here rather than letting it fail silently.
+    """
     return db.scalar(
         select(SignalModel).where(
             SignalModel.strategy == sig.strategy,
             SignalModel.symbol == sig.symbol,
-            SignalModel.direction == sig.direction,
             SignalModel.candle_time == sig.candle_time,
         ),
     ) is not None
@@ -135,11 +141,12 @@ def persist(db: Session, sig: Signal) -> None:
             )
         )
         db.flush()
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        logger.info(
-            "Duplicate signal skipped: %s %s %s",
-            sig.strategy, sig.symbol, sig.candle_time,
-        )
+        if "UNIQUE" in str(e.orig):
+            logger.info("Duplicate signal skipped: %s %s %s", sig.strategy, sig.symbol, sig.candle_time)
+        else:
+            logger.error("IntegrityError persisting signal %s: %s", sig.id, e)
+        return
 
 

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -23,6 +22,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from api.auth_rate_limit import check_login_rate_limit
+from api.auth_rate_limit import reset_login_rate_limits as reset_login_rate_limits  # re-exported
 from api.db import get_db
 from api.models import UserModel
 
@@ -35,23 +36,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # ---------------------------------------------------------------------------
 
 _JWT_ALGORITHM = "HS256"
-_TOKEN_EXPIRE_HOURS = 168  # 7 days
+_TOKEN_EXPIRE_HOURS: int = int(os.getenv("TOKEN_EXPIRE_HOURS", "168"))  # default: 7 days
 
 _bearer_scheme = HTTPBearer(auto_error=False)
-
-# ---------------------------------------------------------------------------
-# Rate limiting (in-memory, per-IP)
-# ---------------------------------------------------------------------------
-
-_LOGIN_RATE_LIMIT = 5
-_LOGIN_RATE_WINDOW_SECONDS = 60
-_login_attempts: dict[str, list[float]] = {}
-
-
-def reset_login_rate_limits() -> None:
-    """Clear all stored rate-limit data. Intended for test teardown only."""
-    _login_attempts.clear()
-
 
 # ---------------------------------------------------------------------------
 # Schemas
@@ -90,27 +77,6 @@ class MessageResponse(BaseModel):
 def _get_jwt_secret() -> str:
     """Read JWT_SECRET from env on each call (avoids stale module-level value)."""
     return os.getenv("JWT_SECRET", "")
-
-
-def _check_login_rate_limit(request: Request) -> None:
-    """Raise 429 if the IP exceeds the login attempt limit."""
-    ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
-    cutoff = now - _LOGIN_RATE_WINDOW_SECONDS
-
-    # Clean old entries for this IP
-    timestamps = _login_attempts.get(ip, [])
-    timestamps = [t for t in timestamps if t > cutoff]
-    _login_attempts[ip] = timestamps
-
-    if len(timestamps) >= _LOGIN_RATE_LIMIT:
-        logger.warning("Rate limit exceeded for IP %s", ip)
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many login attempts. Try again later.",
-        )
-
-    timestamps.append(now)
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +170,7 @@ def login(
     db: Annotated[Session, Depends(get_db)],
 ) -> LoginResponse:
     """Authenticate with username + password, return a JWT."""
-    _check_login_rate_limit(request)
+    check_login_rate_limit(request)
     user = db.scalar(select(UserModel).where(UserModel.username == req.username))
     if user is None:
         # Dummy verify to prevent timing side-channel (don't reveal if username exists)

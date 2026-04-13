@@ -37,7 +37,10 @@ analytics/
   registry.py              @register decorator, resolve_all_params()
   types.py                 Session, PairCategory enums, ParamDef dataclass
   enrichment.py            fetch_resolved(), enrich_batch(), enrich_with_candles()
-  candle_cache.py          CandleCache + STRATEGY_INTERVALS + cached_atr / cached_h1
+  candle_cache.py          CandleCache + STRATEGY_INTERVALS + app singleton (get_app_cache)
+  candle_helpers.py        DataFrame-level derived series helpers (get_candles_around,
+                           cached_atr, cached_h1, cached_d1, cached_ema20_h1).
+                           Memoized via module-level WeakValueDictionary.
   routes.py                GET /api/analytics/enriched
   routes_stats.py          GET /api/analytics/univariate/{name}, /api/analytics/summary
   schemas.py               Pydantic response models
@@ -50,9 +53,10 @@ analytics/
     temporal.py            session_label, day_of_week
     spread.py              spread_risk_ratio, pair_category
     candle_derived.py      atr_14, trend_h1_aligned, volatility_percentile,
-                           risk_pips_atr, relative_volume, volume_percentile,
-                           volume_regime  — plus shared helpers _find_signal_bar,
+                           risk_pips_atr — plus shared helpers _find_signal_bar,
                            _atr_pips_at_bar, _volume_at_bar
+    volume.py              Volume params: relative_volume, volume_percentile,
+                           volume_regime
     fvg_impulse.py         FVG-specific params (shared between M15 and M5 variants)
     nova_candle.py         Nova-specific params + spread_tier
 ```
@@ -170,12 +174,19 @@ instantly participates in the statistics. Do not wait for new data to validate.
 | `_atr_pips_at_bar(candles, signal)` | Returns ATR-14 in pips at the signal bar. Uses memoized ATR. | Any param that normalizes against volatility. |
 | `_volume_at_bar(candles, signal)` | Returns tick count at the signal bar, or `None` if the column is missing or NaN. | Volume-based params. |
 
+### `analytics/candle_helpers.py`
+
+| Helper | What it does | Use when |
+|---|---|---|
+| `cached_atr(df, period=14)` | Memoized ATR series keyed by `id(df)`. Shared across all params that see the same DataFrame. | Param needs the ATR series, not a single bar value. |
+| `cached_h1(df)` | Memoized H1 OHLC resample, keyed by `id(df)`. | Param needs an H1 view. |
+| `cached_d1(df)` | Memoized broker-day D1 resample, keyed by `id(df)`. | Param needs a D1 view. |
+| `cached_ema20_h1(h1)` | Memoized EMA-20 on an H1 DataFrame. | Param needs H1 trend. |
+
 ### `analytics/candle_cache.py`
 
 | Helper | What it does | Use when |
 |---|---|---|
-| `cached_atr(df, period=14)` | Memoized ATR series on `df.attrs`. Shared across all params that see the same DataFrame. | Param needs the ATR series, not a single bar value. |
-| `cached_h1(df)` | Memoized H1 OHLC resample on `df.attrs`. | Param needs an H1 view. |
 | `interval_for_strategy(strategy)` | Returns the `Interval` enum for a strategy slug, with M15 fallback. | Rarely directly — the cache handles it. |
 
 **Do NOT call `_compute_atr` directly from params.** It bypasses memoization and
@@ -320,6 +331,7 @@ See [tests/test_analytics_candle_params.py](../tests/test_analytics_candle_param
   it belongs in the per-request `CandleCache`, not in the database.
 - Introduce a parameter whose computation is non-deterministic (time-of-day, random,
   external API call). Params must be pure functions of `(signal, candles)`.
-- Move helpers out of `params/candle_derived.py` into a separate file "for cleanliness".
-  The current layout is a deliberate choice — `candle_derived.py` is the shared-helper
-  module, other param files import from it.
+- Move DataFrame-level derived series helpers (ATR, H1, D1, EMA) out of
+  `analytics/candle_helpers.py`. That module is the designated home for shared
+  DataFrame helpers. Param-level helpers (`_find_signal_bar`, `_atr_pips_at_bar`,
+  `_volume_at_bar`) live in `params/candle_derived.py` and should stay there.

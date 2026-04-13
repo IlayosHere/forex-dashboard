@@ -20,9 +20,9 @@ import analytics.params  # noqa: F401 — triggers @register side-effects for al
 
 from analytics.candle_cache import (
     CandleCache,
-    _next_bar_close,
     get_app_cache,
     interval_for_strategy,
+    next_bar_close,
 )
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
@@ -51,6 +51,20 @@ class _EnrichedEntry(NamedTuple):
 
 _enriched_cache: dict[str, _EnrichedEntry] = {}
 _enriched_lock = threading.Lock()
+# Per-strategy locks for double-checked locking: prevents two concurrent
+# requests from both computing enrich_batch() for the same strategy when
+# the shared cache is cold. The outer _enriched_lock only guards cache reads
+# and per-strategy lock creation; the per-strategy lock serialises the
+# expensive compute step.
+_enriched_computing_locks: dict[str, threading.Lock] = {}
+
+
+def _get_computing_lock(strategy: str) -> threading.Lock:
+    """Return (creating if needed) the per-strategy computing lock."""
+    with _enriched_lock:
+        if strategy not in _enriched_computing_locks:
+            _enriched_computing_locks[strategy] = threading.Lock()
+        return _enriched_computing_locks[strategy]
 
 
 def filter_by_symbol(
@@ -83,7 +97,15 @@ def get_enriched(
     db: Session,
     candle_cache: CandleCache,
 ) -> list[dict[str, Any]]:
-    """Return enriched signals for a strategy, computing and caching on miss/expiry."""
+    """Return enriched signals for a strategy, computing and caching on miss/expiry.
+
+    Uses double-checked locking to prevent concurrent requests from both
+    computing enrich_batch() for the same strategy on a cold cache:
+    1. Fast path: check cache under the shared lock, return early on hit.
+    2. Slow path: acquire the per-strategy computing lock (blocking), re-check
+       the cache (it may have been filled while we waited), and only compute
+       if still a miss.
+    """
     now = datetime.now(timezone.utc)
 
     with _enriched_lock:
@@ -92,14 +114,29 @@ def get_enriched(
             logger.debug("Enriched cache hit for strategy=%s", strategy)
             return entry.enriched
 
-    logger.info("Enriched cache miss for strategy=%s — recomputing", strategy)
-    signals = fetch_resolved(db, strategy=strategy)
-    candle_cache.warm({(s.symbol, s.strategy) for s in signals})
-    enriched = enrich_batch(signals, candle_cache=candle_cache)
+    computing_lock = _get_computing_lock(strategy)
+    with computing_lock:
+        # Re-check after acquiring the per-strategy lock: a concurrent caller
+        # may have computed and stored the result while we were waiting.
+        with _enriched_lock:
+            entry = _enriched_cache.get(strategy)
+            if entry is not None and now < entry.expires_at:
+                logger.debug("Enriched cache hit (post-lock re-check) for strategy=%s", strategy)
+                return entry.enriched
 
-    expires_at = _next_bar_close(interval_for_strategy(strategy), now)
-    with _enriched_lock:
-        _enriched_cache[strategy] = _EnrichedEntry(enriched=enriched, expires_at=expires_at)
+        logger.info("Enriched cache miss for strategy=%s — recomputing", strategy)
+        signals = fetch_resolved(db, strategy=strategy)
+        _warmed, _failed = candle_cache.warm(list({(s.symbol, s.strategy) for s in signals}))
+        if _failed:
+            logger.warning(
+                "Cache warm failed for %d pair(s) in strategy=%s: %s",
+                len(_failed), strategy, _failed,
+            )
+        enriched = enrich_batch(signals, candle_cache=candle_cache)
+
+        expires_at = next_bar_close(interval_for_strategy(strategy), now)
+        with _enriched_lock:
+            _enriched_cache[strategy] = _EnrichedEntry(enriched=enriched, expires_at=expires_at)
 
     return enriched
 

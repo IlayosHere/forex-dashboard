@@ -59,7 +59,10 @@ def get_tv() -> TvDatafeed:
     with _tv_lock:
         if _tv is None:
             _tv = TvDatafeed()
-            _tv._TvDatafeed__ws_timeout = 15
+            try:
+                _tv._TvDatafeed__ws_timeout = 15
+            except AttributeError:
+                logger.warning("tvDatafeed: could not set __ws_timeout (library API changed)")
             logger.info("TvDatafeed connection established")
         return _tv
 

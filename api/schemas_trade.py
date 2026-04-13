@@ -55,7 +55,7 @@ class TradeCreateRequest(BaseModel):
     rating: int | None = Field(default=None, ge=1, le=5)
     confidence: int | None = Field(default=None, ge=1, le=5)
     screenshot_url: str | None = None
-    metadata: dict = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     # ICT params — required when instrument_type is futures_mnq
     ict_setup_type: str | None = None
@@ -93,7 +93,10 @@ class TradeCreateRequest(BaseModel):
     def validate_ict_setup_detail(cls, v: str | None) -> str | None:
         all_details = [d for details in SETUP_DETAIL_MAP.values() for d in details]
         if v is not None and v not in all_details:
-            raise ValueError(f"ict_setup_detail is not a recognised value")
+            raise ValueError(
+                f"ict_setup_detail '{v}' is not a recognised value. "
+                f"Valid values: {list(SETUP_DETAIL_MAP.values())}",
+            )
         return v
 
     @field_validator("ict_tp_target")
@@ -135,7 +138,7 @@ class TradeUpdateRequest(BaseModel):
     rating: int | None = Field(default=None, ge=1, le=5)
     confidence: int | None = Field(default=None, ge=1, le=5)
     screenshot_url: str | None = None
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
     # ICT params — optional on update
     ict_setup_type: str | None = None
@@ -189,7 +192,10 @@ class TradeUpdateRequest(BaseModel):
     def validate_ict_setup_detail(cls, v: str | None) -> str | None:
         all_details = [d for details in SETUP_DETAIL_MAP.values() for d in details]
         if v is not None and v not in all_details:
-            raise ValueError(f"ict_setup_detail is not a recognised value")
+            raise ValueError(
+                f"ict_setup_detail '{v}' is not a recognised value. "
+                f"Valid values: {list(SETUP_DETAIL_MAP.values())}",
+            )
         return v
 
     @field_validator("ict_tp_target")
@@ -241,7 +247,7 @@ class TradeResponse(BaseModel):
     rating: int | None
     confidence: int | None
     screenshot_url: str | None
-    metadata: dict = Field(validation_alias="trade_metadata")
+    metadata: dict[str, Any] = Field(validation_alias="trade_metadata")
     ict_setup_type: str | None = None
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None

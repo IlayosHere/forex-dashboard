@@ -13,12 +13,14 @@ import asyncio
 import hashlib
 import json
 import logging
+import threading
 import urllib.request
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from api.auth import get_current_user
 from api.schemas import CalendarEventResponse
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,7 @@ _CACHE_TTL = timedelta(minutes=15)
 
 # { "current": (data, fetched_at), "next": (data, fetched_at) }
 _cache: dict[str, tuple[list[dict[str, Any]], datetime]] = {}
+_cache_lock = threading.Lock()
 
 # ET offsets — FF feed embeds the offset directly; we read it back from the
 # parsed datetime rather than hardcoding, so DST is handled by the source.
@@ -174,17 +177,22 @@ def _transform_all(raw_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
 async def _get_events(week: str) -> list[dict[str, Any]]:
     """Return cached events or fetch fresh from ForexFactory."""
     now = datetime.now(timezone.utc)
-    cached = _cache.get(week)
-    if cached is not None:
-        data, fetched_at = cached
-        if now - fetched_at < _CACHE_TTL:
-            logger.debug("Returning cached calendar for week=%s", week)
-            return data
+
+    with _cache_lock:
+        cached = _cache.get(week)
+        if cached is not None:
+            data, fetched_at = cached
+            if now - fetched_at < _CACHE_TTL:
+                logger.debug("Returning cached calendar for week=%s", week)
+                return data
 
     logger.info("Fetching ForexFactory calendar for week=%s", week)
     raw = await asyncio.to_thread(_fetch_ff_json, week)
     transformed = _transform_all(raw)
-    _cache[week] = (transformed, now)
+
+    with _cache_lock:
+        _cache[week] = (transformed, now)
+
     return transformed
 
 
@@ -194,6 +202,7 @@ async def _get_events(week: str) -> list[dict[str, Any]]:
 
 @router.get("/calendar", response_model=list[CalendarEventResponse])
 async def get_calendar(
+    _: Annotated[str, Depends(get_current_user)],
     week: str = Query(default="current", pattern="^(current|next)$"),
 ) -> list[dict[str, Any]]:
     """Return economic calendar events for the current or next week.

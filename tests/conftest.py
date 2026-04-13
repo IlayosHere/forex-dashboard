@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 # Must be set before api.main is imported so the lifespan JWT guard passes.
 os.environ.setdefault("JWT_SECRET", "a" * 32)
+# Force in-memory SQLite so the lifespan create_all does not write signals.db.
+os.environ.setdefault("DATABASE_URL", "sqlite://")
 
 from api.auth import get_current_user, reset_login_rate_limits
 from api.db import Base, get_db

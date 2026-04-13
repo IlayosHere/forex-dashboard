@@ -6,14 +6,21 @@ Used exclusively by api/routes/trades.py.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from api.models import AccountModel, TradeModel
+from api.services.trade_filters import StatsFilterParams, TradeFilterParams
 from shared.calculator import pip_size, pip_value_per_lot
+
+logger = logging.getLogger(__name__)
+
+_MNQ_DOLLARS_PER_POINT: float = 2.0
 
 
 def compute_risk_pips(
@@ -48,7 +55,7 @@ def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
 
     if pnl.instrument_type == "futures_mnq":
         pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
-        pnl_usd = round(pnl_points * 2.0 * pnl.lot_size, 2)
+        pnl_usd = round(pnl_points * _MNQ_DOLLARS_PER_POINT * pnl.lot_size, 2)
         rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
         return pnl_points, pnl_usd, rr
 
@@ -60,40 +67,30 @@ def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
     return pnl_pips, pnl_usd, rr
 
 
-def apply_trade_filters(
-    stmt: Select,
-    strategy: str | None,
-    symbol: str | None,
-    status: str | None,
-    outcome: str | None,
-    date_from: date | None,
-    date_to: date | None,
-    instrument_type: str | None = None,
-    account_id: str | None = None,
-) -> Select:
+def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterParams) -> Select:
     """Apply optional query filters to a trade SELECT statement."""
-    if strategy is not None:
-        stmt = stmt.where(TradeModel.strategy == strategy)
-    if symbol is not None:
-        stmt = stmt.where(TradeModel.symbol == symbol)
-    if status is not None:
-        stmt = stmt.where(TradeModel.status == status)
-    if outcome is not None:
-        stmt = stmt.where(TradeModel.outcome == outcome)
-    if instrument_type is not None:
-        stmt = stmt.where(TradeModel.instrument_type == instrument_type)
-    if account_id is not None:
-        stmt = stmt.where(TradeModel.account_id == account_id)
-    if date_from is not None:
+    if filters.strategy is not None:
+        stmt = stmt.where(TradeModel.strategy == filters.strategy)
+    if filters.symbol is not None:
+        stmt = stmt.where(TradeModel.symbol == filters.symbol)
+    if getattr(filters, "status", None) is not None:
+        stmt = stmt.where(TradeModel.status == filters.status)
+    if getattr(filters, "outcome", None) is not None:
+        stmt = stmt.where(TradeModel.outcome == filters.outcome)
+    if filters.instrument_type is not None:
+        stmt = stmt.where(TradeModel.instrument_type == filters.instrument_type)
+    if filters.account_id is not None:
+        stmt = stmt.where(TradeModel.account_id == filters.account_id)
+    if filters.date_from is not None:
         stmt = stmt.where(
             TradeModel.open_time >= datetime.combine(
-                date_from, datetime.min.time(), tzinfo=timezone.utc,
+                filters.date_from, datetime.min.time(), tzinfo=timezone.utc,
             ),
         )
-    if date_to is not None:
+    if filters.date_to is not None:
         stmt = stmt.where(
             TradeModel.open_time <= datetime.combine(
-                date_to, datetime.max.time(), tzinfo=timezone.utc,
+                filters.date_to, datetime.max.time(), tzinfo=timezone.utc,
             ),
         )
     return stmt
@@ -114,7 +111,7 @@ def build_account_lookup(
 
 def trade_to_response(
     trade: TradeModel, account_lookup: dict[str, AccountModel],
-) -> dict:
+) -> dict[str, Any]:
     """Convert TradeModel to a dict for TradeResponse serialization."""
     account = account_lookup.get(trade.account_id) if trade.account_id else None
     return {

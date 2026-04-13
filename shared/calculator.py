@@ -13,6 +13,7 @@ produce consistent numbers.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 
 def pip_size(symbol: str) -> float:
@@ -44,7 +45,7 @@ def calculate_lot_size(
     risk_percent: float,
     tp_pips: float | None = None,
     instrument_type: str = "forex",
-) -> dict:
+) -> dict[str, Any]:
     """Calculate lot size and risk metrics for a trade.
 
     Parameters

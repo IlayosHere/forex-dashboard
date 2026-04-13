@@ -83,6 +83,7 @@ class _HealthHandler(BaseHTTPRequestHandler):
 
 
 def _start_health_server() -> None:
+    """Start the health-check HTTP server on PORT (default 8080) in a daemon thread."""
     port = int(os.getenv("PORT", "8080"))
     server = HTTPServer(("0.0.0.0", port), _HealthHandler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
@@ -95,6 +96,7 @@ def _start_health_server() -> None:
 # ---------------------------------------------------------------------------
 
 def _notify_discord(signals: list[Signal]) -> None:
+    """Send Discord notifications for new signals. No-op if list is empty."""
     if not signals:
         return
     send_signals(signals)
@@ -166,6 +168,7 @@ def run_scan_cycle(strategies: dict[str, object]) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    """Entry point: discover strategies and run the scan loop until interrupted."""
     logger.info("=" * 60)
     logger.info("  Forex Dashboard Runner")
     logger.info("=" * 60)

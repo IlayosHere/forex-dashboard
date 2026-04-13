@@ -8,11 +8,14 @@ Split from trade_stats.py to keep each module under the 200-line limit.
 """
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from datetime import date
-from typing import Any
+from typing import Any, Callable
 
 from api.models import TradeModel
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Session hour boundaries (UTC)
@@ -187,7 +190,7 @@ def aggregate_by_assessment(
 
 def _aggregate_dimension(
     closed: list[TradeModel],
-    key_fn: Any,
+    key_fn: Callable[[TradeModel], int | str | None],
 ) -> dict[Any, dict[str, Any]]:
     """Generic dimension aggregation: group trades by key_fn result."""
     buckets: dict[Any, dict[str, Any]] = {}

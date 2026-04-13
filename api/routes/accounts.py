@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({"name", "status", "prop_firm", "phase", "balance"})
+
 
 # ---------------------------------------------------------------------------
 # Routes
@@ -99,7 +101,6 @@ def update_account(
         raise HTTPException(status_code=404, detail="Account not found")
 
     update_data = req.model_dump(exclude_unset=True)
-    _ALLOWED_UPDATE_FIELDS = {"name", "status", "prop_firm", "phase", "balance"}
     for field, value in update_data.items():
         if field not in _ALLOWED_UPDATE_FIELDS:
             continue

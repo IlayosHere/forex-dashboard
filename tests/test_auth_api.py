@@ -125,3 +125,26 @@ def test_login_401_has_www_authenticate_header(db: Session, raw_client: TestClie
     )
     assert resp.status_code == 401
     assert "Bearer" in resp.headers.get("WWW-Authenticate", "")
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting — POST /api/auth/login
+# ---------------------------------------------------------------------------
+
+
+def test_login_rate_limit_returns_429(raw_client: TestClient) -> None:
+    """The 6th login attempt from the same IP within 60 s must return 429.
+
+    TestClient sends ``testclient`` as request.client.host, so rate-limit
+    state accumulates per the ``testclient`` key. The autouse ``_setup_tables``
+    fixture calls ``reset_login_rate_limits()`` before each test, ensuring
+    isolation.
+    """
+    payload = {"username": "nobody", "password": "wrong"}
+
+    for _ in range(5):
+        resp = raw_client.post("/api/auth/login", json=payload)
+        assert resp.status_code == 401
+
+    sixth = raw_client.post("/api/auth/login", json=payload)
+    assert sixth.status_code == 429

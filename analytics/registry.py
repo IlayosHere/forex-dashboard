@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from analytics.types import ParamDef
 
@@ -23,7 +23,7 @@ def register(
     *,
     strategies: frozenset[str] = frozenset({"*"}),
     needs_candles: bool = False,
-    dtype: str = "float",
+    dtype: Literal["float", "str", "int", "bool"] = "float",
 ) -> Callable[[Any], Any]:
     """Decorator that registers a parameter computation function.
 
@@ -39,6 +39,7 @@ def register(
         Return type hint — one of "float", "str", "int", "bool".
     """
     def decorator(fn: Any) -> Any:
+        """Register the decorated function as a named analytics param."""
         _PARAMS[name] = ParamDef(
             name=name,
             fn=fn,
