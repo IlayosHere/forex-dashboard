@@ -98,8 +98,9 @@ def calculate_lot_size(
     pip_value = pip_value_per_lot(symbol, entry)
     raw_lots = risk_usd / (sl_pips * pip_value)
     lot_size = round(max(raw_lots, 0.01), 2)
+    min_lot_applied = lot_size > raw_lots
 
-    if lot_size > raw_lots:
+    if min_lot_applied:
         risk_usd = lot_size * sl_pips * pip_value
 
     return {
@@ -108,4 +109,5 @@ def calculate_lot_size(
         "sl_pips": round(sl_pips, 1),
         "rr": rr,
         "instrument_type": instrument_type,
+        "min_lot_applied": min_lot_applied,
     }

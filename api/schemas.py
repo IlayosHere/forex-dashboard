@@ -61,6 +61,8 @@ class SignalResponse(BaseModel):
 
 
 class SignalListResponse(BaseModel):
+    model_config = ConfigDict()
+
     items: list[SignalResponse]
     total: int
 
@@ -150,7 +152,7 @@ class AccountResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CalculateRequest(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict()
 
     symbol: str
     entry: float
@@ -162,13 +164,14 @@ class CalculateRequest(BaseModel):
 
 
 class CalculateResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict()
 
     lot_size: float
     risk_usd: float
     sl_pips: float
     rr: float | None
     instrument_type: str = "forex"
+    min_lot_applied: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +181,7 @@ class CalculateResponse(BaseModel):
 class CalendarEventResponse(BaseModel):
     """Pydantic v2 response model for a single economic calendar event."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict()
 
     id: str
     name: str

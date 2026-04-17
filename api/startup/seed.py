@@ -80,7 +80,7 @@ def seed_default_accounts(db: Session) -> None:
             .select_from(AccountModel)
             .where(AccountModel.owner == user.username),
         )
-        if user_count and user_count > 0:
+        if user_count is not None and user_count > 0:
             continue
         for name, acct_type, inst_type in defaults:
             db.add(AccountModel(

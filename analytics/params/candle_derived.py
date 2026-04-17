@@ -36,7 +36,9 @@ _INSTRUMENT_PIP_OVERRIDES: dict[str, float] = {
 
 def _analytics_pip_size(symbol: str) -> float:
     """Return analytics-layer pip size, with overrides for non-forex instruments."""
-    return _INSTRUMENT_PIP_OVERRIDES.get(symbol, pip_size(symbol))
+    if symbol in _INSTRUMENT_PIP_OVERRIDES:
+        return _INSTRUMENT_PIP_OVERRIDES[symbol]
+    return pip_size(symbol)
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +194,6 @@ def risk_pips_atr(
     atr_pips = _atr_pips_at_bar(candles, signal)
     if atr_pips is None or atr_pips == 0:
         return None
-    return signal.risk_pips / atr_pips
+    return float(signal.risk_pips / atr_pips)
 
 

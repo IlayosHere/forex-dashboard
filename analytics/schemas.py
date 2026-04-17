@@ -25,6 +25,8 @@ class ParamInfo(BaseModel):
 class ParamListResponse(BaseModel):
     """Response for GET /api/analytics/parameters."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     items: list[ParamInfo]
     total: int
 
@@ -44,7 +46,7 @@ class EnrichedSignalResponse(BaseModel):
     tp: float
     risk_pips: float
     spread_pips: float
-    resolution: str
+    resolution: str | None
     resolution_candles: int | None
 
     params: dict[str, Any]
@@ -52,6 +54,8 @@ class EnrichedSignalResponse(BaseModel):
 
 class EnrichedListResponse(BaseModel):
     """Response for GET /api/analytics/enriched."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     items: list[EnrichedSignalResponse]
     total: int
@@ -65,6 +69,8 @@ class EnrichedListResponse(BaseModel):
 class BucketWinRateResponse(BaseModel):
     """Win rate statistics for a single bucket."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     bucket_label: str
     wins: int
     losses: int
@@ -76,6 +82,8 @@ class BucketWinRateResponse(BaseModel):
 
 class UnivariateReportResponse(BaseModel):
     """Response for GET /api/analytics/univariate/{param_name}."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     param_name: str
     dtype: str
@@ -96,6 +104,8 @@ class UnivariateReportResponse(BaseModel):
 class CorrelationItem(BaseModel):
     """Single parameter correlation result."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     param_name: str
     correlation: float | None = None
     p_value: float | None = None
@@ -108,6 +118,8 @@ class CorrelationItem(BaseModel):
 
 class SummaryResponse(BaseModel):
     """Response for GET /api/analytics/summary."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     strategy: str
     total_resolved: int

@@ -21,6 +21,12 @@ logger = logging.getLogger(__name__)
 # Session hour boundaries (UTC)
 # ---------------------------------------------------------------------------
 
+# NOTE: These boundaries differ from _SESSION_RANGES in analytics/params/temporal.py.
+# That module uses finer-grained sessions (asian 0-7, london 7-12, ny_overlap 12-16,
+# ny_late 16-21, close 21-24) for per-signal analytics classification.
+# These boundaries are coarser and used only for trade-level journal aggregation.
+# Neither is authoritative over the other — they serve different purposes.
+# Reconcile both if a single session taxonomy is ever required project-wide.
 _SESSIONS: list[tuple[str, int, int]] = [
     ("asian", 0, 8),
     ("london", 8, 13),

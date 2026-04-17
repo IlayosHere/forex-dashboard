@@ -3,6 +3,7 @@
 Single source of truth for all ICT-specific enum values.
 Imported by API schemas and used to generate frontend select options.
 """
+from __future__ import annotations
 
 from typing import Final
 

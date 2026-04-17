@@ -15,6 +15,7 @@ import logging
 import os
 import sys
 import threading
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # ---------------------------------------------------------------------------
@@ -106,7 +107,7 @@ def _notify_discord(signals: list[Signal]) -> None:
 # Scan cycle
 # ---------------------------------------------------------------------------
 
-def run_scan_cycle(strategies: dict[str, object]) -> None:
+def run_scan_cycle(strategies: dict[str, Callable[[], list[Signal]]]) -> None:
     """Run one scan cycle: call scan() on every strategy, dedup, persist, notify."""
     if not is_market_open():
         logger.info("Forex market closed -- skipping scan.")
@@ -119,7 +120,7 @@ def run_scan_cycle(strategies: dict[str, object]) -> None:
         for strategy_name, scan_fn in strategies.items():
             logger.info("[%s] Running scan...", strategy_name)
             try:
-                signals: list[Signal] = scan_fn()  # type: ignore[operator]
+                signals: list[Signal] = scan_fn()
             except Exception:
                 logger.exception("[%s] scan() raised an exception -- skipping", strategy_name)
                 continue
@@ -132,8 +133,8 @@ def run_scan_cycle(strategies: dict[str, object]) -> None:
                         strategy_name, sig.symbol, sig.direction, sig.candle_time,
                     )
                     continue
-                persist(db, sig)
-                new_signals.append(sig)
+                if persist(db, sig):
+                    new_signals.append(sig)
 
             if new_signals:
                 db.commit()

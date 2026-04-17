@@ -16,6 +16,7 @@ naturally — no manual eviction needed.
 from __future__ import annotations
 
 import logging
+import threading
 import weakref
 from datetime import datetime
 
@@ -44,6 +45,10 @@ _ema20_h1_memo: weakref.WeakValueDictionary[int, pd.Series] = (
     weakref.WeakValueDictionary()
 )
 
+# Single lock guarding all four memo dicts. Computation is done OUTSIDE the
+# lock (double-checked pattern); the lock only protects dict read/write.
+_memo_lock = threading.Lock()
+
 
 def clear_memos() -> None:
     """Clear all module-level memoization stores.
@@ -52,10 +57,11 @@ def clear_memos() -> None:
     EMA-20) are evicted together with the underlying candle entries, ensuring
     no stale derived data survives a cache reset.
     """
-    _atr_memo.clear()
-    _h1_memo.clear()
-    _d1_memo.clear()
-    _ema20_h1_memo.clear()
+    with _memo_lock:
+        _atr_memo.clear()
+        _h1_memo.clear()
+        _d1_memo.clear()
+        _ema20_h1_memo.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -112,52 +118,86 @@ def _compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 
 def cached_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     """Return the ATR series for ``df``, computing on first access and
-    memoizing across callers that share the same DataFrame instance."""
+    memoizing across callers that share the same DataFrame instance.
+
+    Thread-safe via double-checked locking: the expensive ATR computation
+    runs outside ``_memo_lock``; the lock only guards dict access.
+    """
     key = (id(df), period)
-    series = _atr_memo.get(key)
-    if series is None:
-        series = _compute_atr(df, period)
-        _atr_memo[key] = series
+    with _memo_lock:
+        series = _atr_memo.get(key)
+    if series is not None:
+        return series
+    computed = _compute_atr(df, period)
+    with _memo_lock:
+        series = _atr_memo.get(key)
+        if series is None:
+            _atr_memo[key] = computed
+            series = computed
     return series
 
 
 def cached_h1(df: pd.DataFrame) -> pd.DataFrame:
-    """Return the H1 resample of ``df``, memoized per-DataFrame instance."""
+    """Return the H1 resample of ``df``, memoized per-DataFrame instance.
+
+    Thread-safe via double-checked locking: resample runs outside
+    ``_memo_lock``; the lock only guards dict access.
+    """
     key = id(df)
-    cached = _h1_memo.get(key)
-    if cached is not None:
-        return cached
-    h1 = df.resample("1h").agg(
+    with _memo_lock:
+        result = _h1_memo.get(key)
+    if result is not None:
+        return result
+    computed = df.resample("1h").agg(
         {"open": "first", "high": "max", "low": "min", "close": "last"},
     ).dropna()
-    _h1_memo[key] = h1
-    return h1
+    with _memo_lock:
+        result = _h1_memo.get(key)
+        if result is None:
+            _h1_memo[key] = computed
+            result = computed
+    return result
 
 
 def cached_ema20_h1(h1: pd.DataFrame) -> pd.Series:
     """Return the EMA-20 series for an H1 DataFrame, memoized per instance.
 
     Avoids recomputing the full EWM series on every per-signal param call
-    when multiple params share the same H1 DataFrame.
+    when multiple params share the same H1 DataFrame. Thread-safe via
+    double-checked locking.
     """
     key = id(h1)
-    cached = _ema20_h1_memo.get(key)
-    if cached is not None:
-        return cached
-    ema = h1["close"].ewm(span=20, adjust=False).mean()
-    _ema20_h1_memo[key] = ema
-    return ema
+    with _memo_lock:
+        result = _ema20_h1_memo.get(key)
+    if result is not None:
+        return result
+    computed = h1["close"].ewm(span=20, adjust=False).mean()
+    with _memo_lock:
+        result = _ema20_h1_memo.get(key)
+        if result is None:
+            _ema20_h1_memo[key] = computed
+            result = computed
+    return result
 
 
 def cached_d1(df: pd.DataFrame) -> pd.DataFrame:
-    """Return the broker-day D1 resample of ``df``, memoized per instance."""
+    """Return the broker-day D1 resample of ``df``, memoized per instance.
+
+    Thread-safe via double-checked locking: the tz_convert + resample runs
+    outside ``_memo_lock``; the lock only guards dict access.
+    """
     key = id(df)
-    cached = _d1_memo.get(key)
-    if cached is not None:
-        return cached
+    with _memo_lock:
+        result = _d1_memo.get(key)
+    if result is not None:
+        return result
     broker = df.tz_convert(EXCHANGE_TZ)
-    d1 = broker.resample("1D").agg(
+    computed = broker.resample("1D").agg(
         {"open": "first", "high": "max", "low": "min", "close": "last"},
     ).dropna().tz_convert("UTC")
-    _d1_memo[key] = d1
-    return d1
+    with _memo_lock:
+        result = _d1_memo.get(key)
+        if result is None:
+            _d1_memo[key] = computed
+            result = computed
+    return result

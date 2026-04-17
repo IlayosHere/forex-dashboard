@@ -118,7 +118,10 @@ def d1_trend(signal: Any, candles: pd.DataFrame | None) -> str | None:
     d1_atr_series = cached_atr(d1, period=_D1_ATR_PERIOD)
     if len(d1_atr_series) == 0:
         return None
-    atr_at_prior = d1_atr_series.iloc[len(d1_prior) - 1]
+    atr_idx = len(d1_prior) - 1
+    if atr_idx >= len(d1_atr_series):
+        return None
+    atr_at_prior = d1_atr_series.iloc[atr_idx]
     if pd.isna(atr_at_prior):
         return None
     d1_atr = float(atr_at_prior)

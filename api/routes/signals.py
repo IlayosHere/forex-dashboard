@@ -66,7 +66,7 @@ def list_signals(
             base.order_by(SignalModel.candle_time.desc()).offset(offset).limit(limit)
         ).all()
     )
-    return {"items": items, "total": total or 0}
+    return SignalListResponse(items=items, total=total or 0)
 
 
 @router.get("/signals/{signal_id}", response_model=SignalResponse)

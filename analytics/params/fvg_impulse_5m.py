@@ -35,7 +35,7 @@ def h1_fvg_contains_entry(signal: Any, candles: pd.DataFrame | None) -> bool | N
         return None
     h1 = cached_h1(candles)
     idx = _find_signal_bar(h1, signal)
-    if idx is None or idx < 2:
+    if idx is None or idx < 3:
         return None
     h = h1["high"].values
     l = h1["low"].values
@@ -46,13 +46,13 @@ def h1_fvg_contains_entry(signal: Any, candles: pd.DataFrame | None) -> bool | N
     # FVGs through the signal bar itself would kill valid FVGs via the virgin
     # check on the signal bar's wick, even though the entry (close price) may
     # still sit inside the gap.
+    # Guard ensures idx >= 3, so range(2, idx) has at least one iteration.
     for i in range(2, idx):
         detect_fvgs_at_bar(fvgs, h, l, i, h1)
         age_and_prune_fvgs(fvgs, h, l, c, i)
     # Detect any FVG that FORMED at the signal bar (fresh FVGs are not aged
     # by age_and_prune_fvgs on their formation bar, so this is safe).
-    if idx >= 2:
-        detect_fvgs_at_bar(fvgs, h, l, idx, h1)
+    detect_fvgs_at_bar(fvgs, h, l, idx, h1)
     entry = signal.entry
     for fvg in fvgs:
         if not fvg.is_valid:

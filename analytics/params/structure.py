@@ -151,5 +151,8 @@ def bars_since_h1_extreme(signal: Any, candles: pd.DataFrame | None) -> int | No
         extreme_idx = (loc.stop - 1) if loc.stop is not None else len(window) - 1
     else:
         # Boolean array
-        extreme_idx = int(np.where(loc)[0][-1])
+        indices = np.where(loc)[0]
+        if len(indices) == 0:
+            return None
+        extreme_idx = int(indices[-1])
     return int(len(window) - 1 - extreme_idx)

@@ -2,7 +2,7 @@
 runner/resolver.py
 ------------------
 Signal resolution logic. Runs after each scan cycle to check if pending
-signals have hit their TP or SL based on subsequent M15 candles.
+signals have hit their TP or SL based on subsequent candles.
 
 Resolution states:
   TP_HIT      — price reached take profit
@@ -23,7 +23,9 @@ from datetime import datetime, timezone
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from tvDatafeed import Interval
 
+from analytics.candle_cache import interval_for_strategy
 from api.models import SignalModel
 from runner.resolution_strategies import (
     MAX_RESOLUTION_CANDLES,
@@ -34,8 +36,7 @@ from runner.resolution_strategies import (
     resolve_nova,
     resolve_price,
 )
-
-from strategies.fvg_impulse.data import get_candles
+from shared.market_data import get_candles
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,11 @@ def _resolve_nova(signal: SignalModel, df: pd.DataFrame, start_idx: int) -> bool
     """Test-compatible 3-arg wrapper around resolve_nova; passes last available bar as closed_end."""
     return resolve_nova(signal, df, start_idx, len(df) - 1)
 
-_M15_SECONDS: int = 15 * 60
+_INTERVAL_SECONDS: dict[Interval, int] = {
+    Interval.in_5_minute:  5 * 60,
+    Interval.in_15_minute: 15 * 60,
+}
+_DEFAULT_INTERVAL_SECONDS: int = 15 * 60
 _LIMIT_ORDER_STRATEGIES: frozenset[str] = frozenset({"nova-candle"})
 _STANDARD_STRATEGIES: frozenset[str] = frozenset({"fvg-impulse", "fvg-impulse-5m"})
 
@@ -53,14 +58,16 @@ _STANDARD_STRATEGIES: frozenset[str] = frozenset({"fvg-impulse", "fvg-impulse-5m
 # Private helpers
 # ---------------------------------------------------------------------------
 
-def _bars_needed(signals: list[SignalModel]) -> int:
-    """Compute how many M15 bars to request for a group of same-symbol signals."""
+def _bars_needed(signals: list[SignalModel], strategy: str) -> int:
+    """Compute how many bars to request for a group of same-symbol, same-strategy signals."""
+    interval = interval_for_strategy(strategy)
+    bar_seconds = _INTERVAL_SECONDS.get(interval, _DEFAULT_INTERVAL_SECONDS)
     now = datetime.now(timezone.utc)
     oldest = min(s.candle_time for s in signals)
     if oldest.tzinfo is None:
         oldest = oldest.replace(tzinfo=timezone.utc)
     elapsed_seconds = (now - oldest).total_seconds()
-    candles_since_oldest = math.ceil(elapsed_seconds / _M15_SECONDS)
+    candles_since_oldest = math.ceil(elapsed_seconds / bar_seconds)
     needed = candles_since_oldest + MAX_RESOLUTION_CANDLES + 10
     return min(needed, 500)
 
@@ -75,17 +82,26 @@ def _signal_candle_idx(df: pd.DataFrame, candle_time: datetime) -> int | None:
     return int(matches.argmax())
 
 
-def _last_closed_idx(df: pd.DataFrame) -> int:
-    """Return the index of the last fully-closed M15 candle.
+_INTERVAL_MINUTES: dict[Interval, int] = {
+    Interval.in_5_minute:  5,
+    Interval.in_15_minute: 15,
+}
+_DEFAULT_INTERVAL_MINUTES: int = 15
+
+
+def _last_closed_idx(df: pd.DataFrame, strategy: str) -> int:
+    """Return the index of the last fully-closed candle for the strategy's timeframe.
 
     The currently-forming candle has partially-committed OHLC data from the
     live feed. Scanning it can produce false fills or false TP/SL hits based
     on intrabar ticks that are later corrected. Always cap resolution scans
     to this index.
     """
+    interval = interval_for_strategy(strategy)
+    bar_minutes = _INTERVAL_MINUTES.get(interval, _DEFAULT_INTERVAL_MINUTES)
     now = datetime.now(timezone.utc)
     current_boundary = now.replace(
-        minute=(now.minute // 15) * 15, second=0, microsecond=0
+        minute=(now.minute // bar_minutes) * bar_minutes, second=0, microsecond=0
     )
     for i in range(len(df) - 1, -1, -1):
         ts = df.index[i]
@@ -93,6 +109,11 @@ def _last_closed_idx(df: pd.DataFrame) -> int:
             ts = ts.replace(tzinfo=timezone.utc)
         if ts < current_boundary:
             return i
+    logger.warning(
+        "_last_closed_idx: no closed bars found for strategy='%s' — defaulting to idx=0. "
+        "Check if feed is returning future-dated candles.",
+        strategy,
+    )
     return 0
 
 
@@ -147,26 +168,28 @@ def _resolve_signal(signal: SignalModel, df: pd.DataFrame) -> bool:
         logger.debug("Signal %s candle not found in DataFrame — skipping", signal.id)
         return False
 
-    last_closed = _last_closed_idx(df)
+    last_closed = _last_closed_idx(df, signal.strategy)
     if signal.strategy in _LIMIT_ORDER_STRATEGIES:
         return resolve_nova(signal, df, start_idx, last_closed)
-    if signal.strategy not in _STANDARD_STRATEGIES:
-        logger.warning(
-            "_resolve_signal: unknown strategy '%s' for signal %s, using standard resolution",
-            signal.strategy, signal.id,
-        )
-    return _resolve_standard(signal, df, start_idx, last_closed)
+    if signal.strategy in _STANDARD_STRATEGIES:
+        return _resolve_standard(signal, df, start_idx, last_closed)
+    logger.warning(
+        "_resolve_signal: unknown strategy '%s' for signal %s — skipping resolution, add to _STANDARD_STRATEGIES or _LIMIT_ORDER_STRATEGIES",
+        signal.strategy, signal.id,
+    )
+    return False
 
 
 def _update_pending_midpoints(
     signals: list[SignalModel],
     df: pd.DataFrame,
+    strategy: str,
 ) -> int:
     """Update midpoint resolution on still-pending FVG Impulse signals.
 
     Returns the number of signals whose metadata was updated.
     """
-    last_closed = _last_closed_idx(df)
+    last_closed = _last_closed_idx(df, strategy)
     updated = 0
     for signal in signals:
         if signal.resolution is not None or signal.strategy not in {"fvg-impulse", "fvg-impulse-5m"}:
@@ -181,18 +204,26 @@ def _update_pending_midpoints(
     return updated
 
 
-def _resolve_symbol_group(
+def _resolve_symbol_strategy_group(
     symbol: str,
+    strategy: str,
     signals: list[SignalModel],
     db: Session,
 ) -> int:
-    """Fetch candles and resolve all signals for one symbol. Returns resolved count."""
-    count = _bars_needed(signals)
-    df = get_candles(symbol, count=count)
+    """Fetch candles and resolve all signals for one (symbol, strategy) group.
+
+    Fetches at the strategy's native timeframe so M5 signals are resolved
+    against M5 candles and M15 signals against M15 candles.
+
+    Returns the count of signals resolved this call.
+    """
+    interval = interval_for_strategy(strategy)
+    count = _bars_needed(signals, strategy)
+    df = get_candles(symbol, interval, count=count)
     if df is None:
         logger.warning(
-            "Resolution: no candle data for %s — skipping %d signal(s)",
-            symbol, len(signals),
+            "Resolution: no candle data for %s @ %s — skipping %d signal(s)",
+            symbol, strategy, len(signals),
         )
         return 0
 
@@ -200,7 +231,7 @@ def _resolve_symbol_group(
     if resolved:
         db.commit()
 
-    if _update_pending_midpoints(signals, df):
+    if _update_pending_midpoints(signals, df, strategy):
         db.commit()
 
     return resolved
@@ -211,10 +242,11 @@ def _resolve_symbol_group(
 # ---------------------------------------------------------------------------
 
 def resolve_pending_signals(db: Session) -> int:
-    """Check all unresolved signals against recent M15 candles and persist results.
+    """Check all unresolved signals against recent candles and persist results.
 
-    Signals are grouped by symbol so that only one tvDatafeed call is made per
-    symbol per cycle. Commits once per symbol group to avoid long transactions.
+    Signals are grouped by (symbol, strategy) so that each group fetches the
+    correct timeframe for its strategy — M5 for fvg-impulse-5m, M15 for
+    fvg-impulse and nova-candle. Commits once per group to avoid long transactions.
 
     Returns the total count of signals resolved this cycle.
     """
@@ -226,11 +258,11 @@ def resolve_pending_signals(db: Session) -> int:
     if not pending:
         return 0
 
-    by_symbol: dict[str, list[SignalModel]] = {}
+    by_symbol_strategy: dict[tuple[str, str], list[SignalModel]] = {}
     for sig in pending:
-        by_symbol.setdefault(sig.symbol, []).append(sig)
+        by_symbol_strategy.setdefault((sig.symbol, sig.strategy), []).append(sig)
 
     return sum(
-        _resolve_symbol_group(symbol, signals, db)
-        for symbol, signals in by_symbol.items()
+        _resolve_symbol_strategy_group(symbol, strategy, signals, db)
+        for (symbol, strategy), signals in by_symbol_strategy.items()
     )

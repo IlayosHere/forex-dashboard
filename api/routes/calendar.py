@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import http.client
 import json
 import logging
 import threading
@@ -213,7 +214,7 @@ async def get_calendar(
     """
     try:
         return await _get_events(week)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, json.JSONDecodeError, http.client.HTTPException) as exc:
         logger.exception("Failed to fetch ForexFactory calendar: %s", exc)
         raise HTTPException(
             status_code=503,

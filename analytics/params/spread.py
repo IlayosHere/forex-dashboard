@@ -35,7 +35,7 @@ def spread_risk_ratio(
     """Return spread_pips / risk_pips, or None on zero division."""
     if signal.risk_pips == 0:
         return None
-    return signal.spread_pips / signal.risk_pips
+    return float(signal.spread_pips / signal.risk_pips)
 
 
 @register("pair_category", dtype="str")

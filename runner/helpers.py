@@ -11,6 +11,7 @@ import logging
 import os
 import pkgutil
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -74,13 +75,13 @@ def wait_for_next_candle() -> None:
 # Strategy discovery
 # ---------------------------------------------------------------------------
 
-def discover_strategies() -> dict[str, object]:
+def discover_strategies() -> dict[str, Callable[[], list[Signal]]]:
     """Return {module_name: scan_callable} for every valid strategy package.
 
     A valid strategy is a package under strategies/ whose scanner.py exports
     a callable ``scan() -> list[Signal]``.
     """
-    found: dict[str, object] = {}
+    found: dict[str, Callable[[], list[Signal]]] = {}
     for _finder, name, is_pkg in pkgutil.iter_modules([_STRATEGIES_DIR]):
         if not is_pkg:
             continue
@@ -120,33 +121,46 @@ def is_duplicate(db: Session, sig: Signal) -> bool:
     ) is not None
 
 
-def persist(db: Session, sig: Signal) -> None:
-    """Insert a Signal into the DB. Skip gracefully on duplicate."""
+def persist(db: Session, sig: Signal) -> bool:
+    """Insert a Signal into the DB. Skip gracefully on duplicate.
+
+    Uses a savepoint (``db.begin_nested()``) so that an IntegrityError on this
+    signal only rolls back this insert, not the entire session. Previously
+    flushed signals in the same cycle are preserved and the outer commit still
+    succeeds for all successful inserts.
+
+    Returns True if the signal was inserted, False on any IntegrityError.
+    """
+    signal_model = SignalModel(
+        id=sig.id,
+        strategy=sig.strategy,
+        symbol=sig.symbol,
+        direction=sig.direction,
+        candle_time=sig.candle_time,
+        entry=sig.entry,
+        sl=sig.sl,
+        tp=sig.tp,
+        lot_size=sig.lot_size,
+        risk_pips=sig.risk_pips,
+        spread_pips=sig.spread_pips,
+        signal_metadata=sig.metadata,
+        created_at=sig.created_at,
+    )
     try:
-        db.add(
-            SignalModel(
-                id=sig.id,
-                strategy=sig.strategy,
-                symbol=sig.symbol,
-                direction=sig.direction,
-                candle_time=sig.candle_time,
-                entry=sig.entry,
-                sl=sig.sl,
-                tp=sig.tp,
-                lot_size=sig.lot_size,
-                risk_pips=sig.risk_pips,
-                spread_pips=sig.spread_pips,
-                signal_metadata=sig.metadata,
-                created_at=sig.created_at,
-            )
-        )
-        db.flush()
+        with db.begin_nested():  # savepoint — rollback only undoes this signal
+            db.add(signal_model)
+            db.flush()
     except IntegrityError as e:
-        db.rollback()
-        if "UNIQUE" in str(e.orig):
+        orig_msg = str(e.orig).upper()
+        _is_dup_error = "UNIQUE" in orig_msg or "DUPLICATE KEY" in orig_msg or "23505" in orig_msg
+        if _is_dup_error:
             logger.info("Duplicate signal skipped: %s %s %s", sig.strategy, sig.symbol, sig.candle_time)
         else:
-            logger.error("IntegrityError persisting signal %s: %s", sig.id, e)
-        return
+            logger.error(
+                "IntegrityError persisting signal %s (non-duplicate): %s",
+                sig.id, e, exc_info=True,
+            )
+        return False
+    return True
 
 

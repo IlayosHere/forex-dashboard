@@ -9,11 +9,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class EquityCurvePoint(BaseModel):
     """Single point on the equity curve."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     date: str | None
     close_time: str | None
@@ -27,6 +29,8 @@ class EquityCurvePoint(BaseModel):
 
 class DailySummaryPoint(BaseModel):
     """Daily aggregated stats for calendar heatmap."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     date: str
     trades: int

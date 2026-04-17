@@ -17,8 +17,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from analytics.candle_cache import (
-    CandleCache,
+from analytics.candle_cache import CandleCache
+from analytics.candle_helpers import (
     cached_atr,
     cached_d1,
     cached_ema20_h1,

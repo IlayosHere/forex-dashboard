@@ -134,9 +134,14 @@ def get_enriched(
             )
         enriched = enrich_batch(signals, candle_cache=candle_cache)
 
+        now = datetime.now(timezone.utc)
         expires_at = next_bar_close(interval_for_strategy(strategy), now)
         with _enriched_lock:
             _enriched_cache[strategy] = _EnrichedEntry(enriched=enriched, expires_at=expires_at)
+            # Remove the per-strategy lock now that the result is cached.
+            # The lock is only needed during the compute window; the next cache
+            # miss will create a fresh one via _get_computing_lock's setdefault.
+            _enriched_computing_locks.pop(strategy, None)
 
     return enriched
 
@@ -172,7 +177,6 @@ def get_univariate_report(
 def get_summary(
     _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
-    _cache: Annotated[CandleCache, Depends(get_app_cache)],
     strategy: str = Query(..., description="Strategy slug (required)"),
     symbol: str | None = Query(None, description="Filter by currency pair"),
 ) -> SummaryResponse:

@@ -36,9 +36,23 @@ def reset_login_rate_limits() -> None:
         _cleanup_stale_ips()
 
 
+def _get_client_ip(request: Request) -> str:
+    """Extract the client IP from the request, preferring X-Forwarded-For.
+
+    Note: X-Forwarded-For can be spoofed unless the upstream proxy strips it.
+    For a private tool behind a trusted nginx proxy this is acceptable.
+    """
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
+
+
 def check_login_rate_limit(request: Request) -> None:
     """Raise 429 if the requesting IP exceeds the login attempt limit."""
-    ip = request.client.host if request.client else "unknown"
+    ip = _get_client_ip(request)
     now = time.monotonic()
     cutoff = now - _LOGIN_RATE_WINDOW_SECONDS
 

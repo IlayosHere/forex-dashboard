@@ -266,6 +266,8 @@ class TradeResponse(BaseModel):
 
 
 class TradeStatsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     total_trades: int
     open_trades: int
     closed_trades: int

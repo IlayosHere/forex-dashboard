@@ -56,6 +56,11 @@ def get_param_def(name: str) -> ParamDef | None:
     return _PARAMS.get(name)
 
 
+def get_all_params() -> list[ParamDef]:
+    """Return every registered ParamDef regardless of strategy scope."""
+    return list(_PARAMS.values())
+
+
 def get_params_for_strategy(strategy: str) -> list[ParamDef]:
     """Return params where strategy is ``'*'`` or matches exactly."""
     return [

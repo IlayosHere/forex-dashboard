@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from analytics.candle_cache import CandleCache, get_app_cache
-from analytics.registry import get_params_for_strategy
+from analytics.registry import get_all_params, get_params_for_strategy
 from analytics.routes_stats import filter_by_symbol, get_enriched
 from analytics.schemas import (
     EnrichedListResponse,
@@ -33,9 +33,13 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
 def _param_to_info(strategy: str | None) -> list[ParamInfo]:
-    """Convert registry ParamDefs to response models."""
-    target = strategy or "*"
-    params = get_params_for_strategy(target)
+    """Convert registry ParamDefs to response models.
+
+    When strategy is None, returns ALL registered params (cross-strategy and
+    strategy-specific). When strategy is provided, returns only params that
+    apply to that strategy slug.
+    """
+    params = get_all_params() if strategy is None else get_params_for_strategy(strategy)
     return [
         ParamInfo(
             name=p.name,
@@ -50,7 +54,6 @@ def _param_to_info(strategy: str | None) -> list[ParamInfo]:
 @router.get("/parameters", response_model=ParamListResponse)
 def list_parameters(
     _user: Annotated[str, Depends(get_current_user)],
-    _db: Annotated[Session, Depends(get_db)],
     strategy: str | None = Query(None, description="Filter by strategy slug"),
 ) -> ParamListResponse:
     """List all registered analytics parameters, optionally filtered by strategy."""

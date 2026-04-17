@@ -124,7 +124,7 @@ def _compute_boundaries(
 ) -> list[float]:
     """Compute n_buckets+1 percentile boundaries from sorted values."""
     percentiles = [i * (100 / n_buckets) for i in range(n_buckets + 1)]
-    bounds = list(np.percentile(values, percentiles).astype(float))
+    bounds = [float(b) for b in np.percentile(values, percentiles)]
     return bounds
 
 

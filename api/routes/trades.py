@@ -59,7 +59,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-
 @router.post("/trades", response_model=TradeResponse, status_code=201)
 def create_trade(
     req: TradeCreateRequest,
