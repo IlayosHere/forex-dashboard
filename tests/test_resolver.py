@@ -17,15 +17,22 @@ from sqlalchemy.orm import Session
 from api.models import SignalModel
 from runner.resolution_strategies import check_bar as _check_bar
 from runner.resolution_strategies import check_fill as _check_fill
+from runner.resolution_strategies import resolve_nova as _resolve_nova_impl
 from runner.resolution_strategies import resolve_price as _resolve_price
 from runner.resolver import (
     NOVA_FILL_CANDLES,
     _bars_needed,
-    _resolve_nova,
     _resolve_signal,
     _signal_candle_idx,
     resolve_pending_signals,
 )
+
+
+def _resolve_nova(signal: object, df: object, start_idx: int = 0) -> bool:
+    """Thin shim matching the old 3-arg wrapper removed in W13 fix."""
+    import pandas as pd
+    assert isinstance(df, pd.DataFrame)
+    return _resolve_nova_impl(signal, df, start_idx, len(df) - 1)  # type: ignore[arg-type]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -91,7 +98,7 @@ def _persist(db: Session, sig: SignalModel) -> SignalModel:
 
 def test_bars_needed_caps_at_500() -> None:
     sig = _signal(candle_time=datetime(2023, 1, 1, tzinfo=timezone.utc))
-    assert _bars_needed([sig]) == 500
+    assert _bars_needed([sig], "fvg-impulse") == 500
 
 
 def test_bars_needed_one_hour_old() -> None:
@@ -99,14 +106,14 @@ def test_bars_needed_one_hour_old() -> None:
     sig = _signal(candle_time=datetime(2025, 6, 1, 13, 0, tzinfo=timezone.utc))
     with patch("runner.resolver.datetime") as m:
         m.now.return_value = fake_now
-        result = _bars_needed([sig])
+        result = _bars_needed([sig], "fvg-impulse")
     assert result == 110  # ceil(3600 / 900) = 4 candles; 4 + 96 + 10 = 110
 
 
 def test_bars_needed_uses_oldest_signal() -> None:
     recent = _signal(candle_time=datetime(2025, 6, 1, 13, 0, tzinfo=timezone.utc))
     old = _signal(candle_time=datetime(2023, 1, 1, tzinfo=timezone.utc))
-    assert _bars_needed([recent, old]) == 500
+    assert _bars_needed([recent, old], "fvg-impulse") == 500
 
 
 # ---------------------------------------------------------------------------

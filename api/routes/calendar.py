@@ -48,6 +48,7 @@ PROMOTED_EVENTS: frozenset[str] = frozenset({
 })
 
 _CACHE_TTL = timedelta(minutes=15)
+_FEED_UNPARSEABLE_DETAIL = "Calendar feed returned unparseable data"
 
 # { "current": (data, fetched_at), "next": (data, fetched_at) }
 _cache: dict[str, tuple[list[dict[str, Any]], datetime]] = {}
@@ -190,6 +191,13 @@ async def _get_events(week: str) -> list[dict[str, Any]]:
     logger.info("Fetching ForexFactory calendar for week=%s", week)
     raw = await asyncio.to_thread(_fetch_ff_json, week)
     transformed = _transform_all(raw)
+
+    if raw and not transformed:
+        logger.error(
+            "FF feed had %d events but zero transformed — feed format may have changed",
+            len(raw),
+        )
+        raise HTTPException(status_code=503, detail=_FEED_UNPARSEABLE_DETAIL)
 
     with _cache_lock:
         _cache[week] = (transformed, now)

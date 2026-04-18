@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 _VOLATILITY_PERCENTILE_LONG_BARS = 96
 
+# Known limitation: age_and_prune_fvgs (strategies/fvg_impulse/data.py) uses
+# MAX_FVG_AGE = 15 bars, which was calibrated for M15 bars (15 × 15 min = 225 min).
+# When applied to H1 bars in h1_fvg_contains_entry below, 15 H1 bars = 15 hours,
+# a much wider window than intended. The correct H1 equivalent is 4 bars
+# (225 min / 60 min = 3.75, rounded up). A proper fix requires parameterising
+# age_and_prune_fvgs with a max_age argument so each call site can pass the
+# timeframe-appropriate value.
+_H1_MAX_FVG_AGE = 4  # correct H1 equivalent; unused until age_and_prune_fvgs is parameterised
+
 
 @register("h1_fvg_contains_entry", strategies=_FVG_5M_STRATEGIES, needs_candles=True, dtype="bool")
 def h1_fvg_contains_entry(signal: Any, candles: pd.DataFrame | None) -> bool | None:

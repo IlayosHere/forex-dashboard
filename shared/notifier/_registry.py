@@ -79,5 +79,6 @@ def _generic_embed(sig: Signal) -> dict:
 
 TIMEFRAME_LABEL = "M15"  # used by _generic_embed
 
-from shared.notifier import _fvg_impulse  # noqa: E402, F401
-from shared.notifier import _nova_candle  # noqa: E402, F401
+from shared.notifier import _fvg_impulse     # noqa: E402, F401
+from shared.notifier import _fvg_impulse_5m  # noqa: E402, F401
+from shared.notifier import _nova_candle     # noqa: E402, F401

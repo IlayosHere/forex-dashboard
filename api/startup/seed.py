@@ -26,6 +26,14 @@ logger = logging.getLogger(__name__)
 def seed_users_from_env(db: Session) -> str:
     """Import AUTH_USERS env var into the users table on first boot. Idempotent.
 
+    AUTH_USERS format (JSON dict):
+        {"username": "pw_hash"}                  — admin=True (backwards compatible)
+        {"username": "pw_hash:true"}             — admin=True
+        {"username": "pw_hash:false"}            — admin=False (non-admin user)
+
+    The optional third colon-delimited field on the value controls is_admin.
+    If absent, defaults to True for backwards compatibility.
+
     Returns the first username found in env vars, or "admin" as fallback.
     """
     raw = os.getenv("AUTH_USERS", "")
@@ -46,17 +54,20 @@ def seed_users_from_env(db: Session) -> str:
 
     first_username = next(iter(env_users))
     now = datetime.now(timezone.utc)
-    for uname, pw_hash in env_users.items():
+    for uname, raw_value in env_users.items():
+        parts = raw_value.split(":", 1)
+        pw_hash = parts[0]
+        is_admin = parts[1].strip().lower() != "false" if len(parts) > 1 else True
         existing = db.scalar(select(UserModel).where(UserModel.username == uname))
         if existing is None:
             db.add(UserModel(
                 id=str(uuid.uuid4()),
                 username=uname,
                 password_hash=pw_hash,
-                is_admin=True,
+                is_admin=is_admin,
                 created_at=now,
             ))
-            logger.info("Seeded user %r from env var", uname)
+            logger.info("Seeded user %r (is_admin=%s) from env var", uname, is_admin)
         elif existing.password_hash != pw_hash:
             existing.password_hash = pw_hash
             logger.info("Updated password hash for user %r", uname)

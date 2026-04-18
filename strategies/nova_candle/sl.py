@@ -44,7 +44,7 @@ def compute_bos_sl(
     buffer_pips : Pips beyond the swing extreme (default 3.0).
     entry : Entry price. Defaults to opens[signal_idx] equivalent —
             caller should pass the candle open price.
-    min_risk_pips : Minimum acceptable risk in pips (default 15.0).
+    min_risk_pips : Minimum acceptable risk in pips (default 5.0).
     tolerance_atr : Snake-line reversal sensitivity (default 0.5).
     min_leg_atr : Snake-line minimum leg size (default 0.0).
     sl_wick_scan : Bars to scan around the swing for true extreme (default 3).

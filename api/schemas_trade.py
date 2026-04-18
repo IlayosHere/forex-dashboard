@@ -224,6 +224,10 @@ class TradeResponse(BaseModel):
     id: str
     signal_id: str | None
     account_id: str | None = None
+    # NOT an ORM column — TradeModel has no account_name field.
+    # This field must be populated explicitly via trade_to_response().
+    # Never use model_validate(orm_instance) directly on TradeResponse;
+    # doing so will silently return None here.
     account_name: str | None = None
     strategy: str
     symbol: str

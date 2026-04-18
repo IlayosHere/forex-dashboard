@@ -41,10 +41,6 @@ from shared.market_data import get_candles
 logger = logging.getLogger(__name__)
 
 
-def _resolve_nova(signal: SignalModel, df: pd.DataFrame, start_idx: int) -> bool:
-    """Test-compatible 3-arg wrapper around resolve_nova; passes last available bar as closed_end."""
-    return resolve_nova(signal, df, start_idx, len(df) - 1)
-
 _INTERVAL_SECONDS: dict[Interval, int] = {
     Interval.in_5_minute:  5 * 60,
     Interval.in_15_minute: 15 * 60,

@@ -31,13 +31,15 @@ _meta = _signal_meta
 @register("fvg_age", strategies=_FVG_STRATEGIES, dtype="int")
 def fvg_age(signal: Any, _candles: pd.DataFrame | None) -> int | None:
     """Return the FVG age (number of candles since formation)."""
-    return _meta(signal).get("fvg_age")
+    val = _meta(signal).get("fvg_age")
+    return int(val) if val is not None else None
 
 
 @register("fvg_width_pips", strategies=_FVG_STRATEGIES, dtype="float")
 def fvg_width_pips(signal: Any, _candles: pd.DataFrame | None) -> float | None:
     """Return the FVG gap width in pips."""
-    return _meta(signal).get("fvg_width_pips")
+    val = _meta(signal).get("fvg_width_pips")
+    return float(val) if val is not None else None
 
 
 # ---------------------------------------------------------------------------
@@ -60,7 +62,7 @@ def fvg_width_atr_ratio(
     atr_pips = _atr_pips_at_bar(candles, signal)
     if atr_pips is None or atr_pips == 0:
         return None
-    return width / atr_pips
+    return float(width / atr_pips)
 
 
 @register(
@@ -87,7 +89,7 @@ def wick_penetration_ratio(
         ratio = (near_edge - bar["low"]) / fvg_height_price
     else:
         ratio = (bar["high"] - near_edge) / fvg_height_price
-    return max(0.0, min(1.0, ratio))
+    return float(max(0.0, min(1.0, ratio)))
 
 
 @register(
@@ -108,8 +110,8 @@ def rejection_body_ratio(
     if range_ <= 0:
         return None
     if signal.direction == "BUY":
-        return (bar["close"] - bar["low"]) / range_
-    return (bar["high"] - bar["close"]) / range_
+        return float((bar["close"] - bar["low"]) / range_)
+    return float((bar["high"] - bar["close"]) / range_)
 
 
 def _find_impulse_candle(
@@ -153,7 +155,7 @@ def impulse_body_ratio(
     range_ = c1["high"] - c1["low"]
     if range_ <= 0:
         return None
-    return abs(c1["close"] - c1["open"]) / range_
+    return float(abs(c1["close"] - c1["open"]) / range_)
 
 
 @register(

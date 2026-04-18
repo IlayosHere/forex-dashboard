@@ -48,8 +48,10 @@ def calculate_trade_metrics(
     pnl_usd_values = [t.pnl_usd for t in closed if t.pnl_usd is not None]
     total_pnl_usd = round(sum(pnl_usd_values), 2)
 
-    best_trade_pnl = max(pnl_pips_values) if pnl_pips_values else None
-    worst_trade_pnl = min(pnl_pips_values) if pnl_pips_values else None
+    # These are pip values — the schema field names (best_trade_pnl / worst_trade_pnl)
+    # are kept for API compatibility; the local names make the unit explicit.
+    best_trade_pnl_pips = max(pnl_pips_values) if pnl_pips_values else None
+    worst_trade_pnl_pips = min(pnl_pips_values) if pnl_pips_values else None
 
     current_streak = _compute_streak(closed)
     profit_factor = _compute_profit_factor(closed)
@@ -66,8 +68,8 @@ def calculate_trade_metrics(
         "avg_rr": avg_rr,
         "total_pnl_pips": total_pnl_pips,
         "total_pnl_usd": total_pnl_usd,
-        "best_trade_pnl": best_trade_pnl,
-        "worst_trade_pnl": worst_trade_pnl,
+        "best_trade_pnl": best_trade_pnl_pips,
+        "worst_trade_pnl": worst_trade_pnl_pips,
         "current_streak": current_streak,
         "profit_factor": profit_factor,
         "avg_hold_time_hours": avg_hold_time_hours,

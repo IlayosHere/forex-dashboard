@@ -61,7 +61,7 @@ def check_login_rate_limit(request: Request) -> None:
         timestamps.append(now)
         _login_attempts[ip] = timestamps
 
-        if len(timestamps) > _LOGIN_RATE_LIMIT:
+        if len(timestamps) >= _LOGIN_RATE_LIMIT:
             logger.warning("Rate limit exceeded for IP %s", ip)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

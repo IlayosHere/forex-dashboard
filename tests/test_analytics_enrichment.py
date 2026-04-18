@@ -7,7 +7,7 @@ Uses in-memory SQLite via the db fixture.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -32,7 +32,9 @@ def _insert_signal(
         strategy=strategy,
         symbol=symbol,
         direction="BUY",
-        candle_time=datetime(2026, 3, 10, candle_hour, 0, tzinfo=timezone.utc),
+        candle_time=(datetime.now(timezone.utc) - timedelta(days=1)).replace(
+            hour=candle_hour, minute=0, second=0, microsecond=0,
+        ),
         entry=1.08500,
         sl=1.08200,
         tp=1.08800,

@@ -177,29 +177,19 @@ def get_univariate_report(
 def get_summary(
     _user: Annotated[str, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    cache: Annotated[CandleCache, Depends(get_app_cache)],
     strategy: str = Query(..., description="Strategy slug (required)"),
     symbol: str | None = Query(None, description="Filter by currency pair"),
 ) -> SummaryResponse:
     """Return overall analytics summary for a strategy.
 
-    Candle cache is intentionally not warmed here — warming 10+ symbols
-    blocks for ~14 s on a cold cache, causing the landing page to time out.
-    Non-candle params (session, spread tier, day of week, FVG geometry, etc.)
-    are sufficient for the summary ranking.  Candle-dependent params are
-    available in the per-param univariate endpoint where the user explicitly waits.
+    Uses the same get_enriched() cache as /univariate so both endpoints
+    draw from an identical signal set. On a cold cache this may block while
+    the prewarm task catches up, but in production the startup prewarm loop
+    ensures the cache is warm before the first request lands.
     """
-    signals = fetch_resolved(db, strategy=strategy)
-    enriched = filter_by_symbol(enrich_batch(signals, candle_cache=None), symbol)
+    enriched = filter_by_symbol(get_enriched(strategy, db, cache), symbol)
     all_params = get_params_for_strategy(strategy)
-    excluded = [p.name for p in all_params if p.needs_candles]
-    param_defs = [
-        {"name": p.name, "dtype": p.dtype}
-        for p in all_params
-        if not p.needs_candles
-    ]
+    param_defs = [{"name": p.name, "dtype": p.dtype} for p in all_params]
     result = build_summary(strategy, enriched, param_defs)
-    return SummaryResponse(
-        **result,
-        partial=bool(excluded),
-        excluded_params=excluded,
-    )
+    return SummaryResponse(**result, partial=False, excluded_params=[])

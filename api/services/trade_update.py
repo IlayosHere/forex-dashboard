@@ -43,7 +43,12 @@ def guard_terminal_status(trade: TradeModel, new_status: str) -> None:
 
 
 def apply_update_fields(trade: TradeModel, update_data: dict[str, Any]) -> None:
-    """Apply allowed fields from update_data onto the trade model in-place."""
+    """Apply allowed fields from update_data onto the trade model in-place.
+
+    Special case: if status is being set to "cancelled", exit_price is forced
+    to None. A cancelled trade has no exit, so storing an exit_price would
+    create a data inconsistency (PnL is never computed for cancelled status).
+    """
     for field, value in update_data.items():
         if field not in _ALLOWED_UPDATE_FIELDS:
             continue
@@ -51,6 +56,9 @@ def apply_update_fields(trade: TradeModel, update_data: dict[str, Any]) -> None:
             setattr(trade, "trade_metadata", value)
         else:
             setattr(trade, field, value)
+
+    if update_data.get("status") == "cancelled":
+        trade.exit_price = None
 
 
 def infer_outcome(pnl_pips: float) -> tuple[str, str]:

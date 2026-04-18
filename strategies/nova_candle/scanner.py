@@ -116,8 +116,6 @@ def find_nova_candle(
         return None
 
     # --- All checks passed ---
-    _alerted_candles.add(candle_key)
-
     direction = "BUY" if is_bullish else "SELL"
     logger.info(
         "%s NOVA @ %s O=%.5f H=%.5f L=%.5f C=%.5f",
@@ -127,7 +125,7 @@ def find_nova_candle(
     return {
         "direction": direction,
         "entry_price": o,
-        "candle_time": c.name,
+        "candle_time": c.name.to_pydatetime(),
         "signal_idx": idx,
         "open": o,
         "high": h,
@@ -166,6 +164,7 @@ def scan_all_symbols(
             trade_params = calculate_trade_params(result, candles, result["signal_idx"])
             if trade_params is None:
                 continue
+            _alerted_candles.add((symbol, result["candle_time"]))
             result.update(trade_params)
             signals.append(result)
 

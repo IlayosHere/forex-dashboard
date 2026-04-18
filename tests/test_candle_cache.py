@@ -19,7 +19,7 @@ from analytics import candle_cache as cache_mod
 from analytics.candle_cache import (
     STRATEGY_INTERVALS,
     CandleCache,
-    _next_bar_close,
+    next_bar_close as _next_bar_close,
     cached_atr,
     cached_d1,
     cached_h1,

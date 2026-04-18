@@ -96,6 +96,36 @@ def migrate_add_owner_to_trades() -> None:
         ))
 
 
+def migrate_add_trade_owner_open_time_index() -> None:
+    """Create composite index ix_trades_owner_open_time on trades (owner, open_time) if absent."""
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    existing = {idx["name"] for idx in inspector.get_indexes("trades")}
+    if "ix_trades_owner_open_time" in existing:
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_trades_owner_open_time ON trades (owner, open_time)"
+        ))
+    logger.info("Created index ix_trades_owner_open_time")
+
+
+def migrate_add_trade_owner_status_index() -> None:
+    """Create composite index ix_trades_owner_status on trades (owner, status) if absent."""
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    existing = {idx["name"] for idx in inspector.get_indexes("trades")}
+    if "ix_trades_owner_status" in existing:
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_trades_owner_status ON trades (owner, status)"
+        ))
+    logger.info("Created index ix_trades_owner_status")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_add_account_id_column()
@@ -103,3 +133,5 @@ def run_all() -> None:
     migrate_add_users_table()
     migrate_add_owner_to_accounts()
     migrate_add_owner_to_trades()
+    migrate_add_trade_owner_open_time_index()
+    migrate_add_trade_owner_status_index()
