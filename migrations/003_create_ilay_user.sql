@@ -31,6 +31,7 @@ VALUES (
 )
 ON CONFLICT (username) DO NOTHING;
 
--- Reassign ownership of every existing trade and account to Ilay.
-UPDATE trades   SET owner = 'Ilay';
-UPDATE accounts SET owner = 'Ilay';
+-- Reassign ownership of trades/accounts that are still under 'admin' to Ilay.
+-- Leaves rows owned by other real users untouched.
+UPDATE trades   SET owner = 'Ilay' WHERE owner = 'admin';
+UPDATE accounts SET owner = 'Ilay' WHERE owner = 'admin';
