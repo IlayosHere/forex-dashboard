@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, IctStatsResponse, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
 
 import { clearToken, getToken } from "./auth";
 
@@ -183,6 +183,13 @@ export async function fetchDailySummary(filters: StatsFiltersParam = {}): Promis
   const res = await authFetch(`${BASE_URL}/api/trades/stats/daily-summary?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch daily summary: ${res.status}`);
   return res.json() as Promise<DailySummaryPoint[]>;
+}
+
+export async function fetchIctStats(filters: StatsFiltersParam = {}): Promise<IctStatsResponse> {
+  const params = buildStatsParams(filters);
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/ict?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch ICT stats: ${res.status}`);
+  return res.json() as Promise<IctStatsResponse>;
 }
 
 // ---------------------------------------------------------------------------

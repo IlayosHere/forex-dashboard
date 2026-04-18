@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { AccountBadge } from "@/components/AccountBadge";
@@ -64,7 +64,7 @@ function formatTime(iso: string | null): string {
   try {
     const d = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   } catch {
     return "\u2014";
   }
@@ -81,6 +81,9 @@ interface TradeDetailPageProps {
 export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const backUrl = searchParams.get("back") ?? "/journal";
+  const backLabel = backUrl.startsWith("/journal/calendar") ? "Back to Calendar" : "Back to Journal";
 
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,7 +185,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     setSaving(true);
     try {
       await deleteTrade(id);
-      router.push("/journal");
+      router.push(backUrl);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to delete");
     } finally {
@@ -194,10 +197,10 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     <div className="p-6 max-w-2xl">
       {/* Back link */}
       <button
-        onClick={() => router.push("/journal")}
+        onClick={() => router.push(backUrl)}
         className="text-xs text-text-muted hover:text-text-primary mb-4 inline-block cursor-pointer transition-colors"
       >
-        &larr; Back to Journal
+        &larr; {backLabel}
       </button>
 
       {/* Header */}
