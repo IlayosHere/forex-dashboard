@@ -14,7 +14,7 @@ describe("StarRating", () => {
     render(<StarRating value={3} onChange={() => {}} />);
     const buttons = screen.getAllByRole("button");
     const filledColor = "color: rgb(38, 166, 154)";
-    const emptyColor = "color: rgb(42, 42, 42)";
+    const emptyColor = "color: rgb(85, 85, 85)";
     expect(buttons[0].style.cssText).toContain(filledColor);
     expect(buttons[1].style.cssText).toContain(filledColor);
     expect(buttons[2].style.cssText).toContain(filledColor);
@@ -25,7 +25,7 @@ describe("StarRating", () => {
   it("fills no stars when value is null", () => {
     render(<StarRating value={null} onChange={() => {}} />);
     const buttons = screen.getAllByRole("button");
-    const emptyColor = "color: rgb(42, 42, 42)";
+    const emptyColor = "color: rgb(85, 85, 85)";
     for (const button of buttons) {
       expect(button.style.cssText).toContain(emptyColor);
     }

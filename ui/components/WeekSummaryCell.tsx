@@ -28,10 +28,11 @@ function accentBorderColor(pnl: number, tradeCount: number): string {
 
 function getISOWeek(dateStr: string): number {
   const d = new Date(dateStr + "T00:00:00Z");
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 0));
-  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  const dayOfYear = Math.floor((d.getTime() - yearStart.getTime()) / 86400000);
-  return Math.ceil((dayOfYear + (jan4.getUTCDay() || 7) - 1) / 7);
+  // Thursday of the ISO week containing d
+  const thu = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7)));
+  // Jan 4 of thu's year is always in week 1
+  const jan4 = new Date(Date.UTC(thu.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((thu.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
 }
 
 export function WeekSummaryCell({

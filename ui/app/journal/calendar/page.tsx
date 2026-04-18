@@ -37,7 +37,7 @@ export default function CalendarPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
 
   const year = parseInt(searchParams.get("year") ?? String(now.getUTCFullYear()), 10);
   const month = parseInt(searchParams.get("month") ?? String(now.getUTCMonth() + 1), 10);

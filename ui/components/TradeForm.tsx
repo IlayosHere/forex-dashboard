@@ -122,9 +122,16 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     if (!form.strategy) errs.strategy = true;
     if (!form.symbol) errs.symbol = true;
     if (!form.direction) errs.direction = true;
-    if (!form.entry_price || isNaN(Number(form.entry_price))) errs.entry_price = true;
-    if (!form.sl_price || isNaN(Number(form.sl_price))) errs.sl_price = true;
-    if (!form.lot_size || isNaN(Number(form.lot_size))) errs.lot_size = true;
+    const entryNum = Number(form.entry_price);
+    if (!form.entry_price || !isFinite(entryNum) || entryNum <= 0) errs.entry_price = true;
+    const slNum = Number(form.sl_price);
+    if (!form.sl_price || !isFinite(slNum) || slNum <= 0) errs.sl_price = true;
+    const lotNum = Number(form.lot_size);
+    if (!form.lot_size || !isFinite(lotNum) || lotNum <= 0) errs.lot_size = true;
+    if (form.tp_price) {
+      const tpNum = Number(form.tp_price);
+      if (!isFinite(tpNum) || tpNum <= 0) errs.tp_price = true;
+    }
     if (!form.open_time) errs.open_time = true;
     if (isFutures) {
       if (!form.ict_setup_type) errs.ict_setup_type = true;

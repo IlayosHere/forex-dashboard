@@ -150,7 +150,8 @@ export function TradeCalendarGrid({
                   losses={dataMap.get(date)?.losses ?? 0}
                   isToday={date === todayKey}
                   isSelected={date === selectedDate}
-                  isCurrentMonth={true}
+                  isCurrentMonth={date.startsWith(`${year}-${String(month).padStart(2, "0")}`)}
+
                   onClick={() => handleDayClick(date)}
                 />
               )

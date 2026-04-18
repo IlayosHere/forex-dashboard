@@ -40,10 +40,13 @@ function sessionLabel(etMinutes: number): string {
   return "Other";
 }
 
-function groupBySession(trades: Trade[]): Map<string, Trade[]> {
+function groupBySession(trades: Trade[], instrumentType?: string): Map<string, Trade[]> {
   const map = new Map<string, Trade[]>();
   for (const trade of trades) {
-    const label = sessionLabel(storedMinutes(trade.open_time));
+    const label =
+      instrumentType === "futures_mnq"
+        ? sessionLabel(storedMinutes(trade.open_time))
+        : "All";
     const existing = map.get(label) ?? [];
     existing.push(trade);
     map.set(label, existing);
@@ -51,7 +54,7 @@ function groupBySession(trades: Trade[]): Map<string, Trade[]> {
   return map;
 }
 
-const SESSION_ORDER = ["AM", "Lunch", "PM", "Other"];
+const SESSION_ORDER = ["All", "AM", "Lunch", "PM", "Other"];
 
 function formatSheetDate(date: string): string {
   const d = new Date(date + "T00:00:00Z");
@@ -125,23 +128,27 @@ function SkeletonRows() {
 export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: CalendarDaySheetProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!date) return;
     setLoading(true);
+    setError(null);
     const filters: Record<string, string> = { from: date, to: date, limit: "50" };
     if (instrumentType) filters.instrument_type = instrumentType;
     if (accountId) filters.account_id = accountId;
     fetchTrades(filters)
-      .then(setTrades)
-      .catch(() => setTrades([]))
+      .then((data) => setTrades(data.filter((t) => t.status !== "cancelled")))
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : "Failed to load trades")
+      )
       .finally(() => setLoading(false));
   }, [date, instrumentType, accountId]);
 
   const pnl = netPnl(trades);
   const pnlColor = pnl >= 0 ? "#26a69a" : "#ef5350";
   const pnlStr = `${pnl >= 0 ? "+$" : "-$"}${Math.abs(pnl).toFixed(2)}`;
-  const grouped = groupBySession(trades);
+  const grouped = groupBySession(trades, instrumentType);
 
   return (
     <Sheet open={date !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -164,11 +171,15 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
         <div className="px-4 py-3">
           {loading && <SkeletonRows />}
 
-          {!loading && trades.length === 0 && (
+          {!loading && error !== null && (
+            <p style={{ color: "#ef5350" }} className="text-sm py-4">{error}</p>
+          )}
+
+          {!loading && error === null && trades.length === 0 && (
             <p className="text-[#777] text-sm py-4">No trades on this day.</p>
           )}
 
-          {!loading &&
+          {!loading && error === null &&
             SESSION_ORDER.filter((s) => grouped.has(s)).map((session) => {
               const sessionTrades = grouped.get(session) ?? [];
               return (
@@ -183,7 +194,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
               );
             })}
 
-          {!loading && trades.length > 0 && date && (
+          {!loading && error === null && trades.length > 0 && date && (
             <div className="mt-4 pt-3 border-t border-[#1e1e1e]">
               <Link
                 href={`/journal?from=${date}&to=${date}${accountId ? `&account_id=${accountId}` : ""}`}

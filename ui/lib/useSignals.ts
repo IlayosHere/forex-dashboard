@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchSignals, type SignalFilters } from "./api";
 import type { Signal } from "./types";
 
@@ -20,21 +20,25 @@ export function useSignals(filters: SignalFilters = {}): UseSignalsResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const cancelRef = useRef(0);
 
   // Serialize filters to a stable string for dependency tracking
   const filterKey = JSON.stringify(filters);
 
   const load = useCallback(async () => {
+    const id = ++cancelRef.current;
     try {
       const data = await fetchSignals(JSON.parse(filterKey) as SignalFilters);
+      if (cancelRef.current !== id) return;
       setSignals(data.items);
       setTotal(data.total);
       setLastUpdated(new Date());
       setError(null);
     } catch (e) {
+      if (cancelRef.current !== id) return;
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
-      setLoading(false);
+      if (cancelRef.current === id) setLoading(false);
     }
   }, [filterKey]);
 
@@ -42,7 +46,10 @@ export function useSignals(filters: SignalFilters = {}): UseSignalsResult {
     setLoading(true);
     void load();
     const interval = setInterval(() => { void load(); }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => {
+      cancelRef.current++;
+      clearInterval(interval);
+    };
   }, [load]);
 
   return { signals, total, loading, error, lastUpdated };
