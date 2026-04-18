@@ -50,12 +50,12 @@ def _classify_session(hour: int) -> str:
 
 
 def build_equity_curve(closed: list[TradeModel]) -> list[dict[str, Any]]:
-    """Build cumulative P&L curve from closed trades ordered by close_time.
+    """Build cumulative P&L curve from closed trades ordered by open_time.
 
     Returns a list of dicts with per-trade P&L and running cumulative totals.
     """
     sorted_trades = sorted(
-        closed, key=lambda t: t.close_time or t.open_time,
+        closed, key=lambda t: t.open_time,
     )
     cum_usd = 0.0
     cum_pips = 0.0
@@ -65,7 +65,7 @@ def build_equity_curve(closed: list[TradeModel]) -> list[dict[str, Any]]:
         pnl_pips = t.pnl_pips or 0.0
         cum_usd += pnl_usd
         cum_pips += pnl_pips
-        ct = t.close_time or t.open_time
+        ct = t.open_time
         result.append({
             "date": ct.date().isoformat() if ct else None,
             "close_time": ct.isoformat() if ct else None,
@@ -80,10 +80,10 @@ def build_equity_curve(closed: list[TradeModel]) -> list[dict[str, Any]]:
 
 
 def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
-    """Aggregate closed trades by date for a calendar heatmap."""
+    """Aggregate closed trades by open_time date for the calendar."""
     buckets: dict[date, dict[str, Any]] = {}
     for t in closed:
-        ct = t.close_time or t.open_time
+        ct = t.open_time
         if ct is None:
             continue
         d = ct.date()
@@ -157,7 +157,7 @@ def _calc_consistency(closed: list[TradeModel]) -> float | None:
     """Percentage of ISO weeks with net positive P&L."""
     weekly_pnl: dict[tuple[int, int], float] = defaultdict(float)
     for t in closed:
-        ct = t.close_time or t.open_time
+        ct = t.open_time
         if ct is None or t.pnl_usd is None:
             continue
         iso = ct.isocalendar()

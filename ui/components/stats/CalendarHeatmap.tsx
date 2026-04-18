@@ -127,13 +127,13 @@ export function CalendarHeatmap({ data, loading }: CalendarHeatmapProps) {
           {cells.map((cell) => (
             <div
               key={cell.date}
-              className="absolute rounded-[2px] group"
+              className={`absolute rounded-[2px] group${cell.trades === 0 ? " bg-[#1a1a1a]" : ""}`}
               style={{
                 left: cell.col * 14,
                 top: cell.row * 14,
                 width: 11,
                 height: 11,
-                backgroundColor: cell.trades > 0 ? getColor(cell.pnl, maxAbs) : "#1a1a1a",
+                ...(cell.trades > 0 && { backgroundColor: getColor(cell.pnl, maxAbs) }),
               }}
             >
               {cell.trades > 0 && (

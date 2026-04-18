@@ -9,7 +9,7 @@ import { TradeForm } from "@/components/TradeForm";
 import type { Signal, TradeCreateRequest } from "@/lib/types";
 import type { TradeFormData } from "@/components/TradeForm";
 
-import { fetchSignal, createTrade } from "@/lib/api";
+import { createTrade, fetchSignal } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
 import { formatPrice } from "@/lib/utils";
 

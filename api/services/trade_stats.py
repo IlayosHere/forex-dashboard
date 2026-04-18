@@ -84,7 +84,7 @@ def _compute_streak(closed: list[TradeModel]) -> int:
     0 if no decisive (win/loss) trades exist.
     """
     sorted_closed = sorted(
-        closed, key=lambda t: t.close_time or t.open_time, reverse=True,
+        closed, key=lambda t: t.open_time, reverse=True,
     )
     decisive = [t for t in sorted_closed if t.outcome in ("win", "loss")]
     if not decisive:

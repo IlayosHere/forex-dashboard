@@ -9,14 +9,11 @@ interface StatCardProps {
 
 export function StatCard({ label, value, color, subtitle }: StatCardProps) {
   return (
-    <div className="border border-[#2a2a2a] rounded-lg px-4 py-4 min-w-[140px]" style={{ backgroundColor: "#161616" }}>
+    <div className="border border-[#2a2a2a] rounded-lg px-4 py-4 min-w-[140px] bg-[#161616]">
       <div className="text-xs text-[#777777] uppercase tracking-wide mb-1">{label}</div>
       <div
-        className="text-xl font-bold"
-        style={{
-          color: color ?? "#e0e0e0",
-          fontVariantNumeric: "tabular-nums",
-        }}
+        className="text-xl font-bold tabular-nums"
+        style={{ color: color ?? "#e0e0e0" }}
       >
         {value}
       </div>

@@ -44,28 +44,31 @@ function tokenRemainingHours(token: string): number {
   }
 }
 
-let _refreshInFlight = false;
+let _refreshPromise: Promise<void> | null = null;
 
 /**
  * If the current token has less than 24h remaining, fetch a new one.
- * Call this on app load / navigation so the session stays alive as long
- * as the user opens the app within the 7-day window.
+ * Concurrent callers share the same in-flight promise so only one refresh
+ * request is ever sent, and all callers await the same result.
  */
 export async function tryRefreshToken(): Promise<void> {
-  if (_refreshInFlight) return;
+  if (_refreshPromise) return _refreshPromise;
   const token = getToken();
   if (!token) return;
   if (tokenRemainingHours(token) > 24) return; // plenty of time left
 
-  _refreshInFlight = true;
-  try {
-    // Dynamic import to avoid circular dependency (api.ts imports auth.ts)
-    const { refreshToken } = await import("./api");
-    const data = await refreshToken();
-    setToken(data.access_token);
-  } catch {
-    // Refresh failed — token might be expired, user will be redirected on next API call
-  } finally {
-    _refreshInFlight = false;
-  }
+  _refreshPromise = (async () => {
+    try {
+      // Dynamic import to avoid circular dependency (api.ts imports auth.ts)
+      const { refreshToken } = await import("./api");
+      const data = await refreshToken();
+      setToken(data.access_token);
+    } catch {
+      // Refresh failed — token might be expired, user will be redirected on next API call
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
 }

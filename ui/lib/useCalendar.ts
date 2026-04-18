@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import { fetchCalendar } from "@/lib/api";
 import type { CalendarContext, CalendarEvent } from "@/lib/types";
@@ -30,17 +30,21 @@ export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarR
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cancelRef = useRef(0);
 
   const loadData = useCallback(async () => {
+    const id = ++cancelRef.current;
     try {
       const data = await fetchCalendar(week);
+      if (cancelRef.current !== id) return;
       const filtered = context === "mnq" ? data.filter(isMnqRelevant) : data;
       setEvents(filtered);
       setError(null);
     } catch (err) {
+      if (cancelRef.current !== id) return;
       setError(err instanceof Error ? err.message : "Failed to load calendar");
     } finally {
-      setLoading(false);
+      if (cancelRef.current === id) setLoading(false);
     }
   }, [week, context]);
 
@@ -48,7 +52,10 @@ export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarR
     setLoading(true);
     void loadData();
     const id = setInterval(() => void loadData(), POLL_INTERVAL_MS);
-    return () => clearInterval(id);
+    return () => {
+      cancelRef.current++;
+      clearInterval(id);
+    };
   }, [loadData]);
 
   return { events, loading, error };

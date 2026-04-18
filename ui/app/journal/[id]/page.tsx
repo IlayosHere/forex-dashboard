@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useReducer, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useReducer, useState, use, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { AccountBadge } from "@/components/AccountBadge";
@@ -64,7 +64,7 @@ function formatTime(iso: string | null): string {
   try {
     const d = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   } catch {
     return "\u2014";
   }
@@ -78,9 +78,12 @@ interface TradeDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function TradeDetailPage({ params }: TradeDetailPageProps) {
+function TradeDetailContent({ params }: TradeDetailPageProps) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const backUrl = searchParams.get("back") ?? "/journal";
+  const backLabel = backUrl.startsWith("/journal/calendar") ? "Back to Calendar" : "Back to Journal";
 
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,10 +124,10 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
   const isBuy = trade.direction === "BUY";
 
   const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
-    if (!editable.exitPrice) return;
+    const ep = parseFloat(editable.exitPrice);
+    if (!editable.exitPrice || !isFinite(ep) || ep <= 0) return;
     setSaving(true);
     try {
-      const ep = parseFloat(editable.exitPrice);
       const status = outcome === "breakeven" ? "breakeven" : "closed";
       const t = await updateTrade(id, { exit_price: ep, status, outcome, close_time: new Date().toISOString() });
       setTrade(t);
@@ -182,7 +185,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     setSaving(true);
     try {
       await deleteTrade(id);
-      router.push("/journal");
+      router.push(backUrl);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to delete");
     } finally {
@@ -194,10 +197,10 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
     <div className="p-6 max-w-2xl">
       {/* Back link */}
       <button
-        onClick={() => router.push("/journal")}
+        onClick={() => router.push(backUrl)}
         className="text-xs text-text-muted hover:text-text-primary mb-4 inline-block cursor-pointer transition-colors"
       >
-        &larr; Back to Journal
+        &larr; {backLabel}
       </button>
 
       {/* Header */}
@@ -268,7 +271,7 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
           <div className="border border-border rounded p-3 bg-card">
             <span className="label">Linked Signal</span>
             <button
-              onClick={() => router.push(`/strategy/${trade.strategy}?signal=${trade.signal_id}`)}
+              onClick={() => router.push(`/strategy/${encodeURIComponent(trade.strategy)}?signal=${encodeURIComponent(trade.signal_id!)}`)}
               className="block text-xs text-bull hover:underline mt-1 cursor-pointer transition-colors"
             >
               View original signal &rarr;
@@ -299,5 +302,13 @@ export default function TradeDetailPage({ params }: TradeDetailPageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TradeDetailPage({ params }: TradeDetailPageProps) {
+  return (
+    <Suspense fallback={<div className="p-6 text-text-muted text-sm">Loading...</div>}>
+      <TradeDetailContent params={params} />
+    </Suspense>
   );
 }
