@@ -11,7 +11,7 @@ interface IctTradeFieldsProps {
 const SELECT_CLASS =
   "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 
-const LABEL_CLASS = "block text-xs text-text-secondary mb-1";
+const LABEL_CLASS = "block text-xs text-text-muted mb-1";
 
 function errBorder(errors: Record<string, boolean>, field: string): string {
   return errors[field] ? "border-bear" : "";
@@ -99,7 +99,7 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
 
   return (
     <div className="space-y-4 border border-border rounded-md p-4">
-      <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">ICT Setup</p>
+      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">ICT Setup</p>
 
       {/* Setup Type */}
       <div>

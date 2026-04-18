@@ -10,6 +10,13 @@ interface NewsRiskIndicatorProps {
   symbol: string;
 }
 
+// Store the epoch ms of each event so msUntil is recomputed at render time
+interface UpcomingEvent {
+  name: string;
+  currency: string;
+  atMs: number;
+}
+
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 const REFRESH_INTERVAL_MS = 60 * 1000;
 
@@ -25,10 +32,7 @@ function formatMinutesUntil(ms: number): string {
   return `${h}h ${m}m`;
 }
 
-function filterUpcoming(
-  events: CalendarEvent[],
-  symbol: string,
-): { name: string; currency: string; msUntil: number }[] {
+function filterUpcoming(events: CalendarEvent[], symbol: string): UpcomingEvent[] {
   const now = Date.now();
   const [ccy1, ccy2] = deriveCurrencies(symbol);
   return events
@@ -41,13 +45,13 @@ function filterUpcoming(
     .map((ev) => ({
       name: ev.name,
       currency: ev.currency,
-      msUntil: new Date(ev.datetime_utc).getTime() - now,
+      atMs: new Date(ev.datetime_utc).getTime(),
     }))
-    .sort((a, b) => a.msUntil - b.msUntil);
+    .sort((a, b) => a.atMs - b.atMs);
 }
 
 export function NewsRiskIndicator({ symbol }: NewsRiskIndicatorProps) {
-  const [upcoming, setUpcoming] = useState<{ name: string; currency: string; msUntil: number }[]>([]);
+  const [upcoming, setUpcoming] = useState<UpcomingEvent[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,20 +73,24 @@ export function NewsRiskIndicator({ symbol }: NewsRiskIndicatorProps) {
     };
   }, [symbol]);
 
-  if (upcoming.length === 0) return null;
+  // Filter out events that have now passed (recomputed each render)
+  const now = Date.now();
+  const visible = upcoming.filter((ev) => ev.atMs - now > 0);
+
+  if (visible.length === 0) return null;
 
   return (
     <div className="bg-elevated rounded px-3 py-2">
       <p className="text-[9px] uppercase tracking-widest text-text-dim mb-1">News Risk</p>
       <p className="text-xs text-accent-gold leading-snug">
-        {upcoming.map((ev, i) => (
+        {visible.map((ev, i) => (
           <span key={`${ev.currency}-${ev.name}`}>
             {i > 0 && <span className="text-text-dim mx-1.5">·</span>}
             <span className="font-medium">{ev.currency}</span>
             {" "}
             {ev.name}
             {" "}
-            <span className="text-accent-gold/70">in {formatMinutesUntil(ev.msUntil)}</span>
+            <span className="text-accent-gold/70">in {formatMinutesUntil(ev.atMs - now)}</span>
           </span>
         ))}
       </p>

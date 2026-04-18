@@ -26,7 +26,7 @@ function winRateColor(v: number | null): string {
 export function PerformanceTable({ title, rows, pnlUnit = "pips" }: PerformanceTableProps) {
   if (rows.length === 0) {
     return (
-      <div className="border border-[#2a2a2a] rounded-lg p-4" style={{ backgroundColor: "#161616" }}>
+      <div className="border border-[#2a2a2a] rounded-lg p-4 bg-[#161616]">
         <h3 className="text-sm font-medium text-[#e0e0e0] mb-3">{title}</h3>
         <p className="text-xs text-[#777777]">No data available</p>
       </div>
@@ -34,7 +34,7 @@ export function PerformanceTable({ title, rows, pnlUnit = "pips" }: PerformanceT
   }
 
   return (
-    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden" style={{ backgroundColor: "#161616" }}>
+    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden bg-[#161616]">
       <h3 className="text-sm font-medium text-[#e0e0e0] px-4 py-3 border-b border-[#2a2a2a]">
         {title}
       </h3>
@@ -56,23 +56,23 @@ export function PerformanceTable({ title, rows, pnlUnit = "pips" }: PerformanceT
           {rows.map((row) => (
             <tr key={row.name} className="hover:bg-[#1a1a1a] transition-colors">
               <td className="px-4 py-2.5 text-[#e0e0e0] font-medium">{row.name}</td>
-              <td className="px-4 py-2.5 text-right text-[#e0e0e0]" style={{ fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right text-[#e0e0e0] tabular-nums">
                 {row.total}
               </td>
-              <td className="px-4 py-2.5 text-right" style={{ color: "#26a69a", fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right text-[#26a69a] tabular-nums">
                 {row.wins}
               </td>
-              <td className="px-4 py-2.5 text-right" style={{ color: "#ef5350", fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right text-[#ef5350] tabular-nums">
                 {row.losses}
               </td>
-              <td className="px-4 py-2.5 text-right" style={{ color: winRateColor(row.winRate), fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: winRateColor(row.winRate) }}>
                 {row.winRate !== null ? `${fmt(row.winRate)}%` : "--"}
               </td>
-              <td className="px-4 py-2.5 text-right font-medium" style={{ color: pnlColor(row.pnl), fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: pnlColor(row.pnl) }}>
                 {row.pnl >= 0 ? "+" : ""}{fmt(row.pnl)}
               </td>
               {rows.some((r) => r.extra) && (
-                <td className="px-4 py-2.5 text-right" style={{ color: row.extra?.color ?? "#e0e0e0", fontVariantNumeric: "tabular-nums" }}>
+                <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: row.extra?.color ?? "#e0e0e0" }}>
                   {row.extra?.value ?? ""}
                 </td>
               )}

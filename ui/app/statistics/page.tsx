@@ -10,6 +10,7 @@ import { MonthlyBars } from "@/components/stats/MonthlyBars";
 import { PerformanceBreakdowns } from "@/components/stats/PerformanceBreakdowns";
 import { EdgeMetrics } from "@/components/stats/EdgeMetrics";
 import { AssessmentAnalysis } from "@/components/stats/AssessmentAnalysis";
+import { IctAnalysisSection } from "@/components/stats/IctAnalysisSection";
 
 import type { InstrumentType } from "@/lib/types";
 
@@ -17,6 +18,7 @@ import { useTradeStats } from "@/lib/useTradeStats";
 import { useAccounts } from "@/lib/useAccounts";
 import { useEquityCurve } from "@/lib/useEquityCurve";
 import { useDailySummary } from "@/lib/useDailySummary";
+import { useIctStats } from "@/lib/useIctStats";
 
 type PresetKey = "7d" | "30d" | "month" | "3m" | "all";
 
@@ -70,6 +72,7 @@ export default function StatisticsPage() {
   const { stats, loading: statsLoading, error, refetch } = useTradeStats(apiFilters);
   const { data: equityData, loading: equityLoading } = useEquityCurve(apiFilters);
   const { data: dailyData, loading: dailyLoading } = useDailySummary(apiFilters);
+  const { data: ictData, loading: ictLoading } = useIctStats(apiFilters);
 
   function handlePresetChange(value: string) {
     setPreset(value as PresetKey);
@@ -172,6 +175,11 @@ export default function StatisticsPage() {
           loading={statsLoading}
         />
       </div>
+
+      {/* Section 6: ICT Analysis (MNQ only) */}
+      {instrumentType === "futures_mnq" && (
+        <IctAnalysisSection ictStats={ictData} loading={ictLoading} />
+      )}
     </div>
   );
 }

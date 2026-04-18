@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTrades } from "@/lib/useTrades";
 import { useTradeStats } from "@/lib/useTradeStats";
@@ -19,6 +19,11 @@ const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "futures_mnq", label: "MNQ" },
 ];
 
+const journalTabs = [
+  { label: "Trades", href: "/journal" },
+  { label: "Calendar", href: "/journal/calendar" },
+];
+
 const emptyFilters: TradeFilterValues = {
   account_id: "",
   strategy: "",
@@ -31,6 +36,7 @@ const emptyFilters: TradeFilterValues = {
 
 export default function JournalPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [instrumentType, setInstrumentType] = useState<InstrumentType>("forex");
   const [filters, setFilters] = useState<TradeFilterValues>(emptyFilters);
 
@@ -109,6 +115,26 @@ export default function JournalPage() {
         </Button>
       </div>
 
+      {/* Journal tab nav */}
+      <div className="flex gap-2 mb-4">
+        {journalTabs.map((tab) => {
+          const isActive = pathname === tab.href;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                isActive
+                  ? "border-[#26a69a] text-[#26a69a] bg-[#26a69a]/10"
+                  : "border-[#2a2a2a] text-[#777] hover:text-[#e0e0e0]"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+
       {/* Instrument Type Tabs */}
       <div className="flex gap-0 mb-4 border-b border-[#2a2a2a]">
         {instrumentTabs.map((tab) => (
@@ -171,14 +197,20 @@ export default function JournalPage() {
       )}
       {!loading && trades.length > 0 && (
         <div className="border border-[#2a2a2a] rounded overflow-hidden divide-y divide-[#2a2a2a] bg-card">
-          {trades.map((trade) => (
-            <TradeCard
-              key={trade.id}
-              trade={trade}
-              onClick={() => router.push(`/journal/${trade.id}`)}
-              accountType={trade.account_id ? accountTypeMap[trade.account_id] : undefined}
-            />
-          ))}
+          {trades.map((trade) => {
+            const backParams = new URLSearchParams();
+            Object.entries(apiFilters).forEach(([k, v]) => { if (v) backParams.set(k, v); });
+            const backSearch = backParams.toString();
+            const backUrl = "/journal" + (backSearch ? `?${backSearch}` : "");
+            return (
+              <TradeCard
+                key={trade.id}
+                trade={trade}
+                onClick={() => router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`)}
+                accountType={trade.account_id ? accountTypeMap[trade.account_id] : undefined}
+              />
+            );
+          })}
         </div>
       )}
     </div>

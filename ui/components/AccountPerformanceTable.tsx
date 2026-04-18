@@ -26,7 +26,7 @@ interface AccountPerformanceTableProps {
 export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) {
   if (rows.length === 0) {
     return (
-      <div className="border border-[#2a2a2a] rounded-lg p-4" style={{ backgroundColor: "#161616" }}>
+      <div className="border border-[#2a2a2a] rounded-lg p-4 bg-[#161616]">
         <h3 className="text-sm font-medium text-[#e0e0e0] mb-3">Performance by Account</h3>
         <p className="text-xs text-[#777777]">No account data available</p>
       </div>
@@ -34,7 +34,7 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
   }
 
   return (
-    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden" style={{ backgroundColor: "#161616" }}>
+    <div className="border border-[#2a2a2a] rounded-lg overflow-hidden bg-[#161616]">
       <h3 className="text-sm font-medium text-[#e0e0e0] px-4 py-3 border-b border-[#2a2a2a]">
         Performance by Account
       </h3>
@@ -59,22 +59,21 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
                   </span>
                 </div>
               </td>
-              <td className="px-4 py-2.5 text-right text-[#e0e0e0]" style={{ fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right text-[#e0e0e0] tabular-nums">
                 {row.total}
               </td>
               <td
-                className="px-4 py-2.5 text-right"
+                className="px-4 py-2.5 text-right tabular-nums"
                 style={{
                   color: row.winRate !== null ? (row.winRate >= 50 ? "#26a69a" : "#ef5350") : "#777777",
-                  fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {row.winRate !== null ? `${fmt(row.winRate)}%` : "--"}
               </td>
-              <td className="px-4 py-2.5 text-right" style={{ color: pnlColor(row.pnlPips), fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: pnlColor(row.pnlPips) }}>
                 {row.pnlPips != null ? (row.pnlPips >= 0 ? "+" : "") : ""}{fmt(row.pnlPips)}
               </td>
-              <td className="px-4 py-2.5 text-right font-medium" style={{ color: pnlColor(row.pnlUsd), fontVariantNumeric: "tabular-nums" }}>
+              <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: pnlColor(row.pnlUsd) }}>
                 {row.pnlUsd != null ? (row.pnlUsd >= 0 ? "+" : "") : ""}${fmt(row.pnlUsd, 2)}
               </td>
             </tr>

@@ -108,7 +108,7 @@ describe("postCalculate", () => {
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe(`${BASE_URL}/api/calculate`);
     expect(call[1].method).toBe("POST");
-    expect(call[1].headers["Content-Type"]).toBe("application/json");
+    expect((call[1].headers as Headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(call[1].body)).toEqual(body);
   });
 
