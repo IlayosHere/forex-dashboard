@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy everything the runner touches at runtime
 COPY shared/          shared/
 COPY api/             api/
+COPY analytics/       analytics/
 COPY strategies/      strategies/
 COPY impulse-notifier/ impulse-notifier/
 COPY runner/          runner/
