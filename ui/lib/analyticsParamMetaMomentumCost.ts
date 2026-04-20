@@ -1,0 +1,203 @@
+import type { ParamMeta } from "./analyticsParamMeta";
+
+export const PARAM_META_MOMENTUM: Record<string, ParamMeta> = {
+  impulse_body_ratio: {
+    label: "Impulse Body",
+    category: "momentum",
+    description: "Impulse candle body as a share of its range",
+    unit: "%",
+    isRatio01: true,
+  },
+  impulse_size_atr: {
+    label: "Impulse Size ÷ ATR",
+    category: "momentum",
+    description: "Impulse candle range as a multiple of recent volatility",
+    unit: "x",
+  },
+  pair_category: {
+    label: "Pair Type",
+    category: "momentum",
+    description: "Major, JPY cross, or minor cross",
+    unit: null,
+    bucketMap: {
+      MAJOR: "Major",
+      JPY_CROSS: "JPY Cross",
+      MINOR_CROSS: "Minor Cross",
+    },
+  },
+  atr_14: {
+    label: "ATR-14",
+    category: "momentum",
+    description: "14-period Average True Range at the signal bar",
+    unit: "pips",
+  },
+  trend_h1_aligned: {
+    label: "H1 Trend Match",
+    category: "momentum",
+    description: "Whether the H1 EMA trend matches the signal direction",
+    unit: null,
+    bucketMap: {
+      True: "Yes",
+      False: "No",
+    },
+  },
+  volatility_percentile: {
+    label: "Volatility Percentile",
+    category: "momentum",
+    description: "Current ATR rank vs the last 20 values",
+    unit: "%",
+  },
+  relative_volume: {
+    label: "Relative Volume",
+    category: "momentum",
+    description: "Signal-bar tick count vs 20-bar mean — activity proxy, not traded volume",
+    unit: "x",
+  },
+  volume_percentile: {
+    label: "Volume Percentile (50b)",
+    category: "momentum",
+    description: "Signal-bar tick count rank within the last 50 bars",
+    unit: "%",
+  },
+  volume_regime: {
+    label: "Volume Regime",
+    category: "momentum",
+    description: "Low / normal / high activity bucket from relative volume",
+    unit: null,
+    bucketMap: {
+      low: "Low",
+      normal: "Normal",
+      high: "High",
+    },
+  },
+  h1_swing_position: {
+    label: "H1 Range Position",
+    category: "momentum",
+    description: "Where the entry sits within the last 20 H1 bars",
+    unit: null,
+    bucketMap: {
+      near_high: "Near H1 High",
+      near_low: "Near H1 Low",
+      mid: "Mid Range",
+    },
+  },
+  bars_since_h1_extreme: {
+    label: "Bars Since H1 Extreme",
+    category: "momentum",
+    description: "H1 bars since the last swing extreme in the signal direction",
+    unit: "candles",
+  },
+  htf_range_position_d1: {
+    label: "Day Range Position",
+    category: "momentum",
+    description: "Where entry sits inside the current broker-day's range so far",
+    unit: null,
+    bucketMap: {
+      LOW: "Low (0-20%)",
+      MID_LOW: "Mid-low (20-40%)",
+      MID: "Mid (40-60%)",
+      MID_HIGH: "Mid-high (60-80%)",
+      HIGH: "High (80-100%)",
+    },
+  },
+  dist_to_prior_day_hl_atr: {
+    label: "Distance to PDH/PDL ÷ ATR",
+    category: "momentum",
+    description: "Nearest prior broker-day high or low, in ATR units",
+    unit: "x",
+  },
+  d1_trend: {
+    label: "Daily Trend",
+    category: "momentum",
+    description: "Daily bias over the last 5 completed days",
+    unit: null,
+    bucketMap: { up: "Up", down: "Down", flat: "Flat" },
+  },
+  range_bound_efficiency: {
+    label: "Trend Efficiency",
+    category: "momentum",
+    description: "Kaufman efficiency ratio over the last 50 bars (0 = chop, 1 = trend)",
+    unit: "%",
+    isRatio01: true,
+  },
+  range_compression_ratio: {
+    label: "5-Bar Range ÷ ATR",
+    category: "momentum",
+    description: "Pre-signal 5-bar range compression vs ATR",
+    unit: "x",
+  },
+  trail_extension_atr: {
+    label: "Trail Extension ÷ ATR",
+    category: "momentum",
+    description: "Price travel over the last 10 bars in the signal direction — high = exhausted",
+    unit: "x",
+  },
+  c1_close_strength: {
+    label: "Impulse Commitment",
+    category: "momentum",
+    description: "Where the impulse candle closed within its range, in the signal direction",
+    unit: "%",
+    isRatio01: true,
+  },
+  c1_broke_prior_swing: {
+    label: "C1 Broke Swing",
+    category: "momentum",
+    description: "Whether the impulse candle closed beyond the prior 10-bar high/low",
+    unit: null,
+    bucketMap: { True: "Yes", False: "No" },
+  },
+  h1_trend_strength_bucket: {
+    label: "H1 Trend Strength",
+    category: "momentum",
+    description: "H1 EMA slope strength relative to the signal direction",
+    unit: null,
+    bucketMap: { WITH: "With trend", FLAT: "Flat", AGAINST: "Against trend" },
+  },
+  volatility_percentile_long: {
+    label: "Volatility Percentile (24h)",
+    category: "momentum",
+    description: "Current ATR rank vs the last 96 bars (~24h)",
+    unit: "%",
+  },
+  prior_candle_direction: {
+    label: "Prior Candle",
+    category: "momentum",
+    description: "Prior M15 candle direction vs the signal",
+    unit: null,
+    bucketMap: { SAME: "With", OPPOSITE: "Against", DOJI: "Flat" },
+  },
+  prior_body_atr_ratio: {
+    label: "Prior Body ÷ ATR",
+    category: "momentum",
+    description: "Previous candle body as an ATR multiple",
+    unit: "x",
+  },
+};
+
+export const PARAM_META_COST: Record<string, ParamMeta> = {
+  spread_risk_ratio: {
+    label: "Spread ÷ Risk",
+    category: "cost",
+    description: "Broker spread as a share of the stop-loss distance",
+    unit: "x",
+  },
+  risk_pips_atr: {
+    label: "Risk ÷ ATR",
+    category: "cost",
+    description: "Stop-loss distance as a multiple of recent volatility",
+    unit: "x",
+  },
+  spread_atr_ratio: {
+    label: "Spread ÷ ATR",
+    category: "cost",
+    description: "Broker spread as a multiple of recent volatility",
+    unit: "x",
+  },
+  spread_dominance: {
+    label: "Spread Share",
+    category: "cost",
+    description: "Spread as a share of spread + stop distance",
+    unit: "%",
+    isRatio01: true,
+  },
+};

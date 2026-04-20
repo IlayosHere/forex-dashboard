@@ -60,52 +60,52 @@ export function DateTimePicker({
   const displayText = datePart ? `${datePart}  ${hh}:${mm}` : "Select date & time";
 
   const numInputClass =
-    "w-10 h-8 bg-[#1e1e1e] border border-[#2a2a2a] rounded text-sm text-[#e0e0e0] text-center font-mono outline-none focus:border-[#26a69a] focus:ring-1 focus:ring-[#26a69a]/30 transition-colors appearance-none";
+    "w-10 h-8 bg-surface-input border border-border rounded text-sm text-text-primary text-center font-mono outline-none focus:border-bull focus:ring-1 focus:ring-bull/30 transition-colors appearance-none";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
           "flex h-8 w-full items-center justify-start gap-2 rounded-md border px-3 py-1 text-sm font-normal transition-colors",
-          "bg-[#1e1e1e] border-[#2a2a2a] text-[#e0e0e0] hover:bg-[#252525] cursor-pointer",
-          "focus-visible:ring-1 focus-visible:ring-offset-0 ring-[#26a69a]",
-          hasError && "border-[#ef5350]",
-          !value && "text-[#777777]",
+          "bg-surface-input border-border text-text-primary hover:bg-surface-raised cursor-pointer",
+          "focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull",
+          hasError && "border-destructive",
+          !value && "text-text-muted",
           className
         )}
       >
-        <CalendarIcon className="size-3.5 text-[#777777]" />
+        <CalendarIcon className="size-3.5 text-text-muted" />
         <span className="font-mono text-sm">{displayText}</span>
       </PopoverTrigger>
 
       <PopoverContent
         align="start"
-        className="w-auto bg-[#161616] border-[#2a2a2a] p-0"
+        className="w-auto bg-card border-border p-0"
       >
         <Calendar
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
-          className="bg-[#161616]"
+          className="bg-card"
         />
 
-        <div className="flex items-center justify-center gap-2 border-t border-[#2a2a2a] px-4 py-3">
-          <span className="text-xs text-[#777777] mr-1">Time</span>
+        <div className="flex items-center justify-center gap-2 border-t border-border px-4 py-3">
+          <span className="text-xs text-text-muted mr-1">Time</span>
           <input
             type="number"
             min={0}
             max={23}
-            value={parseInt(hh, 10)}
+            value={hh}
             onChange={handleHourChange}
             disabled={!datePart}
             className={numInputClass}
           />
-          <span className="text-[#777777] font-bold font-mono">:</span>
+          <span className="text-text-muted font-bold font-mono">:</span>
           <input
             type="number"
             min={0}
             max={59}
-            value={parseInt(mm, 10)}
+            value={mm}
             onChange={handleMinuteChange}
             disabled={!datePart}
             className={numInputClass}

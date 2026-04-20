@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 
-import type { IctStatsResponse, IctBucketStats } from "@/lib/types";
+import type { IctStatsResponse, IctBucketStats } from "@/lib/ictTypes";
 
 interface IctBreakdownsProps {
   data: IctStatsResponse | null;

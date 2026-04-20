@@ -6,6 +6,9 @@ import { changePassword } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const MIN_PASSWORD_LENGTH = 8;
+const SUCCESS_CLOSE_DELAY_MS = 1500;
+
 export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -18,7 +21,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 8) {
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError("New password must be at least 8 characters");
       return;
     }
@@ -34,7 +37,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setTimeout(() => onClose(), 1500);
+      setTimeout(() => onClose(), SUCCESS_CLOSE_DELAY_MS);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to change password");
     } finally {
@@ -64,7 +67,7 @@ export function ChangePasswordForm({ onClose }: { onClose: () => void }) {
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
         required
-        minLength={8}
+        minLength={MIN_PASSWORD_LENGTH}
         className="h-8 text-sm bg-surface-input"
       />
       <Input

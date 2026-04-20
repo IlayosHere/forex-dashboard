@@ -4,7 +4,7 @@ import { IctBreakdowns } from "@/components/stats/IctBreakdowns";
 import { IctBooleanFlags } from "@/components/stats/IctBooleanFlags";
 import { IctComboMatrix } from "@/components/stats/IctComboMatrix";
 
-import type { IctStatsResponse } from "@/lib/types";
+import type { IctStatsResponse } from "@/lib/ictTypes";
 
 interface IctAnalysisSectionProps {
   ictStats: IctStatsResponse | null;

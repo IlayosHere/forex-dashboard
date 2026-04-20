@@ -1,6 +1,18 @@
-import type { AnalyticsSummary, UnivariateReport, AnalyticsParameterList } from "./types";
+import type { AnalyticsSummary, UnivariateReport } from "./types";
 
 import { authFetch, BASE_URL } from "./api";
+
+interface AnalyticsParameter {
+  name: string;
+  dtype: "float" | "str" | "int" | "bool";
+  strategies: string[];
+  needs_candles: boolean;
+}
+
+interface AnalyticsParameterList {
+  items: AnalyticsParameter[];
+  total: number;
+}
 
 export async function fetchAnalyticsSummary(
   strategy: string
