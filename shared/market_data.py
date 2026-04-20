@@ -17,6 +17,7 @@ This is the single source of truth for:
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from datetime import timezone
@@ -59,12 +60,18 @@ def get_tv() -> TvDatafeed:
     global _tv
     with _tv_lock:
         if _tv is None:
-            _tv = TvDatafeed()
+            tv_username = os.environ.get("TV_USERNAME")
+            tv_password = os.environ.get("TV_PASSWORD")
+            if tv_username and tv_password:
+                _tv = TvDatafeed(username=tv_username, password=tv_password)
+                logger.info("TvDatafeed connection established (authenticated)")
+            else:
+                _tv = TvDatafeed()
+                logger.warning("TvDatafeed connection established (nologin — set TV_USERNAME/TV_PASSWORD for stability)")
             try:
                 _tv._TvDatafeed__ws_timeout = 15
             except AttributeError:
-                logger.warning("tvDatafeed: could not set __ws_timeout (library API changed)")
-            logger.info("TvDatafeed connection established")
+                pass
         return _tv
 
 
