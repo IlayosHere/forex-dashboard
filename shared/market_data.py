@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 _tv: TvDatafeed | None = None
 _tv_lock = threading.Lock()
+_tv_token: str | None = None  # cached once at startup, reused on every reconnect
 
 # Global semaphore: caps concurrent TradingView WebSocket requests across all
 # threads and callers. TradingView rate-limits aggressive parallel connections
@@ -55,15 +56,49 @@ _VOLUME_COLUMN = "volume"
 # TradingView connection
 # ---------------------------------------------------------------------------
 
+def _get_auth_token() -> str | None:
+    """Authenticate once with TV credentials and return the token.
+
+    Called only on first connection. Subsequent reconnects reuse the cached
+    token to avoid hitting TradingView's sign-in rate limit.
+    """
+    import requests as _requests
+    username = os.environ.get("TV_USERNAME")
+    password = os.environ.get("TV_PASSWORD")
+    if not username or not password:
+        return None
+    try:
+        resp = _requests.post(
+            "https://www.tradingview.com/accounts/signin/",
+            data={"username": username, "password": password, "remember": "on"},
+            headers={"Referer": "https://www.tradingview.com"},
+            timeout=10,
+        )
+        token = resp.json().get("user", {}).get("auth_token")
+        if token:
+            logger.info("TvDatafeed: authenticated successfully")
+            return token
+        logger.error("TvDatafeed: sign-in response missing token: %s", resp.text[:200])
+    except Exception as exc:
+        logger.error("TvDatafeed: sign-in request failed: %s", exc)
+    return None
+
+
 def get_tv() -> TvDatafeed:
-    """Return the lazy TvDatafeed singleton, creating it on first access."""
-    global _tv
+    """Return the lazy TvDatafeed singleton, creating it on first access.
+
+    On first call, authenticates with TV credentials (if set) and caches the
+    token. On reconnect (after reset_tv), reuses the cached token — no
+    repeated sign-in calls.
+    """
+    global _tv, _tv_token
     with _tv_lock:
         if _tv is None:
-            tv_username = os.environ.get("TV_USERNAME")
-            tv_password = os.environ.get("TV_PASSWORD")
-            if tv_username and tv_password:
-                _tv = TvDatafeed(username=tv_username, password=tv_password)
+            if _tv_token is None:
+                _tv_token = _get_auth_token()
+            if _tv_token:
+                _tv = TvDatafeed()
+                _tv.token = _tv_token
                 logger.info("TvDatafeed connection established (authenticated)")
             else:
                 _tv = TvDatafeed()
@@ -76,7 +111,10 @@ def get_tv() -> TvDatafeed:
 
 
 def reset_tv() -> None:
-    """Drop the cached TvDatafeed so the next call reconnects."""
+    """Drop the cached TvDatafeed so the next call reconnects.
+
+    Keeps the cached auth token so reconnects reuse it without re-signing in.
+    """
     global _tv
     with _tv_lock:
         _tv = None
