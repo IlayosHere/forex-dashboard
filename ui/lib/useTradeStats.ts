@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchTradeStats } from "./api";
 import type { TradeStats } from "./types";
 
+const POLL_INTERVAL_MS = 30_000;
+
 interface UseTradeStatsResult {
   stats: TradeStats | null;
   loading: boolean;
@@ -38,7 +40,7 @@ export function useTradeStats(filters: { strategy?: string; symbol?: string; fro
   useEffect(() => {
     setLoading(true);
     void load();
-    const interval = setInterval(() => { void load(); }, 30_000);
+    const interval = setInterval(() => { void load(); }, POLL_INTERVAL_MS);
     return () => {
       cancelRef.current++;
       clearInterval(interval);

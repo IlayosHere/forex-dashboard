@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 
-import type { IctComboEntry } from "@/lib/types";
+import type { IctComboEntry } from "@/lib/ictTypes";
 
 interface IctComboMatrixProps {
   comboMatrix: IctComboEntry[];

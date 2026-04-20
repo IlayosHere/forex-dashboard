@@ -1,4 +1,5 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, IctStatsResponse, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
+import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
 
@@ -53,7 +54,8 @@ export async function fetchSignals(
   if (filters.resolution) params.set("resolution", filters.resolution);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset !== undefined) params.set("offset", String(filters.offset));
-  const res = await authFetch(`${BASE_URL}/api/signals?${params.toString()}`, {
+  const qs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/signals${qs ? `?${qs}` : ""}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Failed to fetch signals: ${res.status}`);
@@ -109,7 +111,8 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset !== undefined) params.set("offset", String(filters.offset));
-  const res = await authFetch(`${BASE_URL}/api/trades?${params.toString()}`, { cache: "no-store" });
+  const qs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trades: ${res.status}`);
   return res.json() as Promise<Trade[]>;
 }
@@ -153,7 +156,8 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   if (filters.to) params.set("to", filters.to);
   if (filters.account_id) params.set("account_id", filters.account_id);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
-  const res = await authFetch(`${BASE_URL}/api/trades/stats?${params.toString()}`, { cache: "no-store" });
+  const qs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades/stats${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade stats: ${res.status}`);
   return res.json() as Promise<TradeStats>;
 }
@@ -173,21 +177,24 @@ function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
 
 export async function fetchEquityCurve(filters: StatsFiltersParam = {}): Promise<EquityCurvePoint[]> {
   const params = buildStatsParams(filters);
-  const res = await authFetch(`${BASE_URL}/api/trades/stats/equity-curve?${params.toString()}`, { cache: "no-store" });
+  const eqs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/equity-curve${eqs ? `?${eqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch equity curve: ${res.status}`);
   return res.json() as Promise<EquityCurvePoint[]>;
 }
 
 export async function fetchDailySummary(filters: StatsFiltersParam = {}): Promise<DailySummaryPoint[]> {
   const params = buildStatsParams(filters);
-  const res = await authFetch(`${BASE_URL}/api/trades/stats/daily-summary?${params.toString()}`, { cache: "no-store" });
+  const dqs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/daily-summary${dqs ? `?${dqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch daily summary: ${res.status}`);
   return res.json() as Promise<DailySummaryPoint[]>;
 }
 
 export async function fetchIctStats(filters: StatsFiltersParam = {}): Promise<IctStatsResponse> {
   const params = buildStatsParams(filters);
-  const res = await authFetch(`${BASE_URL}/api/trades/stats/ict?${params.toString()}`, { cache: "no-store" });
+  const iqs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/ict${iqs ? `?${iqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch ICT stats: ${res.status}`);
   return res.json() as Promise<IctStatsResponse>;
 }
@@ -200,7 +207,8 @@ export async function fetchAccounts(params?: { instrument_type?: string; status?
   const qs = new URLSearchParams();
   if (params?.instrument_type) qs.set("instrument_type", params.instrument_type);
   if (params?.status) qs.set("status", params.status);
-  const res = await authFetch(`${BASE_URL}/api/accounts?${qs.toString()}`, { cache: "no-store" });
+  const qss = qs.toString();
+  const res = await authFetch(`${BASE_URL}/api/accounts${qss ? `?${qss}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
   return res.json() as Promise<Account[]>;
 }

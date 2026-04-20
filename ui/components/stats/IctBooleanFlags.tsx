@@ -1,6 +1,6 @@
 "use client";
 
-import type { IctBooleanComparison, IctBucketStats } from "@/lib/types";
+import type { IctBooleanComparison, IctBucketStats } from "@/lib/ictTypes";
 
 interface IctBooleanFlagsProps {
   booleanFlags: Record<string, IctBooleanComparison> | undefined;
