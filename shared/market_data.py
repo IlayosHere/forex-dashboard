@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 
 _tv: TvDatafeed | None = None
 _tv_lock = threading.Lock()
-_tv_token: str | None = None  # cached once at startup, reused on every reconnect
+_tv_token: str | None = None   # auth token, cached after first successful sign-in
+_tv_auth_attempted: bool = False  # True after first sign-in attempt (success or fail)
 
 # Global semaphore: caps concurrent TradingView WebSocket requests across all
 # threads and callers. TradingView rate-limits aggressive parallel connections
@@ -87,21 +88,21 @@ def _get_auth_token() -> str | None:
 def get_tv() -> TvDatafeed:
     """Return the lazy TvDatafeed singleton, creating it on first access.
 
-    On first call, authenticates with TV credentials (if set) and caches the
-    token. On reconnect (after reset_tv), reuses the cached token — no
-    repeated sign-in calls.
+    Sign-in is attempted exactly once per process lifetime. On reconnect
+    (after reset_tv), the cached token is injected directly — no repeated
+    HTTP sign-in calls regardless of whether auth succeeded or failed.
     """
-    global _tv, _tv_token
+    global _tv, _tv_token, _tv_auth_attempted
     with _tv_lock:
         if _tv is None:
-            if _tv_token is None:
+            if not _tv_auth_attempted:
+                _tv_auth_attempted = True
                 _tv_token = _get_auth_token()
+            _tv = TvDatafeed()
             if _tv_token:
-                _tv = TvDatafeed()
                 _tv.token = _tv_token
                 logger.info("TvDatafeed connection established (authenticated)")
             else:
-                _tv = TvDatafeed()
                 logger.warning("TvDatafeed connection established (nologin — set TV_USERNAME/TV_PASSWORD for stability)")
             try:
                 _tv._TvDatafeed__ws_timeout = 15
