@@ -42,8 +42,9 @@ _tv_lock = threading.Lock()
 _tv_semaphore = threading.Semaphore(2)
 
 _EXCHANGE = "PEPPERSTONE"
-_MAX_ATTEMPTS = 2
-_RETRY_SLEEP_SECONDS = 2
+_MAX_ATTEMPTS = 4
+_RETRY_SLEEP_SECONDS = 5
+_RETRY_BACKOFF_FACTOR = 2   # sleep doubles each attempt: 5s, 10s, 20s
 _RATE_LIMIT_SLEEP_SECONDS = 15  # back-off when TV returns 429
 _BASE_COLUMNS = ["open", "high", "low", "close"]
 _VOLUME_COLUMN = "volume"
@@ -167,8 +168,13 @@ def get_candles(
         if raw is not None and not raw.empty:
             break
         if attempt < _MAX_ATTEMPTS - 1:
+            sleep_seconds = _RETRY_SLEEP_SECONDS * (_RETRY_BACKOFF_FACTOR ** attempt)
+            logger.warning(
+                "Fetch failed for %s @ %s (attempt %d/%d), retrying in %ds",
+                symbol, interval, attempt + 1, _MAX_ATTEMPTS, sleep_seconds,
+            )
             reset_tv()
-            time.sleep(_RETRY_SLEEP_SECONDS)
+            time.sleep(sleep_seconds)
 
     if raw is None or raw.empty:
         logger.error("No data returned for %s @ %s", symbol, interval)
