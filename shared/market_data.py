@@ -46,8 +46,8 @@ _tv_semaphore = threading.Semaphore(2)
 
 _EXCHANGE = "PEPPERSTONE"
 _MAX_ATTEMPTS = 4
-_RETRY_SLEEP_SECONDS = 5
-_RETRY_BACKOFF_FACTOR = 2   # sleep doubles each attempt: 5s, 10s, 20s
+_RETRY_SLEEP_SECONDS = 1    # tvDatafeed opens a fresh WebSocket per call — no need to wait long
+_RETRY_BACKOFF_FACTOR = 1   # flat 1s between retries, not exponential
 _RATE_LIMIT_SLEEP_SECONDS = 15  # back-off when TV returns 429
 _BASE_COLUMNS = ["open", "high", "low", "close"]
 _VOLUME_COLUMN = "volume"
