@@ -25,6 +25,7 @@ from analytics.candle_helpers import (
     cached_h1,
 )
 from analytics.registry import resolve_all_params
+from analytics.signal_enricher import ANALYTICS_PARAMS_KEY
 from api.models import SignalModel
 
 logger = logging.getLogger(__name__)
@@ -134,10 +135,14 @@ def enrich_batch(
     results: list[dict[str, Any]] = []
     for signal in signals:
         row = _signal_to_dict(signal)
-        candles = None
-        if candle_cache is not None:
-            candles = candle_cache.get(signal.symbol, signal.strategy)
-        params = resolve_all_params(signal, signal.strategy, candles=candles)
+        stored = (signal.signal_metadata or {}).get(ANALYTICS_PARAMS_KEY)
+        if stored is not None:
+            params = stored
+        else:
+            candles = None
+            if candle_cache is not None:
+                candles = candle_cache.get(signal.symbol, signal.strategy)
+            params = resolve_all_params(signal, signal.strategy, candles=candles)
         row["params"] = params
         results.append(row)
     return results
