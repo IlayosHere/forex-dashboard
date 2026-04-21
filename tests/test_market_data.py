@@ -7,7 +7,8 @@ interval through to TvDatafeed. No live network calls — TvDatafeed is mocked.
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from datetime import timedelta, timezone
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -83,12 +84,41 @@ def test_get_candles_drops_extra_columns(
 def test_get_candles_normalizes_naive_index_to_utc(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A naive index is localized to EXCHANGE_TZ then converted to UTC."""
+    """A naive index is localized to the runtime OS tz then converted to UTC."""
     _patch_tv(monkeypatch, _raw_df(with_volume=False, tz=None))
     result = market_data.get_candles("EURUSD", Interval.in_15_minute)
     assert result is not None
     assert result.index.tz is not None
     assert str(result.index.tz) == "UTC"
+
+
+def test_normalize_index_uses_runtime_local_tz_not_hardcoded_jerusalem() -> None:
+    """_LOCAL_TZ must reflect the OS timezone, not a hardcoded Asia/Jerusalem.
+
+    Simulates Cloud Run (UTC) by patching time.timezone=0 and time.daylight=0.
+    The naive index (2025-03-10 00:00 UTC wall clock) should emerge as
+    2025-03-10 00:00 UTC after localize+convert — not offset by +3 hours.
+    """
+    with (
+        patch.object(market_data, "_LOCAL_TZ", timezone(timedelta(seconds=0))),
+    ):
+        naive_idx = pd.date_range("2025-03-10 00:00", periods=1, freq="15min", tz=None)
+        df = pd.DataFrame({"open": [1.0]}, index=naive_idx)
+        result = market_data._normalize_index(df)
+        assert str(result.index.tz) == "UTC"
+        assert result.index[0].hour == 0  # no spurious +3h shift
+
+
+def test_normalize_index_utc_plus3_local_tz_shifts_correctly() -> None:
+    """When _LOCAL_TZ is UTC+3 (developer machine), naive 00:00 → 21:00 UTC prev day."""
+    utc_plus3 = timezone(timedelta(hours=3))
+    with patch.object(market_data, "_LOCAL_TZ", utc_plus3):
+        naive_idx = pd.date_range("2025-03-10 00:00", periods=1, freq="15min", tz=None)
+        df = pd.DataFrame({"open": [1.0]}, index=naive_idx)
+        result = market_data._normalize_index(df)
+        assert str(result.index.tz) == "UTC"
+        assert result.index[0].hour == 21
+        assert result.index[0].day == 9
 
 
 def test_get_candles_normalizes_aware_index_to_utc(
