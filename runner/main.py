@@ -46,6 +46,7 @@ logger = logging.getLogger("Runner")
 # Project imports (after sys.path is configured)
 # ---------------------------------------------------------------------------
 
+from analytics.candle_cache import CandleCache  # noqa: E402
 from api.db import Base, SessionLocal, engine  # noqa: E402
 from api.models import SignalModel  # noqa: E402  # registers model with Base
 from runner.helpers import (  # noqa: E402
@@ -107,7 +108,10 @@ def _notify_discord(signals: list[Signal]) -> None:
 # Scan cycle
 # ---------------------------------------------------------------------------
 
-def run_scan_cycle(strategies: dict[str, Callable[[], list[Signal]]]) -> None:
+def run_scan_cycle(
+    strategies: dict[str, Callable[[], list[Signal]]],
+    candle_cache: CandleCache,
+) -> None:
     """Run one scan cycle: call scan() on every strategy, dedup, persist, notify."""
     if not is_market_open():
         logger.info("Forex market closed -- skipping scan.")
@@ -133,7 +137,7 @@ def run_scan_cycle(strategies: dict[str, Callable[[], list[Signal]]]) -> None:
                         strategy_name, sig.symbol, sig.direction, sig.candle_time,
                     )
                     continue
-                if persist(db, sig):
+                if persist(db, sig, candle_cache=candle_cache):
                     new_signals.append(sig)
 
             if new_signals:
@@ -191,14 +195,16 @@ def main() -> None:
         len(strategies), ", ".join(strategies),
     )
 
+    candle_cache = CandleCache()
+
     try:
         # Run immediately on startup, then wait for candle boundaries
-        run_scan_cycle(strategies)
+        run_scan_cycle(strategies, candle_cache)
 
         while True:
             wait_for_next_candle()
             try:
-                run_scan_cycle(strategies)
+                run_scan_cycle(strategies, candle_cache)
             except Exception:
                 logger.exception("Scan cycle failed -- will retry next candle")
     except KeyboardInterrupt:

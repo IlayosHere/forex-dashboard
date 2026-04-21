@@ -18,6 +18,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from analytics.candle_cache import CandleCache
+from analytics.signal_enricher import compute_and_attach
 from api.models import SignalModel
 from shared.signal import Signal
 
@@ -121,7 +123,7 @@ def is_duplicate(db: Session, sig: Signal) -> bool:
     ) is not None
 
 
-def persist(db: Session, sig: Signal) -> bool:
+def persist(db: Session, sig: Signal, candle_cache: CandleCache | None = None) -> bool:
     """Insert a Signal into the DB. Skip gracefully on duplicate.
 
     Uses a savepoint (``db.begin_nested()``) so that an IntegrityError on this
@@ -129,8 +131,14 @@ def persist(db: Session, sig: Signal) -> bool:
     flushed signals in the same cycle are preserved and the outer commit still
     succeeds for all successful inserts.
 
+    When *candle_cache* is provided, analytics params are computed while
+    candles are fresh and stored in ``sig.metadata`` before the DB insert.
+
     Returns True if the signal was inserted, False on any IntegrityError.
     """
+    if candle_cache is not None:
+        compute_and_attach(sig, candle_cache)
+
     signal_model = SignalModel(
         id=sig.id,
         strategy=sig.strategy,
