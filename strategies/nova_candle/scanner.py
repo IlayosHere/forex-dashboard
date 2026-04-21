@@ -78,9 +78,10 @@ def find_nova_candle(
     c = candles.iloc[idx]
     now = datetime.now(timezone.utc)
 
-    # Only alert on fresh candles (closed within last 20 minutes)
+    # Only alert on fresh candles (closed within last 35 minutes).
+    # Window is one M15 period + 20min buffer for slow nologin scan cycles.
     candle_time = c.name.to_pydatetime()
-    if now - candle_time > timedelta(minutes=20):
+    if now - candle_time > timedelta(minutes=35):
         return None
 
     # Skip if already alerted on this candle
@@ -145,15 +146,12 @@ def scan_all_symbols(
     # Purge stale entries from dedup set (older than 30 minutes)
     now = datetime.now(timezone.utc)
     _alerted_candles.difference_update(
-        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=30)}
+        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=40)}
     )
 
     signals = []
-    delay = 2  # seconds between requests
 
-    for i, symbol in enumerate(symbols):
-        if i > 0:
-            time.sleep(delay)
+    for symbol in symbols:
         candles = get_candles(symbol, _STRATEGY_INTERVAL)
         if candles is None:
             continue

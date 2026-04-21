@@ -67,10 +67,11 @@ def scan_symbol(candles: pd.DataFrame, symbol: str) -> list[dict[str, Any]]:
     if last_idx is None or last_idx < 2:
         return []
 
-    # Only alert on fresh candles (closed within last 20 minutes)
+    # Only alert on fresh candles (closed within last 35 minutes).
+    # Window is one M15 period + 20min buffer for slow nologin scan cycles.
     now = datetime.now(timezone.utc)
     candle_time = candles.index[last_idx].to_pydatetime()
-    if now - candle_time > timedelta(minutes=20):
+    if now - candle_time > timedelta(minutes=35):
         return []
 
     # Dedup check
@@ -185,15 +186,12 @@ def scan_all_symbols(symbols: list[str]) -> list[dict[str, Any]]:
     """Scan all symbols for virgin FVG wick-test signals."""
     now = datetime.now(timezone.utc)
     _alerted_candles.difference_update(
-        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=30)}
+        {(s, t) for s, t in _alerted_candles if now - t > timedelta(minutes=40)}
     )
 
     signals: list[dict] = []
-    delay = 2  # seconds between TradingView requests
 
-    for i, symbol in enumerate(symbols):
-        if i > 0:
-            time.sleep(delay)
+    for symbol in symbols:
         candles = get_candles(symbol)
         if candles is None:
             continue
