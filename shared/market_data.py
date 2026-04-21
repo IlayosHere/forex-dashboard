@@ -26,14 +26,19 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 from tvDatafeed import Interval, TvDatafeed
 
-__all__ = ["get_candles", "get_tv", "reset_tv"]
+__all__ = ["EXCHANGE_TZ", "get_candles", "get_tv", "reset_tv"]
+
+# Broker timezone — used for broker-hour calculations (spread tier, session
+# boundaries). Asia/Jerusalem matches the Pepperstone server clock and tracks
+# DST automatically via ZoneInfo.
+EXCHANGE_TZ = ZoneInfo("Asia/Jerusalem")
 
 # tvDatafeed converts UNIX timestamps via datetime.fromtimestamp(), which
 # returns naive datetimes in the OS local timezone — not a fixed broker tz.
-# Detect the actual runtime offset so this works correctly on both the
-# developer's machine (UTC+3) and Cloud Run (UTC) without any config change.
+# Detect the actual runtime offset so normalization works correctly on both
+# the developer's machine (UTC+3) and Cloud Run (UTC) without any config change.
 def _local_tz() -> timezone:
-    """Return the OS local timezone as a fixed-offset timezone.utc subtype."""
+    """Return the OS local timezone as a fixed-offset timezone."""
     offset_seconds = -time.timezone if not time.daylight else -time.altzone
     return timezone(timedelta(seconds=offset_seconds))
 
