@@ -34,6 +34,9 @@ LIQUIDITY_SWEEP_DETAILS: Final[list[str]] = [
     "1h_low",
     "4h_high",
     "4h_low",
+    "1d_high",
+    "1d_low",
+    "gap_fill",
     "other",
 ]
 

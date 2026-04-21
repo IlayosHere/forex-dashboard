@@ -40,6 +40,9 @@ const SETUP_DETAIL_OPTIONS: Record<string, { value: string; label: string }[]> =
     { value: "1h_low", label: "1H Low" },
     { value: "4h_high", label: "4H High" },
     { value: "4h_low", label: "4H Low" },
+    { value: "1d_high", label: "1D High" },
+    { value: "1d_low", label: "1D Low" },
+    { value: "gap_fill", label: "Gap Fill" },
     { value: "other", label: "Other" },
   ],
   unmitigated_fvg: [

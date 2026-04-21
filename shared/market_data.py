@@ -11,7 +11,7 @@ strategies need.
 This is the single source of truth for:
   - TvDatafeed connection management (lazy singleton + reset helper)
   - Retry / reconnect policy on fetch failures
-  - Timezone normalization (Asia/Jerusalem broker time -> UTC)
+  - Timezone normalization (OS local time -> UTC)
   - Column selection (preserves ``volume`` when present)
 """
 from __future__ import annotations
@@ -20,17 +20,25 @@ import logging
 import os
 import threading
 import time
-from datetime import timezone
+from datetime import timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 from tvDatafeed import Interval, TvDatafeed
 
-__all__ = ["EXCHANGE_TZ", "get_candles", "get_tv", "reset_tv"]
+__all__ = ["get_candles", "get_tv", "reset_tv"]
 
-# Broker timezone: tvDatafeed returns naive timestamps in Asia/Jerusalem
-# (the machine's local timezone on the production server).
-EXCHANGE_TZ = ZoneInfo("Asia/Jerusalem")
+# tvDatafeed converts UNIX timestamps via datetime.fromtimestamp(), which
+# returns naive datetimes in the OS local timezone — not a fixed broker tz.
+# Detect the actual runtime offset so this works correctly on both the
+# developer's machine (UTC+3) and Cloud Run (UTC) without any config change.
+def _local_tz() -> timezone:
+    """Return the OS local timezone as a fixed-offset timezone.utc subtype."""
+    offset_seconds = -time.timezone if not time.daylight else -time.altzone
+    return timezone(timedelta(seconds=offset_seconds))
+
+
+_LOCAL_TZ: timezone = _local_tz()
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +144,7 @@ def _select_columns(df: pd.DataFrame) -> pd.DataFrame:
 def _normalize_index(df: pd.DataFrame) -> pd.DataFrame:
     """Ensure the DataFrame has a UTC-tz-aware DatetimeIndex."""
     if df.index.tz is None:
-        df.index = df.index.tz_localize(EXCHANGE_TZ).tz_convert(timezone.utc)
+        df.index = df.index.tz_localize(_LOCAL_TZ).tz_convert(timezone.utc)
     else:
         df.index = df.index.tz_convert(timezone.utc)
     return df
