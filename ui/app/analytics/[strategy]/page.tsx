@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { ParamRankingTable } from "@/components/ParamRankingTable";
 import { SampleSizeNotice } from "@/components/SampleSizeNotice";
+import { Skeleton } from "@/components/Skeleton";
 import { WinRateBuckets } from "@/components/WinRateBuckets";
 
 import { SAMPLE_THRESHOLD, formatWinRate } from "@/lib/analyticsFormat";
@@ -13,6 +14,32 @@ import { strategies } from "@/lib/strategies";
 import { useAnalyticsSummary } from "@/lib/useAnalyticsSummary";
 import { useUnivariateReport } from "@/lib/useUnivariateReport";
 
+function StatCardSkeleton({ title }: { title: string }) {
+  return (
+    <div className="shrink-0 border border-border rounded px-4 py-3 min-w-[120px] bg-card">
+      <div className="label mb-1">{title}</div>
+      <Skeleton className="h-7 w-16" />
+    </div>
+  );
+}
+
+function ParamRankingSkeleton() {
+  return (
+    <div>
+      <div className="grid grid-cols-[1fr_90px] gap-4 px-4 py-2 border-b border-border">
+        <span className="label">Parameter</span>
+        <span className="label text-right">Strength</span>
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="grid grid-cols-[1fr_90px] gap-4 px-4 py-2.5 border-b border-border">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-4 w-16 ml-auto" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AnalyticsStrategyPage() {
   const params = useParams<{ strategy: string }>();
   const router = useRouter();
@@ -20,10 +47,9 @@ export default function AnalyticsStrategyPage() {
   const meta = strategies.find((s) => s.slug === slug);
   const strategyLabel = meta?.label ?? slug;
 
-  const { summary, loading, error, refetch } = useAnalyticsSummary(slug);
+  const { summary, loading, refreshing, error, refetch } = useAnalyticsSummary(slug);
   const [selectedParam, setSelectedParam] = useState<string | null>(null);
   const { report, loading: reportLoading, error: reportError } = useUnivariateReport(selectedParam, slug);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -34,15 +60,10 @@ export default function AnalyticsStrategyPage() {
   }, []);
 
   async function handleRefresh() {
-    setRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
+    await refetch();
   }
 
-  if (error) {
+  if (error && !summary) {
     return (
       <div className="p-6 max-w-5xl">
         <button
@@ -86,24 +107,32 @@ export default function AnalyticsStrategyPage() {
       </div>
 
       {/* Stats row */}
-      <div className={`flex gap-3 overflow-x-auto pb-1 mb-4 ${loading ? "opacity-50" : ""}`}>
-        <StatCard title="Resolved Signals" value={String(resolved)} />
-        <StatCard
-          title="Win Rate"
-          value={resolved > 0 ? formatWinRate(winRate) : "—"}
-          colorClass={
-            winRate * 100 >= 55
-              ? "text-bull"
-              : winRate * 100 <= 45
-                ? "text-bear"
-                : "text-text-primary"
-          }
-        />
-        <StatCard title="Params Analyzed" value={String(summary?.params_analyzed ?? 0)} />
-      </div>
+      {loading ? (
+        <div className="flex gap-3 overflow-x-auto pb-1 mb-4">
+          <StatCardSkeleton title="Resolved Signals" />
+          <StatCardSkeleton title="Win Rate" />
+          <StatCardSkeleton title="Params Analyzed" />
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-1 mb-4 skeleton-loaded">
+          <StatCard title="Resolved Signals" value={String(resolved)} />
+          <StatCard
+            title="Win Rate"
+            value={resolved > 0 ? formatWinRate(winRate) : "—"}
+            colorClass={
+              winRate * 100 >= 55
+                ? "text-bull"
+                : winRate * 100 <= 45
+                  ? "text-bear"
+                  : "text-text-primary"
+            }
+          />
+          <StatCard title="Params Analyzed" value={String(summary?.params_analyzed ?? 0)} />
+        </div>
+      )}
 
       {/* Sample size notice */}
-      {resolved > 0 && resolved < SAMPLE_THRESHOLD && (
+      {!loading && resolved > 0 && resolved < SAMPLE_THRESHOLD && (
         <div className="mb-4">
           <SampleSizeNotice count={resolved} />
         </div>
@@ -118,11 +147,17 @@ export default function AnalyticsStrategyPage() {
             <span className="label">Parameter Ranking</span>
           </div>
           <div className="overflow-y-auto max-h-[460px]">
-            <ParamRankingTable
-              correlations={correlations}
-              selectedParam={selectedParam}
-              onSelectParam={(name) => setSelectedParam(name === selectedParam ? null : name)}
-            />
+            {loading ? (
+              <ParamRankingSkeleton />
+            ) : (
+              <div className="skeleton-loaded">
+                <ParamRankingTable
+                  correlations={correlations}
+                  selectedParam={selectedParam}
+                  onSelectParam={(name) => setSelectedParam(name === selectedParam ? null : name)}
+                />
+              </div>
+            )}
           </div>
         </div>
 

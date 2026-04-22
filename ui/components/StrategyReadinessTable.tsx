@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 
+import { Skeleton } from "@/components/Skeleton";
+
 import type { AnalyticsSummary } from "@/lib/types";
 
 import { SAMPLE_THRESHOLD, formatWinRate } from "@/lib/analyticsFormat";
@@ -15,19 +17,33 @@ function winRateColorClass(rate: number): string {
   return "text-text-primary";
 }
 
+const COL_CLASSES = "grid grid-cols-[1fr_80px_80px_160px_1fr] gap-4 px-4";
+
 interface StrategyReadinessTableProps {
   summaries: Map<string, AnalyticsSummary>;
-  loading: boolean;
+  /** Set of strategy slugs still being fetched (skeleton shown for these). */
+  loadingSlugs: Set<string>;
 }
 
-export function StrategyReadinessTable({ summaries, loading }: StrategyReadinessTableProps) {
+function SkeletonRow({ slug }: { slug: string }) {
+  return (
+    <div key={slug} className={`${COL_CLASSES} py-3 border-b border-border bg-card`}>
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="h-4 w-8 ml-auto" />
+      <Skeleton className="h-4 w-14 ml-auto" />
+      <Skeleton className="h-1.5 w-full max-w-[80px] rounded-full" />
+      <Skeleton className="h-4 w-32" />
+    </div>
+  );
+}
+
+export function StrategyReadinessTable({ summaries, loadingSlugs }: StrategyReadinessTableProps) {
   const router = useRouter();
-  const dim = loading ? "opacity-50" : "";
 
   return (
-    <div className={dim}>
+    <div>
       {/* Header */}
-      <div className="grid grid-cols-[1fr_80px_80px_160px_1fr] gap-4 px-4 py-2 border-b border-border">
+      <div className={`${COL_CLASSES} py-2 border-b border-border`}>
         <span className="label">Strategy</span>
         <span className="label text-right">Signals</span>
         <span className="label text-right">Win Rate</span>
@@ -37,6 +53,10 @@ export function StrategyReadinessTable({ summaries, loading }: StrategyReadiness
 
       {/* Rows */}
       {strategies.map((s) => {
+        if (loadingSlugs.has(s.slug)) {
+          return <SkeletonRow key={s.slug} slug={s.slug} />;
+        }
+
         const summary = summaries.get(s.slug);
         const resolved = summary?.total_resolved ?? 0;
         const winRate = summary?.win_rate_overall ?? 0;
@@ -56,7 +76,7 @@ export function StrategyReadinessTable({ summaries, loading }: StrategyReadiness
                 router.push(`/analytics/${s.slug}`);
               }
             }}
-            className="grid grid-cols-[1fr_80px_80px_160px_1fr] gap-4 px-4 py-3 border-b border-border bg-card hover:bg-surface-raised cursor-pointer"
+            className={`${COL_CLASSES} py-3 border-b border-border bg-card hover:bg-surface-raised cursor-pointer skeleton-loaded`}
           >
             <span className="font-bold text-text-primary">{s.label}</span>
             <span className="text-right tabular-nums text-text-primary">{resolved}</span>
