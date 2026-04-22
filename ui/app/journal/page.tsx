@@ -22,6 +22,7 @@ const instrumentTabs: { value: InstrumentType; label: string }[] = [
 const journalTabs = [
   { label: "Trades", href: "/journal" },
   { label: "Calendar", href: "/journal/calendar" },
+  { label: "Mistakes", href: "/journal/mistakes" },
 ];
 
 const emptyFilters: TradeFilterValues = {

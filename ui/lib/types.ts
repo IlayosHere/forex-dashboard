@@ -325,4 +325,15 @@ export interface UnivariateReport {
   level: AnalyticsLevel | null;
 }
 
+// ---------------------------------------------------------------------------
+// Mistakes Tracker
+// ---------------------------------------------------------------------------
+
+export interface Mistake {
+  id: string;
+  name: string;
+  count: number;
+  last_occurred_at: string;
+  created_at: string;
+}
 

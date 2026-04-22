@@ -173,3 +173,19 @@ class TradeModel(Base):
         Index("ix_trades_owner_open_time", "owner", "open_time"),
         Index("ix_trades_owner_status", "owner", "status"),
     )
+
+
+class MistakeModel(Base):
+    __tablename__ = "mistakes"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    owner: Mapped[str] = mapped_column(String, nullable=False, default="admin")
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    last_occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_mistakes_owner", "owner"),
+        UniqueConstraint("owner", "name", name="uq_mistake_owner_name"),
+    )

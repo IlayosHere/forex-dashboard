@@ -16,6 +16,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from api.schemas_mistake import (  # noqa: F401 -- re-export
+    MistakeCreateRequest,
+    MistakeResponse,
+)
 from api.schemas_stats import (  # noqa: F401 -- re-export
     DailySummaryPoint,
     EquityCurvePoint,
