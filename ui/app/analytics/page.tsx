@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 import { StrategyReadinessTable } from "@/components/StrategyReadinessTable";
 
@@ -11,31 +11,47 @@ import { fetchAnalyticsSummary } from "@/lib/analyticsApi";
 
 export default function AnalyticsPage() {
   const [summaries, setSummaries] = useState<Map<string, AnalyticsSummary>>(new Map());
-  const [loading, setLoading] = useState(true);
+  const [loadingSlugs, setLoadingSlugs] = useState<Set<string>>(new Set(strategies.map((s) => s.slug)));
   const [refreshing, setRefreshing] = useState(false);
+  const mountedRef = useRef(true);
 
-  const loadAll = useCallback(async () => {
-    const results = await Promise.allSettled(
-      strategies.map((s) => fetchAnalyticsSummary(s.slug))
+  const loadAll = useCallback(async (showSkeletons: boolean) => {
+    if (showSkeletons) {
+      setLoadingSlugs(new Set(strategies.map((s) => s.slug)));
+    }
+
+    await Promise.allSettled(
+      strategies.map(async (s) => {
+        try {
+          const data = await fetchAnalyticsSummary(s.slug);
+          if (!mountedRef.current) return;
+          setSummaries((prev) => {
+            const next = new Map(prev);
+            next.set(s.slug, data);
+            return next;
+          });
+        } finally {
+          if (!mountedRef.current) return;
+          setLoadingSlugs((prev) => {
+            const next = new Set(prev);
+            next.delete(s.slug);
+            return next;
+          });
+        }
+      })
     );
-    const map = new Map<string, AnalyticsSummary>();
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled") {
-        map.set(strategies[i].slug, r.value);
-      }
-    });
-    setSummaries(map);
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    void loadAll().finally(() => setLoading(false));
+    mountedRef.current = true;
+    void loadAll(true);
+    return () => { mountedRef.current = false; };
   }, [loadAll]);
 
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      await loadAll();
+      await loadAll(false);
     } finally {
       setRefreshing(false);
     }
@@ -55,7 +71,7 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      <StrategyReadinessTable summaries={summaries} loading={loading} />
+      <StrategyReadinessTable summaries={summaries} loadingSlugs={loadingSlugs} />
     </div>
   );
 }
