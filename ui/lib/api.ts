@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -288,4 +288,37 @@ export async function fetchCalendar(week: "current" | "next" = "current"): Promi
   const res = await authFetch(`${BASE_URL}/api/calendar?week=${week}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch calendar: ${res.status}`);
   return res.json() as Promise<CalendarEvent[]>;
+}
+
+// ---------------------------------------------------------------------------
+// Mistakes Tracker
+// ---------------------------------------------------------------------------
+
+export async function fetchMistakes(): Promise<Mistake[]> {
+  const res = await authFetch(`${BASE_URL}/api/mistakes`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch mistakes: ${res.status}`);
+  return res.json() as Promise<Mistake[]>;
+}
+
+export async function createMistake(name: string): Promise<Mistake> {
+  const res = await authFetch(`${BASE_URL}/api/mistakes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`Failed to create mistake: ${res.status}`);
+  return res.json() as Promise<Mistake>;
+}
+
+export async function incrementMistake(id: string): Promise<Mistake> {
+  const res = await authFetch(`${BASE_URL}/api/mistakes/${id}/increment`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`Failed to increment mistake: ${res.status}`);
+  return res.json() as Promise<Mistake>;
+}
+
+export async function deleteMistake(id: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/mistakes/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete mistake: ${res.status}`);
 }
