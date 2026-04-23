@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DirectionToggle } from "@/components/DirectionToggle";
 import { formatPrice } from "@/lib/utils";
+import { utcISOToNYDatetime, nyDatetimeToUtcISO } from "@/lib/dates";
 import type { Trade } from "@/lib/types";
 
 export interface TradeEditFields {
@@ -13,6 +14,7 @@ export interface TradeEditFields {
   sl_price: number;
   tp_price: number | null;
   lot_size: number;
+  open_time: string;
 }
 
 interface TradeInfoPanelProps {
@@ -37,6 +39,7 @@ export function TradeInfoPanel({
   const [sl, setSl] = useState(fp(trade.sl_price));
   const [tp, setTp] = useState(trade.tp_price != null ? fp(trade.tp_price) : "");
   const [lotSize, setLotSize] = useState(String(trade.lot_size));
+  const [openTime, setOpenTime] = useState(utcISOToNYDatetime(trade.open_time));
   const [error, setError] = useState<string | null>(null);
 
   const isClosed = trade.status === "closed" || trade.status === "breakeven";
@@ -49,6 +52,7 @@ export function TradeInfoPanel({
     setSl(fp(trade.sl_price));
     setTp(trade.tp_price != null ? fp(trade.tp_price) : "");
     setLotSize(String(trade.lot_size));
+    setOpenTime(utcISOToNYDatetime(trade.open_time));
     setError(null);
   };
 
@@ -82,8 +86,12 @@ export function TradeInfoPanel({
       setError("Exit price must be a valid number");
       return;
     }
+    if (!openTime) {
+      setError("Open time is required");
+      return;
+    }
     setError(null);
-    onSave({ direction, entry_price: e, exit_price: ep, sl_price: s, tp_price: t, lot_size: l });
+    onSave({ direction, entry_price: e, exit_price: ep, sl_price: s, tp_price: t, lot_size: l, open_time: nyDatetimeToUtcISO(openTime) });
     setEditing(false);
   };
 
@@ -120,6 +128,17 @@ export function TradeInfoPanel({
           <div className="flex justify-between">
             <span className="label">Risk</span>
             <span className="price text-text-primary">{trade.risk_pips} {unitLabel}</span>
+          </div>
+        )}
+        {editing && (
+          <div className="flex items-center justify-between gap-3 sm:col-span-2">
+            <span className="label shrink-0">Open Time (ET)</span>
+            <Input
+              type="datetime-local"
+              value={openTime}
+              onChange={(e) => setOpenTime(e.target.value)}
+              className={INPUT_CLASS + " w-auto"}
+            />
           </div>
         )}
       </div>

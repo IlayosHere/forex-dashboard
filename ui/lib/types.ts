@@ -108,6 +108,7 @@ export interface TradeUpdateRequest {
   risk_pips?: number | null;
   status?: "open" | "closed" | "breakeven" | "cancelled" | null;
   outcome?: "win" | "loss" | "breakeven" | null;
+  open_time?: string | null;
   close_time?: string | null;
   tags?: string[] | null;
   notes?: string | null;

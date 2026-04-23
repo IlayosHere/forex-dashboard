@@ -132,6 +132,7 @@ class TradeUpdateRequest(BaseModel):
     risk_pips: float | None = Field(default=None, gt=0)
     status: str | None = None
     outcome: str | None = None
+    open_time: datetime | None = None
     close_time: datetime | None = None
     tags: list[str] | None = None
     notes: str | None = None

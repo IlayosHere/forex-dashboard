@@ -26,7 +26,7 @@ _TERMINAL: frozenset[str] = frozenset({"closed", "breakeven", "cancelled"})
 _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "instrument_type", "direction", "entry_price", "exit_price",
     "sl_price", "tp_price", "lot_size", "risk_pips", "status",
-    "outcome", "close_time", "tags", "notes", "rating",
+    "outcome", "open_time", "close_time", "tags", "notes", "rating",
     "confidence", "screenshot_url", "metadata",
     "ict_setup_type", "ict_setup_detail", "ict_tp_target",
     "ict_ifvg_timeframe", "ict_smt_present", "ict_tdo_aligned",
