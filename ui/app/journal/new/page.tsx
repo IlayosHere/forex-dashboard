@@ -12,23 +12,7 @@ import type { TradeFormData } from "@/components/TradeForm";
 import { createTrade, fetchSignal } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
 import { formatPrice } from "@/lib/utils";
-
-function toUtcDatetime(d: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
-
-function toLocalDatetime(iso: string): string {
-  try {
-    return toUtcDatetime(new Date(iso));
-  } catch {
-    return "";
-  }
-}
-
-function nowUtcDatetime(): string {
-  return toUtcDatetime(new Date());
-}
+import { nowNYDatetime, nyDatetimeToUtcISO, utcISOToNYDatetime } from "@/lib/dates";
 
 function makeEmptyForm(): TradeFormData {
   return {
@@ -41,7 +25,7 @@ function makeEmptyForm(): TradeFormData {
     sl_price: "",
     tp_price: "",
     lot_size: "",
-    open_time: nowUtcDatetime(),
+    open_time: nowNYDatetime(),
     tags: [],
     notes: "",
     rating: null,
@@ -102,7 +86,7 @@ function NewTradeContent() {
           sl_price: formatPrice(sl, signal.symbol),
           tp_price: formatPrice(tp, signal.symbol),
           lot_size: String(lotSize),
-          open_time: toLocalDatetime(signal.candle_time),
+          open_time: utcISOToNYDatetime(signal.candle_time),
           tags: [],
           notes: "",
           rating: null,
@@ -134,7 +118,7 @@ function NewTradeContent() {
         sl_price: parseFloat(data.sl_price),
         tp_price: data.tp_price ? parseFloat(data.tp_price) : null,
         lot_size: parseFloat(data.lot_size),
-        open_time: new Date(data.open_time + "Z").toISOString(),
+        open_time: nyDatetimeToUtcISO(data.open_time),
         tags: data.tags,
         notes: data.notes,
         rating: data.rating,

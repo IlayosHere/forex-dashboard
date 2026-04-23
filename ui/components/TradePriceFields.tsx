@@ -81,7 +81,7 @@ export function TradePriceFields({
       </div>
 
       <div className="space-y-1">
-        <label className="label">Open Time (UTC)</label>
+        <label className="label">Open Time (ET / New York)</label>
         <DateTimePicker
           value={form.open_time}
           onChange={(v) => onChange("open_time", v)}

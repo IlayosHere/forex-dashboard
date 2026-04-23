@@ -17,6 +17,7 @@ import type { TradeEditFields } from "@/components/TradeInfoPanel";
 import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { useAccounts } from "@/lib/useAccounts";
 import { getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
+import { formatDateTime } from "@/lib/dates";
 
 /* ------------------------------------------------------------------ */
 /*  Editable state for assessment + close actions                      */
@@ -59,16 +60,7 @@ function editableReducer(state: EditableFields, action: EditAction): EditableFie
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function formatTime(iso: string | null): string {
-  if (!iso) return "\u2014";
-  try {
-    const d = new Date(iso);
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-  } catch {
-    return "\u2014";
-  }
-}
+const formatTime = (iso: string | null) => formatDateTime(iso);
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
