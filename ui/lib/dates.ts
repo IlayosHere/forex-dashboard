@@ -1,14 +1,20 @@
 /**
- * Shared date formatting utilities.
- * All display functions show times in America/New_York (ET).
- * All functions accept ISO 8601 strings (UTC).
+ * Date formatting utilities for the trade journal.
+ *
+ * Convention: open_time/close_time are stored in the DB as the NY (ET) time
+ * the user typed, but with no timezone offset (treated as UTC by Postgres).
+ * So we always read the UTC numbers directly — they are already ET.
+ *
+ * Display functions append " ET" to make this explicit.
+ * The form default uses the actual current NY clock time so the pre-filled
+ * value matches what the user would type.
  */
 
 const NY_TZ = "America/New_York";
 
 const pad = (n: number): string => n.toString().padStart(2, "0");
 
-/** "03 Apr 2026" style (ET date) */
+/** "03 Apr 2026" style — reads UTC numbers as ET */
 export function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
@@ -16,55 +22,37 @@ export function formatDate(iso: string): string {
       day: "2-digit",
       month: "short",
       year: "numeric",
-      timeZone: NY_TZ,
+      timeZone: "UTC",
     });
   } catch {
     return "—";
   }
 }
 
-/** "DD/MM/YYYY HH:MM ET" e.g. "03/04/2026 10:30 ET" */
+/** "DD/MM/YYYY HH:MM ET" — reads UTC numbers directly (they are ET) */
 export function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
   try {
     const d = new Date(iso);
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: NY_TZ,
-    }).formatToParts(d);
-    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-    return `${get("day")}/${get("month")}/${get("year")} ${get("hour")}:${get("minute")} ET`;
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} ET`;
   } catch {
     return "—";
   }
 }
 
-/** "DD/MM HH:MM ET" e.g. "03/04 10:30 ET" */
+/** "DD/MM HH:MM ET" — reads UTC numbers directly (they are ET) */
 export function formatShortDate(iso: string): string {
   try {
     const d = new Date(iso);
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: NY_TZ,
-    }).formatToParts(d);
-    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-    return `${get("day")}/${get("month")} ${get("hour")}:${get("minute")} ET`;
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} ET`;
   } catch {
     return "—";
   }
 }
 
 /**
- * Returns current NY time as "YYYY-MM-DDTHH:MM" for use in datetime-local inputs.
+ * Returns current NY clock time as "YYYY-MM-DDTHH:MM" for datetime-local inputs.
+ * This ensures the form pre-fills with what a NY trader would read on their clock.
  */
 export function nowNYDatetime(): string {
   const now = new Date();
@@ -82,66 +70,21 @@ export function nowNYDatetime(): string {
 }
 
 /**
- * Converts a "YYYY-MM-DDTHH:MM" datetime-local string entered as NY time
- * into a UTC ISO 8601 string. Handles DST automatically.
+ * Stores the typed NY datetime verbatim — appends "Z" so JS Date parses
+ * the numbers as-is, preserving what the user entered.
  */
 export function nyDatetimeToUtcISO(nyDatetime: string): string {
-  // Parse as NY time by constructing an ET-aware date
-  // Append a fake offset that we'll use to resolve DST via Intl
-  const [datePart, timePart] = nyDatetime.split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
-
-  // Create a temporary UTC date using the same numeric values, then find
-  // the actual UTC time that corresponds to those numbers in NY.
-  // We use a binary-search-free trick: format a known UTC date back to ET
-  // and compute the offset.
-  const utcGuess = Date.UTC(year, month - 1, day, hour, minute);
-  const guessDate = new Date(utcGuess);
-
-  // Get what ET says this UTC time is
-  const etParts = new Intl.DateTimeFormat("en-CA", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: NY_TZ,
-  }).formatToParts(guessDate);
-  const get = (type: string) => Number(etParts.find((p) => p.type === type)?.value ?? "0");
-  const etHour = get("hour");
-  const etMinute = get("minute");
-  const etDay = get("day");
-  const etMonth = get("month");
-  const etYear = get("year");
-
-  // Difference between what we want (hour:minute) and what ET says (etHour:etMinute)
-  const wantedMs = Date.UTC(year, month - 1, day, hour, minute);
-  const gotMs = Date.UTC(etYear, etMonth - 1, etDay, etHour, etMinute);
-  const offsetMs = wantedMs - gotMs;
-
-  return new Date(utcGuess - offsetMs).toISOString();
+  return new Date(nyDatetime + "Z").toISOString();
 }
 
 /**
- * Converts a stored UTC ISO string back to "YYYY-MM-DDTHH:MM" in NY time,
- * suitable for pre-filling a datetime-local input.
+ * Pre-fills a datetime-local input from a stored ISO string.
+ * Reads the UTC numbers directly (they are already ET).
  */
 export function utcISOToNYDatetime(iso: string): string {
   try {
     const d = new Date(iso);
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: NY_TZ,
-    }).formatToParts(d);
-    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-    return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   } catch {
     return "";
   }
