@@ -83,6 +83,10 @@ function ComboEntryCard({ entry, rank }: ComboEntryCardProps) {
             <span className="text-xs text-text-muted">{winRateStr}</span>
             <span className="text-xs text-text-muted">·</span>
             <span className="text-xs text-text-muted">{formatAvgRr(entry.avg_rr)} avg</span>
+            <span className="text-xs text-text-muted">·</span>
+            <span className="text-xs" style={{ color: entry.total_pnl_usd >= 0 ? "#26a69a" : "#ef5350" }}>
+              {entry.total_pnl_usd >= 0 ? "+" : ""}${Math.abs(entry.total_pnl_usd).toFixed(0)} total
+            </span>
           </div>
         </div>
       </div>
@@ -91,7 +95,7 @@ function ComboEntryCard({ entry, rank }: ComboEntryCardProps) {
 }
 
 export function IctComboMatrix({ comboMatrix, loading }: IctComboMatrixProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const dim = loading ? "opacity-50" : "";
 
   const ranked = useMemo(

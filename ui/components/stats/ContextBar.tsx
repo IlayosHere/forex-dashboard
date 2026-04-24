@@ -1,0 +1,153 @@
+"use client";
+
+import { strategies } from "@/lib/strategies";
+
+import type { InstrumentType, Account } from "@/lib/types";
+import type { PresetKey, UseStatsContextResult } from "@/lib/useStatsContext";
+
+const INSTRUMENT_OPTIONS: { value: InstrumentType | ""; label: string }[] = [
+  { value: "futures_mnq", label: "MNQ" },
+  { value: "forex", label: "Forex" },
+  { value: "", label: "All" },
+];
+
+const PRESETS: { key: PresetKey; label: string }[] = [
+  { key: "7d", label: "7D" },
+  { key: "30d", label: "30D" },
+  { key: "month", label: "MTD" },
+  { key: "3m", label: "3M" },
+  { key: "all", label: "All" },
+];
+
+const SELECT_CLS = "bg-surface-input border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-bull";
+
+function InstrumentPills({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-0 rounded-md overflow-hidden border border-border">
+      {INSTRUMENT_OPTIONS.map((opt, i) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`px-3 py-1 text-xs font-medium transition-colors ${
+            i < INSTRUMENT_OPTIONS.length - 1 ? "border-r border-border" : ""
+          } ${
+            value === opt.value
+              ? "bg-bull/10 text-bull"
+              : "text-text-muted hover:text-text-primary"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PresetPills({ value, hasCustom, onChange }: { value: PresetKey; hasCustom: boolean; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {PRESETS.map((p) => {
+        const active = value === p.key && !hasCustom;
+        return (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => onChange(p.key)}
+            className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+              active
+                ? "border-bull text-bull bg-bull/10"
+                : "border-border text-text-muted hover:text-text-primary"
+            }`}
+          >
+            {p.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+interface ContextBarProps {
+  ctx: UseStatsContextResult;
+  accounts: Account[];
+}
+
+export function ContextBar({ ctx, accounts }: ContextBarProps) {
+  const { context, setFilter, resetFilters, ribbonText, isDefault } = ctx;
+  const hasCustom = !!(context.customFrom || context.customTo);
+
+  return (
+    <div className="mb-5">
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <InstrumentPills
+          value={context.instrumentType}
+          onChange={(v) => setFilter("instrumentType", v)}
+        />
+
+        <select
+          value={context.accountId}
+          onChange={(e) => setFilter("accountId", e.target.value)}
+          aria-label="Filter by account"
+          className={SELECT_CLS}
+        >
+          <option value="">All Accounts</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={context.strategy}
+          onChange={(e) => setFilter("strategy", e.target.value)}
+          aria-label="Filter by strategy"
+          className={SELECT_CLS}
+        >
+          <option value="">All Strategies</option>
+          {strategies.map((s) => (
+            <option key={s.slug} value={s.slug}>{s.label}</option>
+          ))}
+        </select>
+
+        <PresetPills
+          value={context.preset}
+          hasCustom={hasCustom}
+          onChange={(v) => setFilter("preset", v)}
+        />
+
+        <div className="flex items-center gap-1 ml-auto">
+          <input
+            type="date"
+            value={context.customFrom}
+            onChange={(e) => setFilter("customFrom", e.target.value)}
+            aria-label="From date"
+            className={SELECT_CLS}
+          />
+          <span className="text-text-dim text-xs">→</span>
+          <input
+            type="date"
+            value={context.customTo}
+            onChange={(e) => setFilter("customTo", e.target.value)}
+            aria-label="To date"
+            className={SELECT_CLS}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className={`text-xs ${isDefault ? "text-text-dim" : "text-text-muted"}`}>
+          Viewing: {ribbonText}
+        </span>
+        {!isDefault && (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-xs text-bull hover:text-bull/70 underline"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
