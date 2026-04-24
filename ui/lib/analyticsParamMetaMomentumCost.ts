@@ -172,6 +172,34 @@ export const PARAM_META_MOMENTUM: Record<string, ParamMeta> = {
     description: "Previous candle body as an ATR multiple",
     unit: "x",
   },
+  premium_discount_zone: {
+    label: "Premium/Discount Zone",
+    category: "momentum",
+    description: "Entry position within prior day's range: discount (lower 33%), equilibrium, or premium (upper 33%)",
+    unit: null,
+    bucketMap: {
+      discount: "Discount",
+      equilibrium: "Equilibrium",
+      premium: "Premium",
+    },
+  },
+  liquidity_swept_prior: {
+    label: "Liquidity Swept Prior",
+    category: "momentum",
+    description: "Whether a prior swing high/low was swept in the 15 bars before signal",
+    unit: null,
+    bucketMap: {
+      swept_buyside: "Swept Buyside",
+      swept_sellside: "Swept Sellside",
+      none: "No Sweep",
+    },
+  },
+  sweep_to_signal_bars: {
+    label: "Bars Since Sweep",
+    category: "momentum",
+    description: "Bars between the liquidity sweep and this signal (None if no sweep)",
+    unit: "candles",
+  },
 };
 
 export const PARAM_META_COST: Record<string, ParamMeta> = {

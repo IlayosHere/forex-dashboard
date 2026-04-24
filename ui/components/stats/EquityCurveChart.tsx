@@ -6,18 +6,18 @@ import {
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
 
-import type { EquityCurvePoint, TradeStats } from "@/lib/types";
+import type { EquityCurvePoint } from "@/lib/types";
 
 import { fmt } from "@/lib/format";
 
 interface EquityCurveChartProps {
   data: EquityCurvePoint[];
-  stats: TradeStats | null;
   loading: boolean;
 }
 
@@ -50,7 +50,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   );
 }
 
-export function EquityCurveChart({ data, stats, loading }: EquityCurveChartProps) {
+export function EquityCurveChart({ data, loading }: EquityCurveChartProps) {
   const chartData = useMemo<ChartPoint[]>(() =>
     data.map((p) => ({
       date: formatDate(p.close_time ?? p.date),
@@ -67,56 +67,44 @@ export function EquityCurveChart({ data, stats, loading }: EquityCurveChartProps
   const dim = loading ? "opacity-50" : "";
 
   return (
-    <div className={`relative bg-card border border-border rounded-lg p-4 ${dim}`}>
-      {/* KPI overlay */}
-      <div className="absolute top-4 left-4 z-10 flex gap-6">
-        <KPI label="Total P&L" value={stats ? `${stats.total_pnl_usd >= 0 ? "+" : ""}$${fmt(stats.total_pnl_usd, 2)}` : "--"} color={stats ? (stats.total_pnl_usd >= 0 ? "#26a69a" : "#ef5350") : "#777777"} />
-        <KPI label="Win Rate" value={stats?.win_rate != null ? `${fmt(stats.win_rate)}%` : "--"} />
-        <KPI label="Profit Factor" value={stats?.profit_factor != null ? fmt(stats.profit_factor, 2) : "--"} />
-        <KPI label="Expectancy" value={stats?.expectancy_usd != null ? `$${fmt(stats.expectancy_usd, 2)}` : "--"} color={stats?.expectancy_usd != null ? (stats.expectancy_usd >= 0 ? "#26a69a" : "#ef5350") : "#777777"} />
-      </div>
-
-      <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={chartData} margin={{ top: 50, right: 8, bottom: 0, left: 8 }}>
+    <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <defs>
             <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={gradientColor} stopOpacity={0.3} />
               <stop offset="100%" stopColor={gradientColor} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <CartesianGrid strokeDasharray="0" stroke="#2a2a2a" strokeOpacity={0.6} />
           <XAxis
             dataKey="date"
-            tick={{ fill: "#777777", fontSize: 11 }}
+            tick={{ fontSize: 11, fontFamily: "monospace" }}
             axisLine={{ stroke: "#2a2a2a" }}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fill: "#777777", fontSize: 11 }}
+            width={48}
+            tick={{ fontSize: 11, fontFamily: "monospace" }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => `$${v}`}
           />
           <ReferenceLine y={0} stroke="#2a2a2a" strokeDasharray="3 3" />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={<CustomTooltip />}
+            contentStyle={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", fontSize: "12px" }}
+          />
           <Area
             type="monotone"
             dataKey="cumulative"
             stroke={gradientColor}
-            strokeWidth={2}
+            strokeWidth={1.5}
             fill="url(#equityGradient)"
           />
         </AreaChart>
       </ResponsiveContainer>
-    </div>
-  );
-}
-
-function KPI({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wide text-text-muted">{label}</div>
-      <div className="text-sm font-bold price" style={{ color: color ?? "#e0e0e0" }}>{value}</div>
     </div>
   );
 }

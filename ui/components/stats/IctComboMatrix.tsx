@@ -21,23 +21,6 @@ function formatAvgRr(value: number | null): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}R`;
 }
 
-interface ConfluenceBadgeProps {
-  label: string;
-  present: boolean | null;
-}
-
-function ConfluenceBadge({ label, present }: ConfluenceBadgeProps) {
-  if (present === null) return null;
-  const symbol = present ? "✓" : "✗";
-  const cls = present
-    ? "bg-bull/10 text-bull"
-    : "bg-bear/10 text-bear";
-  return (
-    <span className={`text-[10px] rounded px-1.5 py-0.5 ${cls}`}>
-      {label} {symbol}
-    </span>
-  );
-}
 
 interface WinRateBarProps {
   rate: number;
@@ -74,8 +57,16 @@ function ComboEntryCard({ entry, rank }: ComboEntryCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
             <span className="text-sm text-text-primary font-medium">{setupLabel}</span>
-            <ConfluenceBadge label="SMT" present={entry.smt_present} />
-            <ConfluenceBadge label="TDO" present={entry.tdo_aligned} />
+            {entry.mnq_session && (
+              <span className="text-[10px] rounded px-1.5 py-0.5 bg-surface-card text-text-muted">
+                {entry.mnq_session.toUpperCase()}
+              </span>
+            )}
+            {entry.htf_bias && (
+              <span className={`text-[10px] rounded px-1.5 py-0.5 ${entry.htf_bias === "aligned" ? "bg-bull/10 text-bull" : entry.htf_bias === "counter" ? "bg-bear/10 text-bear" : "bg-surface-card text-text-muted"}`}>
+                {entry.htf_bias}
+              </span>
+            )}
             <span className="text-xs text-text-muted ml-auto">{entry.total} trades</span>
           </div>
           <WinRateBar rate={winRate} />
@@ -83,6 +74,10 @@ function ComboEntryCard({ entry, rank }: ComboEntryCardProps) {
             <span className="text-xs text-text-muted">{winRateStr}</span>
             <span className="text-xs text-text-muted">·</span>
             <span className="text-xs text-text-muted">{formatAvgRr(entry.avg_rr)} avg</span>
+            <span className="text-xs text-text-muted">·</span>
+            <span className="text-xs" style={{ color: entry.total_pnl_usd >= 0 ? "#26a69a" : "#ef5350" }}>
+              {entry.total_pnl_usd >= 0 ? "+" : ""}${Math.abs(entry.total_pnl_usd).toFixed(0)} total
+            </span>
           </div>
         </div>
       </div>
@@ -91,7 +86,7 @@ function ComboEntryCard({ entry, rank }: ComboEntryCardProps) {
 }
 
 export function IctComboMatrix({ comboMatrix, loading }: IctComboMatrixProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const dim = loading ? "opacity-50" : "";
 
   const ranked = useMemo(
@@ -127,7 +122,7 @@ export function IctComboMatrix({ comboMatrix, loading }: IctComboMatrixProps) {
           ) : (
             ranked.map((entry, i) => (
               <ComboEntryCard
-                key={`${entry.setup_type}-${String(entry.smt_present)}-${String(entry.tdo_aligned)}`}
+                key={`${entry.setup_type}-${String(entry.mnq_session)}-${String(entry.htf_bias)}`}
                 entry={entry}
                 rank={i + 1}
               />

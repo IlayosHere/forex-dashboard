@@ -95,6 +95,9 @@ export interface TradeCreateRequest {
   ict_ifvg_timeframe?: string | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_htf_bias?: string | null;
+  ict_entry_model?: string | null;
+  ict_pd_array?: string | null;
 }
 
 export interface TradeUpdateRequest {
@@ -122,6 +125,9 @@ export interface TradeUpdateRequest {
   ict_ifvg_timeframe?: string | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_htf_bias?: string | null;
+  ict_entry_model?: string | null;
+  ict_pd_array?: string | null;
 }
 
 export interface Trade {
@@ -158,6 +164,9 @@ export interface Trade {
   ict_ifvg_timeframe: IctIfvgTimeframe | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
+  ict_htf_bias: string | null;
+  ict_entry_model: string | null;
+  ict_pd_array: string | null;
   created_at: string;
   updated_at: string;
 }

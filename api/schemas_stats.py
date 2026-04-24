@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 # ---------------------------------------------------------------------------
 # ICT stats schemas
@@ -28,6 +28,7 @@ class IctBucketStats(BaseModel):
     total_pnl_usd: float
     avg_pnl_usd: float | None
     avg_rr: float | None
+    expectancy_r: float | None
 
 
 class IctBooleanComparison(BaseModel):
@@ -40,19 +41,20 @@ class IctBooleanComparison(BaseModel):
 
 
 class IctComboEntry(BaseModel):
-    """Single row in the setup_type x (smt_present, tdo_aligned) combo matrix."""
+    """Single row in the setup_type x session x htf_bias combo matrix."""
 
     model_config = ConfigDict(from_attributes=True)
 
     setup_type: str
-    smt_present: bool | None
-    tdo_aligned: bool | None
+    mnq_session: str | None
+    htf_bias: str | None
     total: int
     wins: int
     losses: int
     win_rate: float | None
     total_pnl_usd: float
     avg_rr: float | None
+    expectancy_r: float | None
 
 
 class IctStatsResponse(BaseModel):
@@ -68,6 +70,10 @@ class IctStatsResponse(BaseModel):
     by_tp_target: dict[str, IctBucketStats]
     by_ifvg_timeframe: dict[str, IctBucketStats]
     by_mnq_session: dict[str, IctBucketStats]
+    by_htf_bias: dict[str, IctBucketStats]
+    by_entry_model: dict[str, IctBucketStats]
+    by_pd_array: dict[str, IctBucketStats]
+    by_killzone: dict[str, IctBucketStats]
     boolean_flags: dict[str, IctBooleanComparison]
     combo_matrix: list[IctComboEntry]
 
@@ -85,6 +91,42 @@ class EquityCurvePoint(BaseModel):
     cumulative_pnl_pips: float
     trade_count: int
     outcome: str | None
+
+
+class TradeStatsResponse(BaseModel):
+    """Aggregated trade journal statistics for the /trades/stats endpoint."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    total_trades: int
+    open_trades: int
+    closed_trades: int
+    wins: int
+    losses: int
+    breakevens: int
+    win_rate: float | None
+    avg_rr: float | None
+    total_pnl_pips: float
+    total_pnl_usd: float
+    best_trade_pnl: float | None
+    worst_trade_pnl: float | None
+    current_streak: int
+    profit_factor: float | None
+    avg_hold_time_hours: float | None
+    avg_win_pips: float | None = None
+    avg_loss_pips: float | None = None
+    avg_win_usd: float | None = None
+    avg_loss_usd: float | None = None
+    expectancy_usd: float | None = None
+    expectancy_pips: float | None = None
+    consistency_ratio: float | None = None
+    by_strategy: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_symbol: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_account: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_day_of_week: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_session: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_confidence: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_rating: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
 
 class DailySummaryPoint(BaseModel):

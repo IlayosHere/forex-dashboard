@@ -9,14 +9,6 @@ interface EdgeMetricsProps {
   loading: boolean;
 }
 
-function formatHoldTime(hours: number | null): string {
-  if (hours === null) return "--";
-  if (hours < 1) return `${Math.round(hours * 60)}m`;
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
 function MetricRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex justify-between items-center py-1.5">
@@ -42,7 +34,7 @@ export function EdgeMetrics({ stats, loading }: EdgeMetricsProps) {
   const s = stats;
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${dim}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${dim}`}>
       {/* Expectancy */}
       <MetricCard title="Expectancy">
         <MetricRow
@@ -88,24 +80,6 @@ export function EdgeMetrics({ stats, loading }: EdgeMetricsProps) {
         />
       </MetricCard>
 
-      {/* Summary */}
-      <MetricCard title="Summary">
-        <MetricRow label="Total Trades" value={s ? String(s.total_trades) : "--"} />
-        <MetricRow
-          label="Best Trade"
-          value={s?.best_trade_pnl != null ? `$${fmt(s.best_trade_pnl, 2)}` : "--"}
-          color={s?.best_trade_pnl != null && s.best_trade_pnl > 0 ? "#26a69a" : undefined}
-        />
-        <MetricRow
-          label="Worst Trade"
-          value={s?.worst_trade_pnl != null ? `$${fmt(s.worst_trade_pnl, 2)}` : "--"}
-          color={s?.worst_trade_pnl != null && s.worst_trade_pnl < 0 ? "#ef5350" : undefined}
-        />
-        <MetricRow
-          label="Avg Hold Time"
-          value={formatHoldTime(s?.avg_hold_time_hours ?? null)}
-        />
-      </MetricCard>
     </div>
   );
 }
