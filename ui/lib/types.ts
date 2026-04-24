@@ -337,6 +337,30 @@ export interface UnivariateReport {
 }
 
 // ---------------------------------------------------------------------------
+// Interaction Heatmap
+// ---------------------------------------------------------------------------
+
+export interface InteractionCell {
+  bucket_a: string;
+  bucket_b: string;
+  wins: number;
+  losses: number;
+  total: number;
+  win_rate: number | null;
+}
+
+export interface InteractionResponse {
+  strategy: string;
+  param_a: string;
+  param_b: string;
+  buckets_a: string[];
+  buckets_b: string[];
+  cells: InteractionCell[];
+  total_signals: number;
+  overall_win_rate: number;
+}
+
+// ---------------------------------------------------------------------------
 // Regime Detection
 // ---------------------------------------------------------------------------
 
