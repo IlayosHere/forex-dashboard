@@ -114,6 +114,7 @@ class CorrelationItem(BaseModel):
     ci_hi: float | None = None
     best_bucket: str | None = None
     level: str | None = None
+    fdr_status: str = "insufficient_data"
 
 
 class SummaryResponse(BaseModel):
