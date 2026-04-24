@@ -1,5 +1,7 @@
 "use client";
 
+import { IctExtendedFields } from "./IctExtendedFields";
+
 import type { TradeFormData } from "./TradeForm";
 
 interface IctTradeFieldsProps {
@@ -170,6 +172,8 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
         </select>
         <ErrMsg errors={errors} field="ict_ifvg_timeframe" />
       </div>
+
+      <IctExtendedFields form={form} onChange={onChange} />
 
       {/* SMT + TDO — side by side */}
       <div className="grid grid-cols-2 gap-3">

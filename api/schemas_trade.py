@@ -14,7 +14,10 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from shared.ict_taxonomy import (
+    ENTRY_MODELS,
+    HTF_BIAS_VALUES,
     IFVG_TIMEFRAMES,
+    PD_ARRAY_VALUES,
     SETUP_DETAIL_MAP,
     SETUP_TYPES,
     TP_TARGETS,
@@ -64,6 +67,9 @@ class TradeCreateRequest(BaseModel):
     ict_ifvg_timeframe: str | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_htf_bias: str | None = None
+    ict_entry_model: str | None = None
+    ict_pd_array: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -113,6 +119,27 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"ict_ifvg_timeframe must be one of {IFVG_TIMEFRAMES}")
         return v
 
+    @field_validator("ict_htf_bias")
+    @classmethod
+    def validate_ict_htf_bias(cls, v: str | None) -> str | None:
+        if v is not None and v not in HTF_BIAS_VALUES:
+            raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
+        return v
+
+    @field_validator("ict_entry_model")
+    @classmethod
+    def validate_ict_entry_model(cls, v: str | None) -> str | None:
+        if v is not None and v not in ENTRY_MODELS:
+            raise ValueError(f"ict_entry_model must be one of {ENTRY_MODELS}")
+        return v
+
+    @field_validator("ict_pd_array")
+    @classmethod
+    def validate_ict_pd_array(cls, v: str | None) -> str | None:
+        if v is not None and v not in PD_ARRAY_VALUES:
+            raise ValueError(f"ict_pd_array must be one of {PD_ARRAY_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -148,6 +175,9 @@ class TradeUpdateRequest(BaseModel):
     ict_ifvg_timeframe: str | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_htf_bias: str | None = None
+    ict_entry_model: str | None = None
+    ict_pd_array: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -213,6 +243,27 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"ict_ifvg_timeframe must be one of {IFVG_TIMEFRAMES}")
         return v
 
+    @field_validator("ict_htf_bias")
+    @classmethod
+    def validate_ict_htf_bias(cls, v: str | None) -> str | None:
+        if v is not None and v not in HTF_BIAS_VALUES:
+            raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
+        return v
+
+    @field_validator("ict_entry_model")
+    @classmethod
+    def validate_ict_entry_model(cls, v: str | None) -> str | None:
+        if v is not None and v not in ENTRY_MODELS:
+            raise ValueError(f"ict_entry_model must be one of {ENTRY_MODELS}")
+        return v
+
+    @field_validator("ict_pd_array")
+    @classmethod
+    def validate_ict_pd_array(cls, v: str | None) -> str | None:
+        if v is not None and v not in PD_ARRAY_VALUES:
+            raise ValueError(f"ict_pd_array must be one of {PD_ARRAY_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -259,6 +310,9 @@ class TradeResponse(BaseModel):
     ict_ifvg_timeframe: str | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_htf_bias: str | None = None
+    ict_entry_model: str | None = None
+    ict_pd_array: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -270,35 +324,4 @@ class TradeResponse(BaseModel):
         return v
 
 
-class TradeStatsResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    total_trades: int
-    open_trades: int
-    closed_trades: int
-    wins: int
-    losses: int
-    breakevens: int
-    win_rate: float | None
-    avg_rr: float | None
-    total_pnl_pips: float
-    total_pnl_usd: float
-    best_trade_pnl: float | None
-    worst_trade_pnl: float | None
-    current_streak: int
-    profit_factor: float | None
-    avg_hold_time_hours: float | None
-    avg_win_pips: float | None = None
-    avg_loss_pips: float | None = None
-    avg_win_usd: float | None = None
-    avg_loss_usd: float | None = None
-    expectancy_usd: float | None = None
-    expectancy_pips: float | None = None
-    consistency_ratio: float | None = None
-    by_strategy: dict[str, dict[str, Any]]
-    by_symbol: dict[str, dict[str, Any]]
-    by_account: dict[str, dict[str, Any]]
-    by_day_of_week: dict[str, dict[str, Any]] = {}
-    by_session: dict[str, dict[str, Any]] = {}
-    by_confidence: dict[str, dict[str, Any]] = {}
-    by_rating: dict[str, dict[str, Any]] = {}
+from api.schemas_stats import TradeStatsResponse as TradeStatsResponse  # noqa: F401 — re-export

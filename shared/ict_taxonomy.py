@@ -85,6 +85,43 @@ SETUP_DETAIL_MAP: Final[dict[str, list[str]]] = {
     "other": [],  # no detail required for "other"
 }
 
+# HTF bias alignment
+HTF_BIAS_VALUES: Final[list[str]] = [
+    "aligned",
+    "counter",
+    "neutral",
+]
+
+# Entry model
+ENTRY_MODELS: Final[list[str]] = [
+    "silver_bullet",
+    "cisd",
+    "bms",
+    "ote",
+    "turtle_soup",
+    "other",
+]
+
+# Premium / discount / equilibrium at entry
+PD_ARRAY_VALUES: Final[list[str]] = [
+    "premium",
+    "discount",
+    "equilibrium",
+]
+
+# Killzone windows (derived from open_time — not a logged field)
+# Defined here as the canonical bucket labels used by the stats service.
+KILLZONE_BUCKETS: Final[list[str]] = [
+    "london",
+    "ny_am_kz",
+    "silver_bullet_am",
+    "lunch",
+    "ny_pm_kz",
+    "silver_bullet_pm",
+    "close",
+    "other",
+]
+
 # IFVG confirmation timeframe
 IFVG_TIMEFRAMES: Final[list[str]] = [
     "1m",

@@ -37,6 +37,9 @@ function makeEmptyForm(): TradeFormData {
     ict_ifvg_timeframe: "",
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_htf_bias: null,
+    ict_entry_model: null,
+    ict_pd_array: null,
   };
 }
 
@@ -98,6 +101,9 @@ function NewTradeContent() {
           ict_ifvg_timeframe: "",
           ict_smt_present: null,
           ict_tdo_aligned: null,
+          ict_htf_bias: null,
+          ict_entry_model: null,
+          ict_pd_array: null,
         });
         setSignalLabel(`${signal.symbol} ${signal.direction} — ${signal.strategy}`);
       })
@@ -132,6 +138,9 @@ function NewTradeContent() {
         ict_ifvg_timeframe: data.ict_ifvg_timeframe || null,
         ict_smt_present: data.ict_smt_present,
         ict_tdo_aligned: data.ict_tdo_aligned,
+        ict_htf_bias: data.ict_htf_bias || null,
+        ict_entry_model: data.ict_entry_model || null,
+        ict_pd_array: data.ict_pd_array || null,
       };
       const trade = await createTrade(body);
       router.push(`/journal/${trade.id}`);

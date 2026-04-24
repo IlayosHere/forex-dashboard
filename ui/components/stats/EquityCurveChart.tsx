@@ -6,6 +6,7 @@ import {
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
@@ -67,7 +68,7 @@ export function EquityCurveChart({ data, loading }: EquityCurveChartProps) {
 
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={180}>
         <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <defs>
             <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -75,26 +76,31 @@ export function EquityCurveChart({ data, loading }: EquityCurveChartProps) {
               <stop offset="100%" stopColor={gradientColor} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <CartesianGrid strokeDasharray="0" stroke="#2a2a2a" strokeOpacity={0.6} />
           <XAxis
             dataKey="date"
-            tick={{ fill: "#777777", fontSize: 11 }}
+            tick={{ fontSize: 11, fontFamily: "monospace" }}
             axisLine={{ stroke: "#2a2a2a" }}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fill: "#777777", fontSize: 11 }}
+            width={48}
+            tick={{ fontSize: 11, fontFamily: "monospace" }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => `$${v}`}
           />
           <ReferenceLine y={0} stroke="#2a2a2a" strokeDasharray="3 3" />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={<CustomTooltip />}
+            contentStyle={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", fontSize: "12px" }}
+          />
           <Area
             type="monotone"
             dataKey="cumulative"
             stroke={gradientColor}
-            strokeWidth={2}
+            strokeWidth={1.5}
             fill="url(#equityGradient)"
           />
         </AreaChart>

@@ -13,7 +13,7 @@ interface PerformanceBreakdownsProps {
   onDrillDown?: (dimension: string, value: string) => void;
 }
 
-type TabKey = "strategy" | "symbol" | "day" | "session";
+type TabKey = "day" | "session";
 
 interface RowData {
   name: string;
@@ -25,18 +25,13 @@ interface RowData {
 }
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "strategy", label: "Strategy" },
-  { key: "symbol", label: "Symbol" },
   { key: "day", label: "Day of Week" },
   { key: "session", label: "Session" },
 ];
 
 function buildRows(stats: TradeStats | null, tab: TabKey): RowData[] {
   if (!stats) return [];
-  const source = tab === "strategy" ? stats.by_strategy
-    : tab === "symbol" ? stats.by_symbol
-    : tab === "day" ? stats.by_day_of_week
-    : stats.by_session;
+  const source = tab === "day" ? stats.by_day_of_week : stats.by_session;
   if (!source) return [];
   return Object.entries(source)
     .map(([key, d]) => ({
@@ -44,7 +39,7 @@ function buildRows(stats: TradeStats | null, tab: TabKey): RowData[] {
       total: d.total,
       winRate: d.win_rate,
       pnl: d.total_pnl_usd ?? (d as { total_pnl_pips?: number }).total_pnl_pips ?? 0,
-      filterKey: tab === "strategy" ? "strategy" : tab === "symbol" ? "symbol" : "",
+      filterKey: "",
       filterValue: key,
     }))
     .sort((a, b) => b.pnl - a.pnl);
@@ -114,7 +109,7 @@ function TableRow({ row, onJournal, onDrillDown, tab }: TableRowProps) {
 }
 
 export function PerformanceBreakdowns({ stats, loading, onDrillDown }: PerformanceBreakdownsProps) {
-  const [tab, setTab] = useState<TabKey>("strategy");
+  const [tab, setTab] = useState<TabKey>("day");
   const router = useRouter();
   const rows = useMemo(() => buildRows(stats, tab), [stats, tab]);
   const dim = loading ? "opacity-50" : "";
@@ -136,7 +131,7 @@ export function PerformanceBreakdowns({ stats, loading, onDrillDown }: Performan
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-xs font-medium -mb-px ${
               tab === t.key
-                ? "text-bull border-b-2 border-bull"
+                ? "text-yellow-400 border-b-2 border-yellow-400"
                 : "text-text-muted hover:text-text-primary border-b-2 border-transparent"
             }`}
           >

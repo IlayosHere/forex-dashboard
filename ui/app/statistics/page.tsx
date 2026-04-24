@@ -5,10 +5,8 @@ import { SectionHeader } from "@/components/stats/SectionHeader";
 import { OverviewKpiStrip } from "@/components/stats/OverviewKpiStrip";
 import { IctAnalysisSection } from "@/components/stats/IctAnalysisSection";
 import { EdgeMetrics } from "@/components/stats/EdgeMetrics";
-import { PerformanceBreakdowns } from "@/components/stats/PerformanceBreakdowns";
-import { AssessmentAnalysis } from "@/components/stats/AssessmentAnalysis";
+import { UnifiedBreakdowns } from "@/components/stats/UnifiedBreakdowns";
 import { EquityCurveChart } from "@/components/stats/EquityCurveChart";
-import { CalendarHeatmap } from "@/components/stats/CalendarHeatmap";
 import { MonthlyBars } from "@/components/stats/MonthlyBars";
 
 import { useStatsContext } from "@/lib/useStatsContext";
@@ -49,11 +47,16 @@ export default function StatisticsPage() {
         <OverviewKpiStrip stats={stats} loading={statsLoading} />
       </section>
 
+      <hr className="border-border/40" />
+
       {isMnq && (
-        <section id="ict" className="mb-4">
-          <SectionHeader title="ICT Analysis — MNQ Futures" />
-          <IctAnalysisSection ictStats={ictData} loading={ictLoading} />
-        </section>
+        <>
+          <section id="ict" className="mb-4">
+            <SectionHeader title="ICT Analysis — MNQ Futures" />
+            <IctAnalysisSection ictStats={ictData} loading={ictLoading} />
+          </section>
+          <hr className="border-border/40" />
+        </>
       )}
 
       <section id="edge" className="mb-4">
@@ -61,35 +64,25 @@ export default function StatisticsPage() {
         <EdgeMetrics stats={stats} loading={statsLoading} />
       </section>
 
+      <hr className="border-border/40" />
+
       <section id="breakdowns" className="mb-4">
         <SectionHeader title="Performance Breakdowns" />
-        <PerformanceBreakdowns stats={stats} loading={statsLoading} />
+        <UnifiedBreakdowns stats={stats} ictStats={isMnq ? ictData : null} loading={statsLoading || ictLoading} />
       </section>
 
-      <section id="assessment" className="mb-4">
-        <SectionHeader title="Self-Assessment" subtitle="does confidence predict outcome?" />
-        <AssessmentAnalysis
-          byConfidence={stats?.by_confidence}
-          byRating={stats?.by_rating}
-          loading={statsLoading}
-        />
-      </section>
+      <hr className="border-border/40" />
 
       <section id="equity" className="mb-4">
         <SectionHeader title="Equity Curve" />
         <EquityCurveChart data={equityData} loading={equityLoading} />
       </section>
 
+      <hr className="border-border/40" />
+
       <section id="calendar">
-        <SectionHeader title="Calendar" />
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-          <div className="lg:col-span-3">
-            <CalendarHeatmap data={dailyData} loading={dailyLoading} />
-          </div>
-          <div className="lg:col-span-2">
-            <MonthlyBars data={dailyData} loading={dailyLoading} />
-          </div>
-        </div>
+        <SectionHeader title="Monthly P&amp;L" />
+        <MonthlyBars data={dailyData} loading={dailyLoading} />
       </section>
     </div>
   );

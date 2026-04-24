@@ -32,11 +32,14 @@ export function OverviewKpiStrip({ stats, loading }: OverviewKpiStripProps) {
   const pf = stats?.profit_factor ?? null;
   const pnl = stats?.total_pnl_usd ?? null;
 
+  const avgRr = stats?.avg_rr ?? null;
+
   const expectancyColor = expectancy == null ? "#777777" : expectancy > 0 ? "#26a69a" : "#ef5350";
   const pnlColor = pnl == null ? "#777777" : pnl > 0 ? "#26a69a" : "#ef5350";
+  const avgRrColor = avgRr == null ? "#777777" : avgRr >= 1 ? "#26a69a" : "#ef5350";
 
   return (
-    <div className={`grid grid-cols-4 gap-px bg-border rounded-lg overflow-hidden ${dim}`}>
+    <div className={`grid grid-cols-5 gap-px bg-border rounded-lg overflow-hidden ${dim}`}>
       <Tile
         label="Expectancy"
         value={expectancy != null ? `${expectancy >= 0 ? "+" : ""}$${fmt(expectancy, 2)}` : "--"}
@@ -58,6 +61,12 @@ export function OverviewKpiStrip({ stats, loading }: OverviewKpiStripProps) {
         value={pnl != null ? `${pnl >= 0 ? "+" : ""}$${fmt(pnl, 2)}` : "--"}
         sub={stats ? `${stats.closed_trades} closed trades` : "—"}
         color={pnlColor}
+      />
+      <Tile
+        label="Avg R"
+        value={avgRr != null ? fmt(avgRr, 2) : "--"}
+        sub="avg R:R achieved"
+        color={avgRrColor}
       />
     </div>
   );

@@ -1,16 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Cell,
-} from "recharts";
 
 import type { DailySummaryPoint } from "@/lib/types";
 
@@ -43,69 +33,41 @@ function aggregateMonthly(data: DailySummaryPoint[]): MonthBucket[] {
     });
 }
 
-function MonthlyTooltip({ active, payload }: { active?: boolean; payload?: { payload: MonthBucket }[] }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div className="bg-surface-raised border border-border rounded px-3 py-2 text-xs">
-      <p className="text-text-primary">{d.month}</p>
-      <p style={{ color: d.pnl >= 0 ? "#26a69a" : "#ef5350" }}>
-        {d.pnl >= 0 ? "+" : ""}${fmt(d.pnl, 2)}
-      </p>
-    </div>
-  );
-}
-
 export function MonthlyBars({ data, loading }: MonthlyBarsProps) {
   const monthly = useMemo(() => aggregateMonthly(data), [data]);
   const dim = loading ? "opacity-50" : "";
 
-  const best = monthly.reduce<MonthBucket | null>((acc, m) => (!acc || m.pnl > acc.pnl ? m : acc), null);
-  const worst = monthly.reduce<MonthBucket | null>((acc, m) => (!acc || m.pnl < acc.pnl ? m : acc), null);
+  const maxAbs = monthly.reduce((acc, m) => Math.max(acc, Math.abs(m.pnl)), 0);
 
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
-      <h3 className="text-xs uppercase tracking-wide text-text-muted mb-3">Monthly P&L</h3>
+      <h3 className="text-xs uppercase tracking-wide text-text-muted mb-3">Monthly P&amp;L</h3>
 
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-          <XAxis
-            dataKey="month"
-            tick={{ fill: "#777777", fontSize: 10 }}
-            axisLine={{ stroke: "#2a2a2a" }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: "#777777", fontSize: 10 }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v: number) => `$${v}`}
-          />
-          <ReferenceLine y={0} stroke="#2a2a2a" />
-          <Tooltip content={<MonthlyTooltip />} />
-          <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
-            {monthly.map((entry) => (
-              <Cell key={entry.month} fill={entry.pnl >= 0 ? "#26a69a" : "#ef5350"} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Best / Worst labels */}
-      <div className="flex justify-between mt-2 text-[10px]">
-        <div>
-          <span className="text-text-dim">Best: </span>
-          {best && (
-            <span className="text-bull">{best.month} (+${fmt(best.pnl, 2)})</span>
-          )}
+      {monthly.length === 0 ? (
+        <p className="text-text-dim text-sm py-4 text-center">No data</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {monthly.map((m) => {
+            const isPositive = m.pnl >= 0;
+            const fillPct = maxAbs > 0 ? (Math.abs(m.pnl) / maxAbs) * 100 : 0;
+            return (
+              <div key={m.month} className="flex items-center gap-2 min-w-0">
+                <span className="text-xs text-text-muted w-12 shrink-0 tabular-nums">{m.month}</span>
+                <div className="flex-1 h-4 flex items-center min-w-0 overflow-hidden rounded-sm">
+                  <div
+                    className={`h-2 rounded-sm ${isPositive ? "bg-bull" : "bg-bear"}`}
+                    style={{ width: `${fillPct}%` }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <span className={`text-xs tabular-nums shrink-0 w-16 text-right ${isPositive ? "text-bull" : "text-bear"}`}>
+                  {isPositive ? "+" : ""}${fmt(m.pnl, 0)}
+                </span>
+              </div>
+            );
+          })}
         </div>
-        <div>
-          <span className="text-text-dim">Worst: </span>
-          {worst && (
-            <span className="text-bear">{worst.month} (${fmt(worst.pnl, 2)})</span>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
