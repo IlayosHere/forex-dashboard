@@ -298,6 +298,7 @@ export interface AnalyticsCorrelation {
   ci_hi: number | null;
   best_bucket: string | null;
   level: AnalyticsLevel | null;
+  fdr_status: "confirmed" | "exploratory" | "insufficient_data";
 }
 
 export interface AnalyticsSummary {

@@ -155,6 +155,7 @@ export default function AnalyticsStrategyPage() {
                   correlations={correlations}
                   selectedParam={selectedParam}
                   onSelectParam={(name) => setSelectedParam(name === selectedParam ? null : name)}
+                  totalResolved={resolved}
                 />
               </div>
             )}
