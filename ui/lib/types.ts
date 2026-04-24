@@ -337,6 +337,29 @@ export interface UnivariateReport {
 }
 
 // ---------------------------------------------------------------------------
+// Regime Detection
+// ---------------------------------------------------------------------------
+
+export interface RegimeWindowStats {
+  n: number;
+  win_rate: number;
+  wins: number;
+}
+
+export type RegimeStatus = "healthy" | "warning" | "degraded" | "insufficient_data";
+
+export interface RegimeResult {
+  strategy: string;
+  symbol: string | null;
+  recent: RegimeWindowStats;
+  prior: RegimeWindowStats;
+  delta: number;
+  z_score: number | null;
+  status: RegimeStatus;
+  sufficient_data: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Mistakes Tracker
 // ---------------------------------------------------------------------------
 
