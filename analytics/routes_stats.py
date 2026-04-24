@@ -26,12 +26,14 @@ from analytics.candle_cache import (
 )
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
-from analytics.schemas import InteractionResponse, RegimeResponse, SummaryResponse, UnivariateReportResponse
+from analytics.schemas import InteractionResponse, RegimeResponse, ScoreResponse, SummaryResponse, UnivariateReportResponse
+from analytics.scoring import compute_score
 from analytics.stats.interaction import build_interaction_grid
 from analytics.stats.regime import compute_regime
 from analytics.stats.report import build_summary, build_univariate_report
 from api.auth import get_current_user
 from api.db import get_db
+from api.models import SignalModel
 
 logger = logging.getLogger(__name__)
 
@@ -253,4 +255,44 @@ def get_interaction(
         cells=cells,
         total_signals=total,
         overall_win_rate=overall_wr,
+    )
+
+
+@router.get("/score/{signal_id}", response_model=ScoreResponse)
+def get_score(
+    signal_id: Annotated[str, Path(description="Signal primary key")],
+    _user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    cache: Annotated[CandleCache, Depends(get_app_cache)],
+    strategy: str = Query(..., description="Strategy slug (required)"),
+) -> ScoreResponse:
+    """Compute composite setup quality score for a single signal.
+
+    Only FDR-confirmed parameters contribute. Returns score=0 / max_possible=0
+    when fewer than 3 confirmed params exist (score is meaningless then).
+    """
+    signal = db.get(SignalModel, signal_id)
+    if signal is None:
+        logger.warning("Score requested for unknown signal: %s", signal_id)
+        raise HTTPException(status_code=404, detail="Signal not found")
+
+    enriched = get_enriched(strategy, db, cache)
+    all_params = get_params_for_strategy(strategy)
+    param_defs = [{"name": p.name, "dtype": p.dtype} for p in all_params]
+    summary = build_summary(strategy, enriched, param_defs)
+    confirmed = [
+        row for row in summary.get("top_correlations", [])
+        if row.get("fdr_status") == "confirmed"
+    ]
+
+    candles = cache.get(signal.symbol, strategy)
+    result = compute_score(signal, strategy, candles, confirmed)
+
+    return ScoreResponse(
+        signal_id=signal_id,
+        score=result["score"],
+        max_possible=result["max_possible"],
+        contributing=result["contributing"],
+        explanation=result["explanation"],
+        confirmed_params_used=len(confirmed),
     )
