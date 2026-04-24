@@ -26,7 +26,8 @@ from analytics.candle_cache import (
 )
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
-from analytics.schemas import SummaryResponse, UnivariateReportResponse
+from analytics.schemas import RegimeResponse, SummaryResponse, UnivariateReportResponse
+from analytics.stats.regime import compute_regime
 from analytics.stats.report import build_summary, build_univariate_report
 from api.auth import get_current_user
 from api.db import get_db
@@ -193,3 +194,23 @@ def get_summary(
     param_defs = [{"name": p.name, "dtype": p.dtype} for p in all_params]
     result = build_summary(strategy, enriched, param_defs)
     return SummaryResponse(**result, partial=False, excluded_params=[])
+
+
+@router.get("/regime", response_model=RegimeResponse)
+def get_regime(
+    _user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    strategy: str = Query(..., description="Strategy slug (required)"),
+    symbol: str | None = Query(None, description="Filter by currency pair"),
+) -> RegimeResponse:
+    """Compare recent 30 vs prior 30 resolved signals to detect regime shift."""
+    signals = fetch_resolved(
+        db,
+        strategy=strategy,
+        symbol=symbol,
+        limit=60,
+        from_date=None,
+        order_by_recent=True,
+    )
+    result = compute_regime(signals)
+    return RegimeResponse(strategy=strategy, symbol=symbol, **result)
