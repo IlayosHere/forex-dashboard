@@ -61,8 +61,6 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
       <div className="flex flex-wrap items-center gap-2 mt-1">
         <span className="text-xs text-muted-foreground">
           {formatShortDate(trade.open_time)}
-          {" → "}
-          {trade.close_time ? formatShortDate(trade.close_time) : "OPEN"}
         </span>
         {trade.account_name && (
           <AccountBadge

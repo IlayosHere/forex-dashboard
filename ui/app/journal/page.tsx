@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTrades } from "@/lib/useTrades";
@@ -35,11 +35,36 @@ const emptyFilters: TradeFilterValues = {
   to: "",
 };
 
+const SESSION_KEY = "journal_list_state";
+
+interface SavedListState {
+  instrumentType: InstrumentType;
+  filters: TradeFilterValues;
+  scrollY: number;
+}
+
 export default function JournalPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const [instrumentType, setInstrumentType] = useState<InstrumentType>("forex");
-  const [filters, setFilters] = useState<TradeFilterValues>(emptyFilters);
+  const restoredRef = useRef(false);
+
+  const [instrumentType, setInstrumentType] = useState<InstrumentType>(() => {
+    if (typeof window === "undefined") return "forex";
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) return (JSON.parse(saved) as SavedListState).instrumentType;
+    } catch {}
+    return "forex";
+  });
+
+  const [filters, setFilters] = useState<TradeFilterValues>(() => {
+    if (typeof window === "undefined") return emptyFilters;
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) return (JSON.parse(saved) as SavedListState).filters;
+    } catch {}
+    return emptyFilters;
+  });
 
   const { accounts } = useAccounts();
 
@@ -64,6 +89,21 @@ export default function JournalPage() {
 
   const { trades, loading, error } = useTrades(apiFilters);
   const { stats, loading: statsLoading } = useTradeStats(apiFilters);
+
+  // Restore scroll position once trades have loaded (list must be in DOM first)
+  useEffect(() => {
+    if (loading || restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const { scrollY } = JSON.parse(saved) as SavedListState;
+        if (scrollY > 0) {
+          requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "instant" }));
+        }
+      }
+    } catch {}
+  }, [loading]);
 
   // Build account lookup: id -> account_type
   const accountTypeMap = useMemo(() => {
@@ -207,7 +247,13 @@ export default function JournalPage() {
               <TradeCard
                 key={trade.id}
                 trade={trade}
-                onClick={() => router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`)}
+                onClick={() => {
+                  try {
+                    const state: SavedListState = { instrumentType, filters, scrollY: window.scrollY };
+                    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+                  } catch {}
+                  router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`);
+                }}
                 accountType={trade.account_id ? accountTypeMap[trade.account_id] : undefined}
               />
             );

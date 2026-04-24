@@ -8,18 +8,6 @@ interface TradeResultPanelProps {
   unitLabel: string;
 }
 
-function formatDuration(open: string, close: string | null): string {
-  if (!close) {
-    const mins = Math.floor((Date.now() - new Date(open).getTime()) / 60000);
-    if (mins < 60) return `${mins}m (running)`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ${mins % 60}m (running)`;
-  }
-  const mins = Math.floor((new Date(close).getTime() - new Date(open).getTime()) / 60000);
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m`;
-}
 
 export function TradeResultPanel({ trade, unitLabel }: TradeResultPanelProps) {
   return (
@@ -30,12 +18,6 @@ export function TradeResultPanel({ trade, unitLabel }: TradeResultPanelProps) {
         <div className="flex justify-between items-center">
           <span className="label">Status</span>
           <StatusBadge status={trade.status} outcome={trade.outcome} />
-        </div>
-        <div className="flex justify-between">
-          <span className="label">Duration</span>
-          <span className="text-xs text-text-primary">
-            {formatDuration(trade.open_time, trade.close_time)}
-          </span>
         </div>
         <div className="flex justify-between">
           <span className="label">P&L</span>
