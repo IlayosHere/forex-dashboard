@@ -157,6 +157,44 @@ def _rank_params(
         if row is not None:
             rows.append(row)
     rows.sort(key=_rank_sort_key)
+    return _apply_fdr(rows)
+
+
+def _apply_fdr(
+    rows: list[dict[str, Any]],
+    q: float = 0.10,
+) -> list[dict[str, Any]]:
+    """Apply Benjamini-Hochberg FDR correction and annotate each row with fdr_status.
+
+    Rows with level='none' or p_value=None always get 'insufficient_data'.
+    All others are tested at FDR level q. Survivors get 'confirmed'; the rest
+    get 'exploratory'.
+    """
+    testable = [
+        (i, r) for i, r in enumerate(rows)
+        if r.get("level") not in (None, "none") and r.get("p_value") is not None
+    ]
+
+    confirmed_indices: set[int] = set()
+    if testable:
+        testable_sorted = sorted(testable, key=lambda x: x[1]["p_value"])
+        m = len(testable_sorted)
+        threshold_idx = -1
+        for rank, (_, row) in enumerate(testable_sorted, start=1):
+            if row["p_value"] <= (rank / m) * q:
+                threshold_idx = rank - 1
+        for rank in range(threshold_idx + 1):
+            original_idx = testable_sorted[rank][0]
+            confirmed_indices.add(original_idx)
+
+    for i, row in enumerate(rows):
+        if row.get("level") in (None, "none") or row.get("p_value") is None:
+            row["fdr_status"] = "insufficient_data"
+        elif i in confirmed_indices:
+            row["fdr_status"] = "confirmed"
+        else:
+            row["fdr_status"] = "exploratory"
+
     return rows
 
 
