@@ -7,7 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Calculator } from "./Calculator";
 import { MetadataPanel } from "./MetadataPanel";
 import { NewsRiskIndicator } from "./NewsRiskIndicator";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 import { useCalculator } from "@/lib/useCalculator";
+import { useSignalScore } from "@/lib/useSignalScore";
 import { formatPrice, pipSize } from "@/lib/utils";
 import { RESOLUTION_CONFIG } from "@/lib/signals";
 
@@ -68,6 +70,12 @@ export function SignalDetail({ signal }: SignalDetailProps) {
       : signal.resolution_candles;
 
   const calc = useCalculator(signal, activeSl, activeTp);
+
+  const { data: scoreData, fetch: fetchScore } = useSignalScore(signal.id, signal.strategy);
+
+  useEffect(() => {
+    fetchScore();
+  }, [signal.id, fetchScore]);
 
   return (
     <div className="space-y-4 p-4">
@@ -153,6 +161,9 @@ export function SignalDetail({ signal }: SignalDetailProps) {
 
       {/* Calculator */}
       <Calculator direction={signal.direction} calculator={calc} />
+
+      {/* Composite quality score breakdown */}
+      {scoreData && <ScoreBreakdown scoreData={scoreData} />}
 
       {/* News risk for this pair */}
       <NewsRiskIndicator symbol={signal.symbol} />

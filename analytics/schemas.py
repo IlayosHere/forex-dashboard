@@ -169,6 +169,30 @@ class InteractionResponse(BaseModel):
     overall_win_rate: float
 
 
+class ScoreContributor(BaseModel):
+    """Single parameter's contribution to the composite quality score."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    param_name: str
+    bucket: str | None
+    indicator: int
+    weight: int
+
+
+class ScoreResponse(BaseModel):
+    """Response for GET /api/analytics/score/{signal_id}."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    signal_id: str
+    score: int
+    max_possible: int
+    contributing: list[ScoreContributor]
+    explanation: str
+    confirmed_params_used: int
+
+
 class RegimeWindowStats(BaseModel):
     """Win-rate stats for one 30-signal window."""
 

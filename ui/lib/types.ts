@@ -337,6 +337,26 @@ export interface UnivariateReport {
 }
 
 // ---------------------------------------------------------------------------
+// Composite Quality Score
+// ---------------------------------------------------------------------------
+
+export interface ScoreContributor {
+  param_name: string;
+  bucket: string | null;
+  indicator: number;   // +1, -1, or 0
+  weight: number;
+}
+
+export interface ScoreResponse {
+  signal_id: string;
+  score: number;
+  max_possible: number;
+  contributing: ScoreContributor[];
+  explanation: string;
+  confirmed_params_used: number;
+}
+
+// ---------------------------------------------------------------------------
 // Interaction Heatmap
 // ---------------------------------------------------------------------------
 
