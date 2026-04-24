@@ -103,7 +103,7 @@ def detect_fvgs_at_bar(
 
 
 def age_and_prune_fvgs(
-    fvgs: list[FVG], h: Any, l: Any, c: Any, i: int,
+    fvgs: list[FVG], h: Any, l: Any, c: Any, i: int, max_age: int = MAX_FVG_AGE,
 ) -> None:
     """Age, expire, and check virginity/consumption for existing FVGs."""
     for fvg in fvgs:
@@ -112,7 +112,7 @@ def age_and_prune_fvgs(
 
         fvg.age_bars += 1
 
-        if fvg.age_bars > MAX_FVG_AGE:
+        if fvg.age_bars > max_age:
             fvg.is_valid = False
             continue
 

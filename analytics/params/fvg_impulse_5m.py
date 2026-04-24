@@ -27,14 +27,9 @@ logger = logging.getLogger(__name__)
 
 _VOLATILITY_PERCENTILE_LONG_BARS = 96
 
-# Known limitation: age_and_prune_fvgs (strategies/fvg_impulse/data.py) uses
-# MAX_FVG_AGE = 15 bars, which was calibrated for M15 bars (15 × 15 min = 225 min).
-# When applied to H1 bars in h1_fvg_contains_entry below, 15 H1 bars = 15 hours,
-# a much wider window than intended. The correct H1 equivalent is 4 bars
-# (225 min / 60 min = 3.75, rounded up). A proper fix requires parameterising
-# age_and_prune_fvgs with a max_age argument so each call site can pass the
-# timeframe-appropriate value.
-_H1_MAX_FVG_AGE = 4  # correct H1 equivalent; unused until age_and_prune_fvgs is parameterised
+# MAX_FVG_AGE=15 is calibrated for M15 bars (15 × 15 min = 225 min).
+# On H1 bars the equivalent is 4 bars (225 min / 60 min = 3.75, rounded up).
+_H1_MAX_FVG_AGE = 4
 
 
 @register("h1_fvg_contains_entry", strategies=_FVG_5M_STRATEGIES, needs_candles=True, dtype="bool")
@@ -58,7 +53,7 @@ def h1_fvg_contains_entry(signal: Any, candles: pd.DataFrame | None) -> bool | N
     # Guard ensures idx >= 3, so range(2, idx) has at least one iteration.
     for i in range(2, idx):
         detect_fvgs_at_bar(fvgs, h, l, i, h1)
-        age_and_prune_fvgs(fvgs, h, l, c, i)
+        age_and_prune_fvgs(fvgs, h, l, c, i, max_age=_H1_MAX_FVG_AGE)
     # Detect any FVG that FORMED at the signal bar (fresh FVGs are not aged
     # by age_and_prune_fvgs on their formation bar, so this is safe).
     detect_fvgs_at_bar(fvgs, h, l, idx, h1)

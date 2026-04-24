@@ -1,95 +1,61 @@
 """
 analytics/params/volume.py
 --------------------------
-Volume-based candle parameters for all strategies.
+Session-normalised volume parameter for all strategies.
 
-All three params use TradingView tick count as an activity proxy — FX has
-no central exchange volume. Returns None gracefully when volume data is
-unavailable for a pair or broker.
+Uses TradingView tick count as an activity proxy — FX has no central exchange
+volume. The single ``volume_regime`` param compares signal-bar volume only
+against bars from the same session window (Asian / London / NY) so that the
+natural session-volume difference (NY > Asian) does not dominate the bucket.
 """
 from __future__ import annotations
 
 import logging
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from analytics.params.candle_derived import _find_signal_bar
+from analytics.params.candle_derived import _find_signal_bar, _volume_at_bar
 from analytics.registry import register
 
 logger = logging.getLogger(__name__)
 
+_NY_TZ = ZoneInfo("America/New_York")
 _VOL_REGIME_LOW = 0.7
 _VOL_REGIME_HIGH = 1.5
-_VOL_BASELINE_BARS = 20
-_VOL_PERCENTILE_BARS = 50
+_VOL_BASELINE_BARS = 50
+_VOL_MIN_SESSION_BARS = 10
 
 
-def _bar_volume(candles: pd.DataFrame, idx: int) -> float | None:
-    """Return the volume at integer position ``idx``, or None if missing or NaN."""
-    if "volume" not in candles.columns:
-        return None
-    raw = candles["volume"].iloc[idx]
-    if pd.isna(raw):
-        return None
-    return float(raw)
+def _session_for_ny_hour(hour: int) -> str:
+    """Map a NY-local hour (0-23) to a session group name."""
+    if 7 <= hour <= 12:
+        return "london"
+    if 13 <= hour <= 20:
+        return "ny"
+    return "asian"
 
 
-@register("relative_volume", needs_candles=True, dtype="float")
-def relative_volume(
-    signal: Any,
-    candles: pd.DataFrame | None,
-) -> float | None:
-    """Signal-bar volume divided by the mean volume of the prior 20 bars.
+def _session_bar_volumes(
+    candles: pd.DataFrame,
+    idx: int,
+    session: str,
+) -> pd.Series:
+    """Return volume series for the prior 50 bars filtered to ``session``.
 
-    Volume here is TradingView tick count, not traded lot volume — FX has
-    no central exchange. Values >1 indicate above-average participation at
-    the signal bar; values <1 indicate a quieter-than-average bar.
-    Returns None when volume data is unavailable for the pair or when
-    there are fewer than 20 prior bars.
+    Falls back to all prior 50 bars when fewer than _VOL_MIN_SESSION_BARS
+    same-session bars are found.
     """
-    if candles is None:
-        return None
-    idx = _find_signal_bar(candles, signal)
-    if idx is None or idx < _VOL_BASELINE_BARS:
-        return None
-    bar_vol = _bar_volume(candles, idx)
-    if bar_vol is None:
-        return None
-    baseline = candles["volume"].iloc[idx - _VOL_BASELINE_BARS:idx]
-    if baseline.isna().any():
-        return None
-    baseline_mean = float(baseline.mean())
-    if baseline_mean <= 0:
-        return None
-    return bar_vol / baseline_mean
-
-
-@register("volume_percentile", needs_candles=True, dtype="float")
-def volume_percentile(
-    signal: Any,
-    candles: pd.DataFrame | None,
-) -> float | None:
-    """Percentile rank (0-100) of signal-bar volume within the last 50 bars.
-
-    Uses tick count as activity proxy, not traded lot volume — FX has no
-    central exchange. Returns None when volume data is unavailable or when
-    there are fewer than 50 bars of history at the signal bar.
-    """
-    if candles is None:
-        return None
-    idx = _find_signal_bar(candles, signal)
-    if idx is None:
-        return None
-    bar_vol = _bar_volume(candles, idx)
-    if bar_vol is None:
-        return None
-    start = max(0, idx - (_VOL_PERCENTILE_BARS - 1))
-    window = candles["volume"].iloc[start:idx + 1]
-    if len(window) < _VOL_PERCENTILE_BARS or window.isna().any():
-        return None
-    count_le = int((window <= bar_vol).sum())
-    return float(count_le / len(window) * 100)
+    prior = candles["volume"].iloc[max(0, idx - _VOL_BASELINE_BARS):idx]
+    if len(prior) == 0:
+        return prior
+    ny_hours = prior.index.tz_convert(_NY_TZ).hour
+    mask = pd.Series(ny_hours, index=prior.index).map(_session_for_ny_hour) == session
+    session_bars = prior[mask.values]
+    if len(session_bars) >= _VOL_MIN_SESSION_BARS:
+        return session_bars
+    return prior
 
 
 @register("volume_regime", needs_candles=True, dtype="str")
@@ -97,15 +63,36 @@ def volume_regime(
     signal: Any,
     candles: pd.DataFrame | None,
 ) -> str | None:
-    """Categorical volume regime derived from relative_volume.
+    """Session-normalized volume regime at the signal bar.
 
-    Buckets tick-count activity (not traded lot volume) into low / normal /
-    high relative to the 20-bar baseline. Returns None when relative_volume
-    cannot be computed.
+    Compares signal-bar tick count to the mean volume of prior bars in the
+    same session window (Asian / London / NY). Falls back to all prior 50
+    bars when fewer than 10 same-session bars exist in the window.
+    Returns None when volume data is unavailable or history is insufficient.
     """
-    rv = relative_volume(signal, candles)
-    if rv is None:
+    if candles is None:
         return None
+    if "volume" not in candles.columns:
+        return None
+    bar_volume = _volume_at_bar(candles, signal)
+    if bar_volume is None:
+        return None
+    idx = _find_signal_bar(candles, signal)
+    if idx is None or idx < 1:
+        return None
+    ct = signal.candle_time
+    if hasattr(ct, "tzinfo") and ct.tzinfo is None:
+        from datetime import timezone
+        ct = ct.replace(tzinfo=timezone.utc)
+    ny_hour = ct.astimezone(_NY_TZ).hour
+    session = _session_for_ny_hour(ny_hour)
+    baseline = _session_bar_volumes(candles, idx, session)
+    if baseline.isna().any() or len(baseline) == 0:
+        return None
+    mean_vol = float(baseline.mean())
+    if mean_vol <= 0:
+        return None
+    rv = bar_volume / mean_vol
     if rv < _VOL_REGIME_LOW:
         return "low"
     if rv > _VOL_REGIME_HIGH:
