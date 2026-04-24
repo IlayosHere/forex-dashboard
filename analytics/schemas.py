@@ -136,6 +136,39 @@ class SummaryResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Interaction heatmap responses
+# ---------------------------------------------------------------------------
+
+
+class InteractionCell(BaseModel):
+    """Win/loss counts and win rate for a single (bucket_a, bucket_b) cell."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bucket_a: str
+    bucket_b: str
+    wins: int
+    losses: int
+    total: int
+    win_rate: float | None  # None when total < 15 (sparse cell)
+
+
+class InteractionResponse(BaseModel):
+    """Response for GET /api/analytics/interaction."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    strategy: str
+    param_a: str
+    param_b: str
+    buckets_a: list[str]
+    buckets_b: list[str]
+    cells: list[InteractionCell]
+    total_signals: int
+    overall_win_rate: float
+
+
 class RegimeWindowStats(BaseModel):
     """Win-rate stats for one 30-signal window."""
 

@@ -26,7 +26,8 @@ from analytics.candle_cache import (
 )
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
-from analytics.schemas import RegimeResponse, SummaryResponse, UnivariateReportResponse
+from analytics.schemas import InteractionResponse, RegimeResponse, SummaryResponse, UnivariateReportResponse
+from analytics.stats.interaction import build_interaction_grid
 from analytics.stats.regime import compute_regime
 from analytics.stats.report import build_summary, build_univariate_report
 from api.auth import get_current_user
@@ -214,3 +215,42 @@ def get_regime(
     )
     result = compute_regime(signals)
     return RegimeResponse(strategy=strategy, symbol=symbol, **result)
+
+
+@router.get("/interaction", response_model=InteractionResponse)
+def get_interaction(
+    _user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    cache: Annotated[CandleCache, Depends(get_app_cache)],
+    strategy: str = Query(..., description="Strategy slug (required)"),
+    param_a: str = Query(..., description="First parameter name"),
+    param_b: str = Query(..., description="Second parameter name"),
+    symbol: str | None = Query(None, description="Filter by currency pair"),
+) -> InteractionResponse:
+    """Return 2D win-rate heatmap for a pair of analytics parameters."""
+    def_a = get_param_def(param_a)
+    def_b = get_param_def(param_b)
+    if def_a is None:
+        logger.warning("Unknown param_a requested: %s", param_a)
+        raise HTTPException(status_code=422, detail=f"Parameter '{param_a}' is not registered")
+    if def_b is None:
+        logger.warning("Unknown param_b requested: %s", param_b)
+        raise HTTPException(status_code=422, detail=f"Parameter '{param_b}' is not registered")
+
+    enriched = filter_by_symbol(get_enriched(strategy, db, cache), symbol)
+    buckets_a, buckets_b, cells = build_interaction_grid(
+        enriched, param_a, def_a.dtype, param_b, def_b.dtype,
+    )
+    total = len(enriched)
+    wins = sum(1 for s in enriched if s.get("resolution") == "TP_HIT")
+    overall_wr = (wins / total) if total > 0 else 0.0
+    return InteractionResponse(
+        strategy=strategy,
+        param_a=param_a,
+        param_b=param_b,
+        buckets_a=buckets_a,
+        buckets_b=buckets_b,
+        cells=cells,
+        total_signals=total,
+        overall_win_rate=overall_wr,
+    )
