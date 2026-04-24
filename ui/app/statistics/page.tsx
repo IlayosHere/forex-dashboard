@@ -1,6 +1,7 @@
 "use client";
 
 import { ContextBar } from "@/components/stats/ContextBar";
+import { RegimeBanner } from "@/components/stats/RegimeBanner";
 import { SectionHeader } from "@/components/stats/SectionHeader";
 import { OverviewKpiStrip } from "@/components/stats/OverviewKpiStrip";
 import { IctAnalysisSection } from "@/components/stats/IctAnalysisSection";
@@ -32,6 +33,10 @@ export default function StatisticsPage() {
       <h1 className="text-lg font-semibold text-text-primary mb-4">Statistics</h1>
 
       <ContextBar ctx={ctx} accounts={accounts} />
+
+      {ctx.context.strategy && ctx.context.strategy !== "all" && (
+        <RegimeBanner strategy={ctx.context.strategy} />
+      )}
 
       {error && (
         <div className="mb-4 flex items-center gap-3 rounded border border-bear/30 bg-bear/10 px-4 py-3">

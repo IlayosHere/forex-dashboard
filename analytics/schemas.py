@@ -129,3 +129,33 @@ class SummaryResponse(BaseModel):
     top_correlations: list[CorrelationItem]
     partial: bool = False
     excluded_params: list[str] = []
+
+
+# ---------------------------------------------------------------------------
+# Regime detection responses
+# ---------------------------------------------------------------------------
+
+
+class RegimeWindowStats(BaseModel):
+    """Win-rate stats for one 30-signal window."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    n: int
+    win_rate: float
+    wins: int
+
+
+class RegimeResponse(BaseModel):
+    """Response for GET /api/analytics/regime."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    strategy: str
+    symbol: str | None
+    recent: RegimeWindowStats
+    prior: RegimeWindowStats
+    delta: float
+    z_score: float | None
+    status: str
+    sufficient_data: bool
