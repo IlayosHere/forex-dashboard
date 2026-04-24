@@ -1,14 +1,12 @@
 """
 tests/test_volume_params.py
 ---------------------------
-Unit tests for the tick-count volume parameters exposed by
-``analytics.params.volume``: ``relative_volume``,
-``volume_percentile``, and ``volume_regime``.
+Unit tests for ``analytics.params.volume.volume_regime``.
 
-Volume here is TradingView tick count (activity proxy), not traded lot
-volume — FX has no central exchange. These tests exercise both the
-happy paths and the graceful-degradation paths the analytics pipeline
-relies on when a pair/timeframe returns no volume column.
+The original ``relative_volume`` and ``volume_percentile`` params were removed
+in analytics phase 5. This file now covers ``volume_regime`` only.
+For the session-normalisation behaviour see
+``tests/test_analytics_volume_regime_v2.py``.
 """
 from __future__ import annotations
 
@@ -19,11 +17,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 
-from analytics.params.volume import (
-    relative_volume,
-    volume_percentile,
-    volume_regime,
-)
+from analytics.params.volume import volume_regime
 
 
 def _make_candles(
@@ -31,21 +25,9 @@ def _make_candles(
     base_price: float = 1.08,
     volume: float | list[float] | None = 100.0,
 ) -> pd.DataFrame:
-    """Build a deterministic M15 OHLC DataFrame with an optional volume column.
-
-    Parameters
-    ----------
-    n : int
-        Number of bars.
-    base_price : float
-        Starting price for the monotonically rising series.
-    volume : float | list[float] | None
-        - ``None``: omit the volume column entirely.
-        - ``float``: constant volume across every bar.
-        - ``list[float]``: explicit per-bar volume (must have length ``n``).
-    """
+    """Build a deterministic M15 OHLC DataFrame with an optional volume column."""
     idx = pd.date_range(
-        "2025-03-10 00:00", periods=n, freq="15min", tz="UTC",
+        "2025-03-10 14:00", periods=n, freq="15min", tz="UTC",
     )
     data: dict[str, list[float]] = {
         "open": [base_price + i * 0.0001 for i in range(n)],
@@ -75,7 +57,7 @@ def _signal(
 ) -> MagicMock:
     sig = MagicMock()
     sig.candle_time = candle_time or datetime(
-        2025, 3, 10, 6, 0, tzinfo=timezone.utc,
+        2025, 3, 10, 16, 0, tzinfo=timezone.utc,
     )
     sig.symbol = symbol
     sig.direction = direction
@@ -86,113 +68,34 @@ def _signal(
 
 
 # ---------------------------------------------------------------------------
-# relative_volume — happy paths
-# ---------------------------------------------------------------------------
-
-
-def test_relative_volume_equals_one_when_constant_volume() -> None:
-    df = _make_candles(n=60, volume=100.0)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    result = relative_volume(sig, df)
-    assert result is not None
-    assert result == 1.0
-
-
-def test_relative_volume_above_one_when_signal_bar_spikes() -> None:
-    vols = [100.0] * 60
-    vols[25] = 500.0
-    df = _make_candles(n=60, volume=vols)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    result = relative_volume(sig, df)
-    assert result is not None
-    assert result == 5.0
-
-
-def test_relative_volume_below_one_when_signal_bar_dips() -> None:
-    vols = [200.0] * 60
-    vols[25] = 50.0
-    df = _make_candles(n=60, volume=vols)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    result = relative_volume(sig, df)
-    assert result is not None
-    assert result == 0.25
-
-
-# ---------------------------------------------------------------------------
-# volume_percentile — happy paths
-# ---------------------------------------------------------------------------
-
-
-def test_volume_percentile_max_when_signal_bar_is_largest() -> None:
-    # 50-bar window ending at index 49; set bar 49 as the largest.
-    vols = [100.0] * 60
-    vols[49] = 500.0
-    df = _make_candles(n=60, volume=vols)
-    sig = _signal(candle_time=df.index[49].to_pydatetime())
-    result = volume_percentile(sig, df)
-    assert result is not None
-    assert result == 100.0
-
-
-def test_volume_percentile_min_when_signal_bar_is_smallest() -> None:
-    # 50-bar window ending at index 49; make bar 49 the strict minimum.
-    vols = [100.0] * 60
-    vols[49] = 10.0
-    df = _make_candles(n=60, volume=vols)
-    sig = _signal(candle_time=df.index[49].to_pydatetime())
-    result = volume_percentile(sig, df)
-    assert result is not None
-    assert result == 2.0
-
-
-# ---------------------------------------------------------------------------
 # volume_regime — bucket thresholds
 # ---------------------------------------------------------------------------
 
-
-def _regime_df_for_ratio(ratio: float) -> pd.DataFrame:
-    """Build a DataFrame where relative_volume at bar 25 equals ``ratio``."""
-    baseline = 100.0
-    bar_vol = baseline * ratio
-    vols = [baseline] * 60
-    vols[25] = bar_vol
-    return _make_candles(n=60, volume=vols)
-
-
 def test_volume_regime_low() -> None:
-    df = _regime_df_for_ratio(0.5)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
+    vols = [100.0] * 60
+    vols[59] = 50.0  # 0.5× mean → low
+    df = _make_candles(n=60, volume=vols)
+    sig = _signal(candle_time=df.index[59].to_pydatetime())
     assert volume_regime(sig, df) == "low"
 
 
 def test_volume_regime_normal() -> None:
-    df = _regime_df_for_ratio(1.0)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
+    df = _make_candles(n=60, volume=100.0)
+    sig = _signal(candle_time=df.index[59].to_pydatetime())
     assert volume_regime(sig, df) == "normal"
 
 
 def test_volume_regime_high() -> None:
-    df = _regime_df_for_ratio(2.0)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
+    vols = [100.0] * 60
+    vols[59] = 200.0  # 2.0× mean → high
+    df = _make_candles(n=60, volume=vols)
+    sig = _signal(candle_time=df.index[59].to_pydatetime())
     assert volume_regime(sig, df) == "high"
 
 
 # ---------------------------------------------------------------------------
-# Graceful degradation — must return None, never raise
+# Graceful degradation
 # ---------------------------------------------------------------------------
-
-
-def test_relative_volume_returns_none_when_column_missing() -> None:
-    df = _make_candles(n=60, volume=None)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    assert relative_volume(sig, df) is None
-
-
-def test_volume_percentile_returns_none_when_column_missing() -> None:
-    df = _make_candles(n=60, volume=None)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    assert volume_percentile(sig, df) is None
-
 
 def test_volume_regime_returns_none_when_column_missing() -> None:
     df = _make_candles(n=60, volume=None)
@@ -200,75 +103,14 @@ def test_volume_regime_returns_none_when_column_missing() -> None:
     assert volume_regime(sig, df) is None
 
 
-def test_volume_percentile_returns_none_with_insufficient_history() -> None:
-    df = _make_candles(n=30, volume=100.0)
-    sig = _signal(candle_time=df.index[29].to_pydatetime())
-    assert volume_percentile(sig, df) is None
-
-
-def test_relative_volume_returns_none_with_insufficient_history() -> None:
-    df = _make_candles(n=60, volume=100.0)
-    sig = _signal(candle_time=df.index[5].to_pydatetime())
-    assert relative_volume(sig, df) is None
-
-
 def test_volume_params_return_none_without_candles() -> None:
     sig = _signal()
-    assert relative_volume(sig, None) is None
-    assert volume_percentile(sig, None) is None
     assert volume_regime(sig, None) is None
 
 
-def test_volume_regime_returns_none_when_relative_volume_none() -> None:
-    df = _make_candles(n=60, volume=None)
-    sig = _signal(candle_time=df.index[25].to_pydatetime())
-    assert volume_regime(sig, df) is None
-
-
-def test_volume_params_return_none_when_bar_volume_is_nan() -> None:
+def test_volume_regime_returns_none_when_bar_volume_is_nan() -> None:
     vols = [100.0] * 60
     df = _make_candles(n=60, volume=vols)
-    df.loc[df.index[49], "volume"] = np.nan
-    sig = _signal(candle_time=df.index[49].to_pydatetime())
-    assert relative_volume(sig, df) is None
-    assert volume_percentile(sig, df) is None
+    df.loc[df.index[59], "volume"] = np.nan
+    sig = _signal(candle_time=df.index[59].to_pydatetime())
     assert volume_regime(sig, df) is None
-
-
-# ---------------------------------------------------------------------------
-# Boundary — exact guard conditions
-# ---------------------------------------------------------------------------
-
-
-def test_relative_volume_boundary_at_exactly_20_bars() -> None:
-    """Signal at index 19 with 20 bars total: guard is idx < 20, so idx==19 returns None."""
-    df = _make_candles(n=20, volume=100.0)
-    sig = _signal(candle_time=df.index[19].to_pydatetime())
-    assert relative_volume(sig, df) is None
-
-
-def test_volume_percentile_boundary_at_exactly_50_bars() -> None:
-    """Signal at index 49 with 50 bars total: window length == 50, so result is a float."""
-    df = _make_candles(n=50, volume=100.0)
-    sig = _signal(candle_time=df.index[49].to_pydatetime())
-    result = volume_percentile(sig, df)
-    assert result is not None
-    assert isinstance(result, float)
-
-
-# ---------------------------------------------------------------------------
-# NaN inside baseline window
-# ---------------------------------------------------------------------------
-
-
-def test_relative_volume_returns_none_when_nan_in_baseline() -> None:
-    """NaN inside the 20-bar baseline window must cause None.
-
-    Signal is at index 39.  Baseline window is iloc[19:39] (bars 19–38).
-    NaN is injected at positional index 25, which falls inside that window.
-    """
-    vols = [100.0] * 40
-    df = _make_candles(n=40, volume=vols)
-    df.loc[df.index[25], "volume"] = np.nan
-    sig = _signal(candle_time=df.index[39].to_pydatetime())
-    assert relative_volume(sig, df) is None
