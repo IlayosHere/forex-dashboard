@@ -56,6 +56,26 @@ export const PARAM_META_WHEN: Record<string, ParamMeta> = {
       NY_LATE_CLOSE: "NY Late/Close",
     },
   },
+  kill_zone: {
+    label: "Kill Zone",
+    category: "when",
+    description: "ICT kill zone at signal time (NY timezone)",
+    unit: null,
+    bucketMap: {
+      asian_kz: "Asian KZ",
+      london_kz: "London KZ",
+      ny_am_kz: "NY AM KZ",
+      ny_lunch: "NY Lunch",
+      ny_pm_kz: "NY PM KZ",
+      dead_zone: "Dead Zone",
+    },
+  },
+  resolution_candles_param: {
+    label: "Bars to Resolution",
+    category: "when",
+    description: "How many bars from signal to TP/SL hit — fast resolutions indicate cleaner setups",
+    unit: "candles",
+  },
 };
 
 export const PARAM_META_SETUP: Record<string, ParamMeta> = {
