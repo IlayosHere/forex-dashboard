@@ -47,22 +47,10 @@ export const PARAM_META_MOMENTUM: Record<string, ParamMeta> = {
     description: "Current ATR rank vs the last 20 values",
     unit: "%",
   },
-  relative_volume: {
-    label: "Relative Volume",
-    category: "momentum",
-    description: "Signal-bar tick count vs 20-bar mean — activity proxy, not traded volume",
-    unit: "x",
-  },
-  volume_percentile: {
-    label: "Volume Percentile (50b)",
-    category: "momentum",
-    description: "Signal-bar tick count rank within the last 50 bars",
-    unit: "%",
-  },
   volume_regime: {
     label: "Volume Regime",
     category: "momentum",
-    description: "Low / normal / high activity bucket from relative volume",
+    description: "Session-normalized volume: compares signal bar volume to bars in the same session window",
     unit: null,
     bucketMap: {
       low: "Low",
