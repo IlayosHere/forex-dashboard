@@ -1,5 +1,7 @@
 "use client";
 
+import { useSignalScore } from "@/lib/useSignalScore";
+
 import type { Signal } from "@/lib/types";
 
 interface SignalCardProps {
@@ -19,12 +21,35 @@ function formatTime(iso: string): string {
   }
 }
 
+function ScoreBadge({ score, maxPossible }: { score: number; maxPossible: number }) {
+  if (maxPossible === 0) return null;
+  const color =
+    score > 0 ? "text-bull" : score < 0 ? "text-bear" : "text-muted-foreground";
+  const sign = score > 0 ? "+" : "";
+  return (
+    <span className={`text-[10px] font-medium tabular-nums ${color}`}>
+      {sign}{score} / {maxPossible}
+    </span>
+  );
+}
+
 export function SignalCard({ signal, isSelected, onClick }: SignalCardProps) {
   const isBuy = signal.direction === "BUY";
+  const { data: scoreData, loading: scoreLoading, fetch: fetchScore } = useSignalScore(
+    signal.id,
+    signal.strategy,
+  );
+
+  function handleMouseEnter() {
+    if (!scoreData && !scoreLoading) {
+      fetchScore();
+    }
+  }
 
   return (
     <div
       onClick={onClick}
+      onMouseEnter={handleMouseEnter}
       data-interactive
       className={`cursor-pointer w-full px-3 py-2.5 border-l-2 ${
         isBuy ? "border-l-bull" : "border-l-bear"
@@ -47,6 +72,9 @@ export function SignalCard({ signal, isSelected, onClick }: SignalCardProps) {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {scoreData && scoreData.max_possible > 0 && (
+            <ScoreBadge score={scoreData.score} maxPossible={scoreData.max_possible} />
+          )}
           <span className="text-xs text-muted-foreground">{formatTime(signal.candle_time)}</span>
           {isSelected && (
             <span className="text-bull text-xs leading-none">●</span>
