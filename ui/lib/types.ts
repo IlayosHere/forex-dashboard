@@ -415,3 +415,38 @@ export interface Mistake {
   created_at: string;
 }
 
+// ---------------------------------------------------------------------------
+// Top Combinations
+// ---------------------------------------------------------------------------
+
+export interface TopCombination {
+  rank: number;
+  param_a: string;
+  bucket_a: string;
+  param_b: string;
+  bucket_b: string;
+  wins: number;
+  losses: number;
+  total: number;
+  win_rate: number;
+  edge: number;
+  direction: "positive" | "negative";
+  ci_lo_raw: number;
+  ci_hi_raw: number;
+  ci_lo_adjusted: number;
+  ci_hi_adjusted: number;
+  score: number;
+}
+
+export interface TopCombinationsResponse {
+  strategy: string;
+  symbol: string | null;
+  total_signals: number;
+  overall_win_rate: number;
+  confirmed_param_count: number;
+  pairs_scanned: number;
+  cells_evaluated: number;
+  items: TopCombination[];
+  reason: string | null;
+}
+

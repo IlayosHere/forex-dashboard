@@ -169,6 +169,45 @@ class InteractionResponse(BaseModel):
     overall_win_rate: float
 
 
+class TopCombination(BaseModel):
+    """One ranked (param_a × bucket_a) ∧ (param_b × bucket_b) combination."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    rank: int
+    param_a: str
+    bucket_a: str
+    param_b: str
+    bucket_b: str
+    wins: int
+    losses: int
+    total: int
+    win_rate: float
+    edge: float
+    direction: str
+    ci_lo_raw: float
+    ci_hi_raw: float
+    ci_lo_adjusted: float
+    ci_hi_adjusted: float
+    score: float
+
+
+class TopCombinationsResponse(BaseModel):
+    """Response for GET /api/analytics/top-combinations."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    strategy: str
+    symbol: str | None = None
+    total_signals: int
+    overall_win_rate: float
+    confirmed_param_count: int
+    pairs_scanned: int
+    cells_evaluated: int
+    items: list[TopCombination]
+    reason: str | None = None
+
+
 class ScoreContributor(BaseModel):
     """Single parameter's contribution to the composite quality score."""
 

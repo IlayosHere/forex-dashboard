@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { InteractionHeatmap } from "@/components/stats/InteractionHeatmap";
+import { RankedCombinationsTable } from "@/components/stats/RankedCombinationsTable";
 
 import { fetchAnalyticsParameters } from "@/lib/analyticsApi";
 import { getParamLabel } from "@/lib/analyticsParamMeta";
@@ -120,7 +121,20 @@ export default function InteractionsPage() {
       )}
 
       {strategy && (
-        <InteractionHeatmap data={data} loading={loading} />
+        <>
+          <RankedCombinationsTable
+            strategy={strategy}
+            onSelect={(a, b) => { setParamA(a); setParamB(b); }}
+          />
+
+          <div className="my-6 flex items-center gap-3">
+            <hr className="flex-1 border-border/40" />
+            <span className="text-xs text-text-dim">Heatmap for selected pair</span>
+            <hr className="flex-1 border-border/40" />
+          </div>
+
+          <InteractionHeatmap data={data} loading={loading} />
+        </>
       )}
     </div>
   );

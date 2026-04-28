@@ -26,8 +26,17 @@ from analytics.candle_cache import (
 )
 from analytics.enrichment import enrich_batch, fetch_resolved
 from analytics.registry import get_param_def, get_params_for_strategy
-from analytics.schemas import InteractionResponse, RegimeResponse, ScoreResponse, SummaryResponse, UnivariateReportResponse
+from analytics.schemas import (
+    InteractionResponse,
+    RegimeResponse,
+    ScoreResponse,
+    SummaryResponse,
+    TopCombination,
+    TopCombinationsResponse,
+    UnivariateReportResponse,
+)
 from analytics.scoring import compute_score
+from analytics.stats.combinations import find_top_combinations
 from analytics.stats.interaction import build_interaction_grid
 from analytics.stats.regime import compute_regime
 from analytics.stats.report import build_summary, build_univariate_report
@@ -256,6 +265,58 @@ def get_interaction(
         total_signals=total,
         overall_win_rate=overall_wr,
     )
+
+
+@router.get("/top-combinations", response_model=TopCombinationsResponse)
+def get_top_combinations(
+    _user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    cache: Annotated[CandleCache, Depends(get_app_cache)],
+    strategy: str = Query(..., description="Strategy slug (required)"),
+    symbol: str | None = Query(None, description="Filter by currency pair"),
+    limit: int = Query(20, ge=1, le=50),
+    min_cell_n: int = Query(25, ge=15, le=100),
+) -> TopCombinationsResponse:
+    """Return ranked param-pair combinations with confirmed edge above baseline."""
+    enriched = filter_by_symbol(get_enriched(strategy, db, cache), symbol)
+    all_params = get_params_for_strategy(strategy)
+    param_defs = [{"name": p.name, "dtype": p.dtype} for p in all_params]
+    summary = build_summary(strategy, enriched, param_defs)
+
+    confirmed = [
+        {"name": row["param_name"], "dtype": _dtype_for(row["param_name"], param_defs)}
+        for row in summary.get("top_correlations", [])
+        if row.get("fdr_status") == "confirmed"
+    ]
+
+    wins = sum(1 for s in enriched if s.get("resolution") == "TP_HIT")
+    total = len(enriched)
+    overall_wr = wins / total if total > 0 else 0.0
+
+    result = find_top_combinations(
+        enriched, confirmed, overall_wr, limit=limit, min_cell_n=min_cell_n,
+    )
+
+    items = [TopCombination(**item) for item in result["items"]]
+    return TopCombinationsResponse(
+        strategy=strategy,
+        symbol=symbol,
+        total_signals=total,
+        overall_win_rate=overall_wr,
+        confirmed_param_count=len(confirmed),
+        pairs_scanned=result["pairs_scanned"],
+        cells_evaluated=result["cells_evaluated"],
+        items=items,
+        reason=result["reason"],
+    )
+
+
+def _dtype_for(param_name: str, param_defs: list[dict[str, str]]) -> str:
+    """Look up the dtype for a param by name from the param_defs list."""
+    for p in param_defs:
+        if p["name"] == param_name:
+            return p["dtype"]
+    return "str"
 
 
 @router.get("/score/{signal_id}", response_model=ScoreResponse)

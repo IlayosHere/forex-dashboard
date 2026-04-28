@@ -56,7 +56,7 @@ def win_rate_by_bucket(
         wins, losses = _count_outcomes(signals)
         total = wins + losses
         rate = wins / total if total > 0 else 0.0
-        ci_lo, ci_hi = _wilson_ci(wins, total)
+        ci_lo, ci_hi = wilson_ci(wins, total)
         results.append(BucketWinRate(
             bucket_label=label,
             wins=wins,
@@ -192,7 +192,7 @@ def point_biserial_test(
 # Private helpers
 # ---------------------------------------------------------------------------
 
-def _wilson_ci(
+def wilson_ci(
     wins: int,
     total: int,
     z: float = 1.96,

@@ -22,7 +22,7 @@ from analytics.stats.report import (
     build_univariate_report,
 )
 from analytics.stats.univariate import (
-    _wilson_ci,
+    wilson_ci,
     chi_squared_test,
     point_biserial_test,
     two_proportion_ci,
@@ -114,17 +114,17 @@ def test_filter_min_bucket_removes_small() -> None:
 
 
 def test_wilson_ci_known_values() -> None:
-    lo, hi = _wilson_ci(50, 100)
+    lo, hi = wilson_ci(50, 100)
     assert lo == pytest.approx(0.4, abs=0.05)
     assert hi == pytest.approx(0.6, abs=0.05)
 
 
 def test_wilson_ci_zero_total() -> None:
-    assert _wilson_ci(0, 0) == (0.0, 0.0)
+    assert wilson_ci(0, 0) == (0.0, 0.0)
 
 
 def test_wilson_ci_all_wins() -> None:
-    lo, hi = _wilson_ci(100, 100)
+    lo, hi = wilson_ci(100, 100)
     assert hi == pytest.approx(1.0, abs=0.05)
 
 
