@@ -100,6 +100,8 @@ def create_trade(
         ict_ifvg_timeframe=req.ict_ifvg_timeframe,
         ict_smt_present=req.ict_smt_present,
         ict_tdo_aligned=req.ict_tdo_aligned,
+        ict_htf_bias=req.ict_htf_bias,
+        fees=req.fees,
     )
     db.add(trade)
     db.commit()

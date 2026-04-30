@@ -4,7 +4,6 @@ import type { BreakdownEntry, TradeStats } from "@/lib/types";
 export type UnifiedTabKey =
   | "session"
   | "setup_type"
-  | "entry_model"
   | "htf_bias"
   | "tp_target"
   | "ifvg_timeframe"
@@ -33,7 +32,6 @@ export interface TabDef {
 export const ALL_TABS: TabDef[] = [
   { key: "session", label: "Session", requiresIct: false },
   { key: "setup_type", label: "Setup Type", requiresIct: true },
-  { key: "entry_model", label: "Entry Model", requiresIct: true },
   { key: "htf_bias", label: "HTF Bias", requiresIct: true },
   { key: "tp_target", label: "TP Target", requiresIct: true },
   { key: "ifvg_timeframe", label: "IFVG TF", requiresIct: true },
@@ -68,20 +66,10 @@ const HTF_BIAS_LABELS: Record<string, string> = {
   neutral: "Neutral",
 };
 
-const ENTRY_MODEL_LABELS: Record<string, string> = {
-  silver_bullet: "Silver Bullet",
-  cisd: "CISD",
-  bms: "BMS",
-  ote: "OTE",
-  turtle_soup: "Turtle Soup",
-  other: "Other",
-};
-
 const LABEL_MAPS: Partial<Record<UnifiedTabKey, Record<string, string>>> = {
   setup_type: SETUP_TYPE_LABELS,
   killzone: KILLZONE_LABELS,
   htf_bias: HTF_BIAS_LABELS,
-  entry_model: ENTRY_MODEL_LABELS,
 };
 
 export function toTitleCase(key: string): string {
@@ -152,7 +140,6 @@ function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
 
 function ictSource(tab: UnifiedTabKey, ict: IctStatsResponse): Record<string, IctBucketStats> {
   if (tab === "setup_type") return ict.by_setup_type;
-  if (tab === "entry_model") return ict.by_entry_model;
   if (tab === "htf_bias") return ict.by_htf_bias;
   if (tab === "tp_target") return ict.by_tp_target;
   if (tab === "ifvg_timeframe") return ict.by_ifvg_timeframe;

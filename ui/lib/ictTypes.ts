@@ -37,8 +37,6 @@ export interface IctStatsResponse {
   by_ifvg_timeframe: Record<string, IctBucketStats>;
   by_mnq_session: Record<string, IctBucketStats>;
   by_htf_bias: Record<string, IctBucketStats>;
-  by_entry_model: Record<string, IctBucketStats>;
-  by_pd_array: Record<string, IctBucketStats>;
   by_killzone: Record<string, IctBucketStats>;
   boolean_flags: Record<string, IctBooleanComparison>;
   combo_matrix: IctComboEntry[];

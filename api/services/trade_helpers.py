@@ -148,6 +148,8 @@ def trade_to_response(
         "ict_ifvg_timeframe": trade.ict_ifvg_timeframe,
         "ict_smt_present": trade.ict_smt_present,
         "ict_tdo_aligned": trade.ict_tdo_aligned,
+        "ict_htf_bias": trade.ict_htf_bias,
+        "fees": trade.fees,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }

@@ -36,8 +36,7 @@ export interface TradeFormData {
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;
-  ict_entry_model: string | null;
-  ict_pd_array: string | null;
+  fees: string;
 }
 
 interface TradeFormProps {
@@ -96,8 +95,6 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         ict_smt_present: null,
         ict_tdo_aligned: null,
         ict_htf_bias: null,
-        ict_entry_model: null,
-        ict_pd_array: null,
       }));
     }
   }, [isFutures]);

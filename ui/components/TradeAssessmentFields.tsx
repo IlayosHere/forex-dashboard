@@ -44,14 +44,28 @@ export function TradeAssessmentFields({ form, onChange }: TradeAssessmentFieldsP
         />
       </div>
 
-      <div className="space-y-1">
-        <label className="label">Screenshot URL</label>
-        <Input
-          value={form.screenshot_url}
-          onChange={(e) => onChange("screenshot_url", e.target.value)}
-          placeholder="https://..."
-          className={INPUT_CLASS}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="label">Broker Fees (USD)</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.fees}
+            onChange={(e) => onChange("fees", e.target.value)}
+            placeholder="e.g. 2.40"
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="label">Screenshot URL</label>
+          <Input
+            value={form.screenshot_url}
+            onChange={(e) => onChange("screenshot_url", e.target.value)}
+            placeholder="https://..."
+            className={INPUT_CLASS}
+          />
+        </div>
       </div>
     </fieldset>
   );

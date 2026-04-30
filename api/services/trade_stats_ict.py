@@ -167,8 +167,6 @@ def compute_ict_stats(trades: list[TradeModel]) -> dict[str, Any]:
         "by_ifvg_timeframe": aggregate_by_ict_field(mnq, "ict_ifvg_timeframe"),
         "by_mnq_session":    aggregate_by_mnq_session(mnq),
         "by_htf_bias":       aggregate_by_ict_field(mnq, "ict_htf_bias"),
-        "by_entry_model":    aggregate_by_ict_field(mnq, "ict_entry_model"),
-        "by_pd_array":       aggregate_by_ict_field(mnq, "ict_pd_array"),
         "by_killzone":       aggregate_by_killzone(mnq),
         "boolean_flags":     aggregate_boolean_flags(mnq),
         "combo_matrix":      build_combo_matrix(mnq),

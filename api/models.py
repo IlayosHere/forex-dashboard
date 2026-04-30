@@ -151,8 +151,7 @@ class TradeModel(Base):
     ict_smt_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_tdo_aligned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_htf_bias: Mapped[str | None] = mapped_column(String, nullable=True)    # aligned / counter / neutral
-    ict_entry_model: Mapped[str | None] = mapped_column(String, nullable=True)  # silver_bullet / cisd / bms / ote / turtle_soup
-    ict_pd_array: Mapped[str | None] = mapped_column(String, nullable=True)     # premium / discount / equilibrium
+    fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)
 
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)

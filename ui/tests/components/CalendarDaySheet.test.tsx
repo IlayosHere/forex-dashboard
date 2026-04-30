@@ -74,6 +74,8 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     ict_ifvg_timeframe: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_htf_bias: null,
+    fees: null,
     created_at: "2026-04-10T14:00:00Z",
     updated_at: "2026-04-10T14:00:00Z",
     ...overrides,

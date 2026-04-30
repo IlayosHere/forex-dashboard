@@ -14,10 +14,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from shared.ict_taxonomy import (
-    ENTRY_MODELS,
     HTF_BIAS_VALUES,
     IFVG_TIMEFRAMES,
-    PD_ARRAY_VALUES,
     SETUP_DETAIL_MAP,
     SETUP_TYPES,
     TP_TARGETS,
@@ -68,8 +66,7 @@ class TradeCreateRequest(BaseModel):
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
-    ict_entry_model: str | None = None
-    ict_pd_array: str | None = None
+    fees: float | None = Field(default=None, ge=0)
 
     @field_validator("direction")
     @classmethod
@@ -126,20 +123,6 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
         return v
 
-    @field_validator("ict_entry_model")
-    @classmethod
-    def validate_ict_entry_model(cls, v: str | None) -> str | None:
-        if v is not None and v not in ENTRY_MODELS:
-            raise ValueError(f"ict_entry_model must be one of {ENTRY_MODELS}")
-        return v
-
-    @field_validator("ict_pd_array")
-    @classmethod
-    def validate_ict_pd_array(cls, v: str | None) -> str | None:
-        if v is not None and v not in PD_ARRAY_VALUES:
-            raise ValueError(f"ict_pd_array must be one of {PD_ARRAY_VALUES}")
-        return v
-
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -176,8 +159,7 @@ class TradeUpdateRequest(BaseModel):
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
-    ict_entry_model: str | None = None
-    ict_pd_array: str | None = None
+    fees: float | None = Field(default=None, ge=0)
 
     @field_validator("direction")
     @classmethod
@@ -250,20 +232,6 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
         return v
 
-    @field_validator("ict_entry_model")
-    @classmethod
-    def validate_ict_entry_model(cls, v: str | None) -> str | None:
-        if v is not None and v not in ENTRY_MODELS:
-            raise ValueError(f"ict_entry_model must be one of {ENTRY_MODELS}")
-        return v
-
-    @field_validator("ict_pd_array")
-    @classmethod
-    def validate_ict_pd_array(cls, v: str | None) -> str | None:
-        if v is not None and v not in PD_ARRAY_VALUES:
-            raise ValueError(f"ict_pd_array must be one of {PD_ARRAY_VALUES}")
-        return v
-
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -311,8 +279,7 @@ class TradeResponse(BaseModel):
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
-    ict_entry_model: str | None = None
-    ict_pd_array: str | None = None
+    fees: float | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -8,11 +8,13 @@ interface TradeAssessmentPanelProps {
   tags: string[];
   notes: string;
   screenshotUrl: string;
+  fees: string;
   onRatingChange: (v: number | null) => void;
   onConfidenceChange: (v: number | null) => void;
   onTagsChange: (v: string[]) => void;
   onNotesChange: (v: string) => void;
   onScreenshotUrlChange: (v: string) => void;
+  onFeesChange: (v: string) => void;
 }
 
 const INPUT_CLASS =
@@ -24,11 +26,13 @@ export function TradeAssessmentPanel({
   tags,
   notes,
   screenshotUrl,
+  fees,
   onRatingChange,
   onConfidenceChange,
   onTagsChange,
   onNotesChange,
   onScreenshotUrlChange,
+  onFeesChange,
 }: TradeAssessmentPanelProps) {
   return (
     <div className="border border-border rounded p-4 space-y-4 bg-card">
@@ -61,14 +65,28 @@ export function TradeAssessmentPanel({
         />
       </div>
 
-      <div className="space-y-1">
-        <label className="label">Screenshot URL</label>
-        <Input
-          value={screenshotUrl}
-          onChange={(e) => onScreenshotUrlChange(e.target.value)}
-          placeholder="https://..."
-          className={INPUT_CLASS}
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label className="label">Broker Fees (USD)</label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={fees}
+            onChange={(e) => onFeesChange(e.target.value)}
+            placeholder="e.g. 2.40"
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="label">Screenshot URL</label>
+          <Input
+            value={screenshotUrl}
+            onChange={(e) => onScreenshotUrlChange(e.target.value)}
+            placeholder="https://..."
+            className={INPUT_CLASS}
+          />
+        </div>
       </div>
     </div>
   );
