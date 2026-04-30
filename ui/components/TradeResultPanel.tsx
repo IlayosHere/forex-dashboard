@@ -34,6 +34,12 @@ export function TradeResultPanel({ trade, unitLabel }: TradeResultPanelProps) {
             {trade.rr_achieved != null ? `1 : ${trade.rr_achieved.toFixed(2)}` : "\u2014"}
           </span>
         </div>
+        {trade.fees != null && (
+          <div className="flex justify-between">
+            <span className="label">Broker Fees</span>
+            <span className="price text-text-muted">-${trade.fees.toFixed(2)}</span>
+          </div>
+        )}
       </div>
     </div>
   );

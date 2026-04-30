@@ -96,8 +96,7 @@ export interface TradeCreateRequest {
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
-  ict_entry_model?: string | null;
-  ict_pd_array?: string | null;
+  fees?: number | null;
 }
 
 export interface TradeUpdateRequest {
@@ -126,8 +125,7 @@ export interface TradeUpdateRequest {
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
-  ict_entry_model?: string | null;
-  ict_pd_array?: string | null;
+  fees?: number | null;
 }
 
 export interface Trade {
@@ -165,8 +163,7 @@ export interface Trade {
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;
-  ict_entry_model: string | null;
-  ict_pd_array: string | null;
+  fees: number | null;
   created_at: string;
   updated_at: string;
 }

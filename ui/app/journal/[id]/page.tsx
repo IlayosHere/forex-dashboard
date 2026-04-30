@@ -25,6 +25,7 @@ import { formatDateTime } from "@/lib/dates";
 
 interface EditableFields {
   exitPrice: string;
+  fees: string;
   tags: string[];
   notes: string;
   rating: number | null;
@@ -39,6 +40,7 @@ type EditAction =
 
 const INITIAL_EDITABLE: EditableFields = {
   exitPrice: "",
+  fees: "",
   tags: [],
   notes: "",
   rating: null,
@@ -92,6 +94,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           type: "LOAD",
           payload: {
             exitPrice: t.exit_price != null ? String(t.exit_price) : "",
+            fees: t.fees != null ? String(t.fees) : "",
             tags: t.tags,
             notes: t.notes,
             rating: t.rating,
@@ -152,6 +155,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         rating: editable.rating,
         confidence: editable.confidence,
         screenshot_url: editable.screenshotUrl || null,
+        fees: editable.fees ? parseFloat(editable.fees) : null,
       });
       setTrade(t);
     } catch (e) {
@@ -246,11 +250,13 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           tags={editable.tags}
           notes={editable.notes}
           screenshotUrl={editable.screenshotUrl}
+          fees={editable.fees}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
           onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
           onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
           onNotesChange={(v) => dispatch({ type: "SET_FIELD", field: "notes", value: v })}
           onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
+          onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
         />
 
         {/* Save assessment */}

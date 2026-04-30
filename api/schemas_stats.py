@@ -71,8 +71,6 @@ class IctStatsResponse(BaseModel):
     by_ifvg_timeframe: dict[str, IctBucketStats]
     by_mnq_session: dict[str, IctBucketStats]
     by_htf_bias: dict[str, IctBucketStats]
-    by_entry_model: dict[str, IctBucketStats]
-    by_pd_array: dict[str, IctBucketStats]
     by_killzone: dict[str, IctBucketStats]
     boolean_flags: dict[str, IctBooleanComparison]
     combo_matrix: list[IctComboEntry]
