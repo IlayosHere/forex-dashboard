@@ -39,3 +39,4 @@ When deploying a new version to the live system:
 | 002 | `002_ict_fields.sql` | Adds 6 ICT columns to `trades` table for MNQ journaling | 2026-04-13 |
 | 003 | `003_create_ilay_user.sql` | Seeds user `Ilay` and reassigns all trades/accounts to them | 2026-04-18 |
 | 004 | `004_ict_extended_fields.sql` | Adds `ict_htf_bias`, `ict_entry_model`, `ict_pd_array` to `trades` table | 2026-04-24 |
+| 005 | `005_mnq_remove_entry_fields_add_fees.sql` | Adds `fees` column to `trades` table (entry model/pd_array dropped from app, not DB) | 2026-04-30 |

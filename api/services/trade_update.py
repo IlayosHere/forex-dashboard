@@ -89,6 +89,8 @@ def recalculate_pnl_on_close(trade: TradeModel, user_sent_outcome: bool, trade_i
         lot_size=trade.lot_size, risk_pips=trade.risk_pips,
         instrument_type=trade.instrument_type,
     ))
+    if trade.fees:
+        pnl_usd = round(pnl_usd - trade.fees, 2)
     trade.pnl_pips = pnl_pips
     trade.pnl_usd = pnl_usd
     trade.rr_achieved = rr
