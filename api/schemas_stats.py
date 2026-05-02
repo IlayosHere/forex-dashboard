@@ -125,6 +125,7 @@ class TradeStatsResponse(BaseModel):
     by_session: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_confidence: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_rating: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_rule_compliance: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
 
 class DailySummaryPoint(BaseModel):
@@ -139,3 +140,5 @@ class DailySummaryPoint(BaseModel):
     breakevens: int
     pnl_usd: float
     pnl_pips: float
+    compliant: int = 0
+    mistakes: int = 0

@@ -31,6 +31,7 @@ const emptyFilters: TradeFilterValues = {
   symbol: "",
   status: "",
   outcome: "",
+  rule_followed: "",
   from: "",
   to: "",
 };
@@ -82,6 +83,9 @@ export default function JournalPage() {
     if (filters.symbol) f.symbol = filters.symbol;
     if (filters.status) f.status = filters.status;
     if (filters.outcome) f.outcome = filters.outcome;
+    if (filters.rule_followed === "true") f.rule_followed = "true";
+    else if (filters.rule_followed === "false") f.rule_followed = "false";
+    else if (filters.rule_followed === "null") f.rule_followed = "null";
     if (filters.from) f.from = filters.from;
     if (filters.to) f.to = filters.to;
     return f;

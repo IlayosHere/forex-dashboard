@@ -69,6 +69,18 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
           />
         )}
         <StatusBadge status={trade.status} outcome={trade.outcome} />
+        {trade.rule_followed === true && (
+          <span className="text-bull text-xs font-bold" aria-label="Rules followed">
+            ✓
+          </span>
+        )}
+        {trade.rule_followed === false && (
+          <span className="text-bear text-xs font-bold" aria-label="Rules not followed">
+            {(trade.linked_mistakes?.length ?? 0) > 1
+              ? `✗ ${trade.linked_mistakes?.length}`
+              : "✗"}
+          </span>
+        )}
         {trade.tags.map((tag) => (
           <span
             key={tag}

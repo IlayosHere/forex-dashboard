@@ -14,7 +14,7 @@ from typing import Any
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from api.models import AccountModel, TradeModel
+from api.models import AccountModel, MistakeModel, TradeMistakeModel, TradeModel
 from api.services.trade_filters import StatsFilterParams, TradeFilterParams
 from shared.calculator import pip_size, pip_value_per_lot
 
@@ -79,6 +79,9 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
         stmt = stmt.where(TradeModel.outcome == filters.outcome)
     if filters.instrument_type is not None:
         stmt = stmt.where(TradeModel.instrument_type == filters.instrument_type)
+    rule_followed = getattr(filters, "rule_followed", None)
+    if rule_followed is not None:
+        stmt = stmt.where(TradeModel.rule_followed == rule_followed)
     if filters.account_id is not None:
         stmt = stmt.where(TradeModel.account_id == filters.account_id)
     if filters.date_from is not None:
@@ -96,6 +99,22 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
     return stmt
 
 
+def fetch_linked_mistakes(
+    db: Session, trade_id: str,
+) -> list[dict[str, str]]:
+    """Return list of {id, name} dicts for all mistakes linked to a trade."""
+    rows = list(db.scalars(
+        select(TradeMistakeModel).where(TradeMistakeModel.trade_id == trade_id),
+    ).all())
+    if not rows:
+        return []
+    mistake_ids = [r.mistake_id for r in rows]
+    mistakes = list(db.scalars(
+        select(MistakeModel).where(MistakeModel.id.in_(mistake_ids)),
+    ).all())
+    return [{"id": m.id, "name": m.name} for m in mistakes]
+
+
 def build_account_lookup(
     db: Session, trades: list[TradeModel],
 ) -> dict[str, AccountModel]:
@@ -110,10 +129,13 @@ def build_account_lookup(
 
 
 def trade_to_response(
-    trade: TradeModel, account_lookup: dict[str, AccountModel],
+    trade: TradeModel,
+    account_lookup: dict[str, AccountModel],
+    db: Session | None = None,
 ) -> dict[str, Any]:
     """Convert TradeModel to a dict for TradeResponse serialization."""
     account = account_lookup.get(trade.account_id) if trade.account_id else None
+    linked_mistakes = fetch_linked_mistakes(db, trade.id) if db is not None else []
     return {
         "id": trade.id,
         "signal_id": trade.signal_id,
@@ -140,6 +162,8 @@ def trade_to_response(
         "notes": trade.notes,
         "rating": trade.rating,
         "confidence": trade.confidence,
+        "rule_followed": trade.rule_followed,
+        "linked_mistakes": linked_mistakes,
         "screenshot_url": trade.screenshot_url,
         "trade_metadata": trade.trade_metadata,
         "ict_setup_type": trade.ict_setup_type,

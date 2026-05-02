@@ -50,6 +50,7 @@ from api.services.trade_stats import (
 from api.services.trade_stats_extended import (
     aggregate_by_assessment,
     aggregate_by_day_of_week,
+    aggregate_by_rule_compliance,
     aggregate_by_session,
     calculate_edge_metrics,
 )
@@ -107,7 +108,7 @@ def create_trade(
     db.commit()
     db.refresh(trade)
     logger.info("Trade created: %s %s %s", trade.id, trade.symbol, trade.direction)
-    return trade_to_response(trade, build_account_lookup(db, [trade]))
+    return trade_to_response(trade, build_account_lookup(db, [trade]), db)
 
 
 @router.get("/trades", response_model=list[TradeResponse])
@@ -127,7 +128,7 @@ def list_trades(
     stmt = stmt.offset(offset).limit(limit)
     trades = list(db.scalars(stmt).all())
     lookup = build_account_lookup(db, trades)
-    return [trade_to_response(t, lookup) for t in trades]
+    return [trade_to_response(t, lookup, db) for t in trades]
 
 
 @router.get("/trades/stats", response_model=TradeStatsResponse)
@@ -155,6 +156,7 @@ def trade_stats(
     metrics["by_session"] = aggregate_by_session(closed)
     metrics["by_confidence"] = aggregate_by_assessment(closed, "confidence")
     metrics["by_rating"] = aggregate_by_assessment(closed, "rating")
+    metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     return metrics
 
 
@@ -169,7 +171,7 @@ def get_trade(
     if trade is None or trade.owner != current_user:
         logger.warning("Trade not found: %s", trade_id)
         raise HTTPException(status_code=404, detail="Trade not found")
-    return trade_to_response(trade, build_account_lookup(db, [trade]))
+    return trade_to_response(trade, build_account_lookup(db, [trade]), db)
 
 
 @router.put("/trades/{trade_id}", response_model=TradeResponse)
@@ -194,7 +196,7 @@ def update_trade(
     trade.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(trade)
-    return trade_to_response(trade, build_account_lookup(db, [trade]))
+    return trade_to_response(trade, build_account_lookup(db, [trade]), db)
 
 
 @router.delete("/trades/{trade_id}", status_code=204)

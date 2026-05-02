@@ -10,6 +10,7 @@ export interface TradeFilterValues {
   symbol: string;
   status: string;
   outcome: string;
+  rule_followed: string;
   from: string;
   to: string;
 }
@@ -96,6 +97,17 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
         <option value="breakeven">Breakeven</option>
       </select>
 
+      <select
+        className={selectClass}
+        value={values.rule_followed}
+        onChange={(e) => set("rule_followed", e.target.value)}
+      >
+        <option value="">All</option>
+        <option value="true">Followed Rules</option>
+        <option value="false">Had Mistakes</option>
+        <option value="null">Not Reviewed</option>
+      </select>
+
       <input
         type="date"
         className={dateClass}
@@ -116,7 +128,7 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
           type="button"
           className="text-xs text-[#777777] hover:text-[#e0e0e0] cursor-pointer transition-colors"
           onClick={() =>
-            onChange({ account_id: "", strategy: "", symbol: "", status: "", outcome: "", from: "", to: "" })
+            onChange({ account_id: "", strategy: "", symbol: "", status: "", outcome: "", rule_followed: "", from: "", to: "" })
           }
         >
           Clear all

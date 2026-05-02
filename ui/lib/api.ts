@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -321,4 +321,24 @@ export async function incrementMistake(id: string): Promise<Mistake> {
 export async function deleteMistake(id: string): Promise<void> {
   const res = await authFetch(`${BASE_URL}/api/mistakes/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete mistake: ${res.status}`);
+}
+
+export async function linkMistake(
+  tradeId: string,
+  body: { mistake_id?: string; name?: string }
+): Promise<LinkedMistake[]> {
+  const res = await authFetch(`${BASE_URL}/api/trades/${tradeId}/mistakes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to link mistake: ${res.status}`);
+  return res.json() as Promise<LinkedMistake[]>;
+}
+
+export async function unlinkMistake(tradeId: string, mistakeId: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/trades/${tradeId}/mistakes/${mistakeId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Failed to unlink mistake: ${res.status}`);
 }

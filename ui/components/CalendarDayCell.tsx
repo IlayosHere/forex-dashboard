@@ -8,6 +8,7 @@ export interface CalendarDayCellProps {
   tradeCount: number;
   wins: number;
   losses: number;
+  mistakes?: number;
   isToday: boolean;
   isSelected: boolean;
   isCurrentMonth: boolean;
@@ -42,6 +43,7 @@ export function CalendarDayCell({
   tradeCount,
   wins,
   losses,
+  mistakes = 0,
   isToday,
   isSelected,
   isCurrentMonth,
@@ -99,6 +101,14 @@ export function CalendarDayCell({
         className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-md"
         style={{ backgroundColor: accentColor(pnl, tradeCount) }}
       />
+
+      {/* Mistake dot — shown when any trades had rule violations */}
+      {mistakes > 0 && (
+        <div
+          aria-label={`${mistakes} mistake trade${mistakes > 1 ? "s" : ""}`}
+          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500"
+        />
+      )}
 
       {/* Date number */}
       <div

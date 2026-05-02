@@ -13,6 +13,15 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+
+class LinkedMistake(BaseModel):
+    """A mistake vocabulary entry linked to a trade."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+
 from shared.ict_taxonomy import (
     HTF_BIAS_VALUES,
     IFVG_TIMEFRAMES,
@@ -148,6 +157,7 @@ class TradeUpdateRequest(BaseModel):
     notes: str | None = None
     rating: int | None = Field(default=None, ge=1, le=5)
     confidence: int | None = Field(default=None, ge=1, le=5)
+    rule_followed: bool | None = None
     screenshot_url: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -270,6 +280,8 @@ class TradeResponse(BaseModel):
     notes: str
     rating: int | None
     confidence: int | None
+    rule_followed: bool | None
+    linked_mistakes: list[LinkedMistake] = Field(default_factory=list)
     screenshot_url: str | None
     metadata: dict[str, Any] = Field(validation_alias="trade_metadata")
     ict_setup_type: str | None = None

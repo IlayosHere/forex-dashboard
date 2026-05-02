@@ -10,8 +10,9 @@ import { TradeInfoPanel } from "@/components/TradeInfoPanel";
 import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
+import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 
-import type { Trade, AccountType } from "@/lib/types";
+import type { Trade, AccountType, LinkedMistake } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
 
 import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
@@ -32,6 +33,8 @@ interface EditableFields {
   confidence: number | null;
   screenshotUrl: string;
   confirmDelete: boolean;
+  ruleFollowed: boolean | null;
+  linkedMistakes: LinkedMistake[];
 }
 
 type EditAction =
@@ -47,6 +50,8 @@ const INITIAL_EDITABLE: EditableFields = {
   confidence: null,
   screenshotUrl: "",
   confirmDelete: false,
+  ruleFollowed: null,
+  linkedMistakes: [],
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -100,6 +105,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             rating: t.rating,
             confidence: t.confidence,
             screenshotUrl: t.screenshot_url ?? "",
+            ruleFollowed: t.rule_followed,
+            linkedMistakes: t.linked_mistakes,
           },
         });
       })
@@ -156,6 +163,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         confidence: editable.confidence,
         screenshot_url: editable.screenshotUrl || null,
         fees: editable.fees ? parseFloat(editable.fees) : null,
+        rule_followed: editable.ruleFollowed,
       });
       setTrade(t);
     } catch (e) {
@@ -257,6 +265,15 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onNotesChange={(v) => dispatch({ type: "SET_FIELD", field: "notes", value: v })}
           onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
+        />
+
+        {/* Rule Compliance */}
+        <TradeCompliancePanel
+          tradeId={id}
+          ruleFollowed={editable.ruleFollowed}
+          linkedMistakes={editable.linkedMistakes}
+          onRuleFollowedChange={(v) => dispatch({ type: "SET_FIELD", field: "ruleFollowed", value: v })}
+          onMistakesChange={(v) => dispatch({ type: "SET_FIELD", field: "linkedMistakes", value: v })}
         />
 
         {/* Save assessment */}

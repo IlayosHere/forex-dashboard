@@ -141,6 +141,7 @@ class TradeModel(Base):
     notes: Mapped[str] = mapped_column(String, nullable=False, default="")
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
     confidence: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rule_followed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     screenshot_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # ICT trade params (MNQ only — nullable for all other strategies)
@@ -191,3 +192,17 @@ class MistakeModel(Base):
         Index("ix_mistakes_owner", "owner"),
         UniqueConstraint("owner", "name", name="uq_mistake_owner_name"),
     )
+
+
+class TradeMistakeModel(Base):
+    """Join table linking trades to mistakes (many-to-many)."""
+
+    __tablename__ = "trade_mistakes"
+
+    trade_id: Mapped[str] = mapped_column(
+        String, ForeignKey("trades.id", ondelete="CASCADE"), primary_key=True,
+    )
+    mistake_id: Mapped[str] = mapped_column(
+        String, ForeignKey("mistakes.id", ondelete="CASCADE"), primary_key=True,
+    )
+    linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

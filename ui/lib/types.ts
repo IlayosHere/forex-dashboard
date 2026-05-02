@@ -126,6 +126,7 @@ export interface TradeUpdateRequest {
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
+  rule_followed?: boolean | null;
 }
 
 export interface Trade {
@@ -164,6 +165,8 @@ export interface Trade {
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;
   fees: number | null;
+  rule_followed: boolean | null;
+  linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
 }
@@ -275,6 +278,8 @@ export interface DailySummaryPoint {
   breakevens: number;
   pnl_usd: number;
   pnl_pips: number;
+  compliant: number;
+  mistakes: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -410,6 +415,14 @@ export interface Mistake {
   count: number;
   last_occurred_at: string;
   created_at: string;
+}
+
+/** Alias used by the compliance API responses — same shape as Mistake. */
+export type MistakeResponse = Mistake;
+
+export interface LinkedMistake {
+  id: string;
+  name: string;
 }
 
 // ---------------------------------------------------------------------------

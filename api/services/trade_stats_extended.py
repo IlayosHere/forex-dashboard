@@ -92,6 +92,7 @@ def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
                 "date": d.isoformat(),
                 "trades": 0, "wins": 0, "losses": 0,
                 "breakevens": 0, "pnl_usd": 0.0, "pnl_pips": 0.0,
+                "compliant": 0, "mistakes": 0,
             }
         buckets[d]["trades"] += 1
         if t.outcome == "win":
@@ -102,6 +103,10 @@ def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
             buckets[d]["breakevens"] += 1
         buckets[d]["pnl_usd"] += t.pnl_usd or 0.0
         buckets[d]["pnl_pips"] += t.pnl_pips or 0.0
+        if t.rule_followed is True:
+            buckets[d]["compliant"] += 1
+        elif t.rule_followed is False:
+            buckets[d]["mistakes"] += 1
     for v in buckets.values():
         v["pnl_usd"] = round(v["pnl_usd"], 2)
         v["pnl_pips"] = round(v["pnl_pips"], 1)
@@ -192,6 +197,24 @@ def aggregate_by_assessment(
         return getattr(t, field, None)
     raw = _aggregate_dimension(closed, key_fn)
     return {str(k): {**v, "name": str(k)} for k, v in sorted(raw.items())}
+
+
+_RULE_BUCKET: dict[bool | None, str] = {
+    True: "compliant", False: "mistake", None: "unreviewed",
+}
+
+
+def aggregate_by_rule_compliance(closed: list[TradeModel]) -> dict[str, dict]:
+    """Group closed trades by rule_followed value.
+
+    Buckets: 'compliant' (True), 'mistake' (False), 'unreviewed' (None).
+    All trades are included — rule_followed=None maps to 'unreviewed'.
+    """
+    def key_fn(t: TradeModel) -> str:
+        return _RULE_BUCKET[t.rule_followed]
+
+    raw = _aggregate_dimension(closed, key_fn)
+    return {k: {**v, "name": k} for k, v in raw.items()}
 
 
 def _aggregate_dimension(

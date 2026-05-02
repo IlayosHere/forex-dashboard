@@ -22,6 +22,7 @@ class TradeFilterParams:
         outcome: str | None = Query(default=None),
         instrument_type: str | None = Query(default=None),
         account_id: str | None = Query(default=None),
+        rule_followed: bool | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
     ) -> None:
@@ -31,6 +32,7 @@ class TradeFilterParams:
         self.outcome = outcome
         self.instrument_type = instrument_type
         self.account_id = account_id
+        self.rule_followed = rule_followed
         self.date_from = date_from
         self.date_to = date_to
 

@@ -4,8 +4,24 @@ import type { TradeStats } from "@/lib/types";
 
 import { fmt } from "@/lib/format";
 
+interface ComplianceBucket {
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  total_pnl_usd: number;
+}
+
+interface TradeStatsWithCompliance extends TradeStats {
+  by_rule_compliance?: {
+    compliant?: ComplianceBucket;
+    mistake?: ComplianceBucket;
+    unreviewed?: ComplianceBucket;
+  };
+}
+
 interface StatsBarProps {
-  stats: TradeStats | null;
+  stats: TradeStatsWithCompliance | null;
   loading: boolean;
 }
 
@@ -55,7 +71,23 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
         title="Profit Factor"
         primary={s?.profit_factor != null ? fmt(s.profit_factor, 2) : "—"}
       />
+      <ComplianceStatCard stats={s} />
     </div>
+  );
+}
+
+function ComplianceStatCard({ stats }: { stats: TradeStatsWithCompliance | null }) {
+  const compliantTotal = stats?.by_rule_compliance?.compliant?.total ?? 0;
+  const mistakeTotal = stats?.by_rule_compliance?.mistake?.total ?? 0;
+  const reviewed = compliantTotal + mistakeTotal;
+  const complianceRate = reviewed > 0 ? Math.round((compliantTotal / reviewed) * 100) : null;
+
+  return (
+    <StatCard
+      title="Compliance"
+      primary={complianceRate !== null ? `${complianceRate}%` : "—"}
+      secondary={`${compliantTotal} ok / ${mistakeTotal} mistakes`}
+    />
   );
 }
 
