@@ -27,7 +27,7 @@ _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "instrument_type", "direction", "entry_price", "exit_price",
     "sl_price", "tp_price", "lot_size", "risk_pips", "status",
     "outcome", "open_time", "close_time", "tags", "notes", "rating",
-    "confidence", "screenshot_url", "metadata",
+    "confidence", "rule_followed", "screenshot_url", "metadata",
     "ict_setup_type", "ict_setup_detail", "ict_tp_target",
     "ict_ifvg_timeframe", "ict_smt_present", "ict_tdo_aligned",
     "ict_htf_bias", "fees",
@@ -94,7 +94,7 @@ def recalculate_pnl_on_close(trade: TradeModel, user_sent_outcome: bool, trade_i
     trade.pnl_pips = pnl_pips
     trade.pnl_usd = pnl_usd
     trade.rr_achieved = rr
-    if not user_sent_outcome:
+    if not user_sent_outcome and trade.outcome is None:
         trade.outcome, trade.status = infer_outcome(pnl_pips)
     if trade.close_time is None:
         trade.close_time = datetime.now(timezone.utc)
