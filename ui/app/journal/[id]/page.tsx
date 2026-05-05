@@ -156,7 +156,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const saveAssessment = async () => {
     setSaving(true);
     try {
-      const t = await updateTrade(id, {
+      await updateTrade(id, {
         tags: editable.tags,
         notes: editable.notes,
         rating: editable.rating,
@@ -165,7 +165,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         fees: editable.fees ? parseFloat(editable.fees) : null,
         rule_followed: editable.ruleFollowed,
       });
-      setTrade(t);
+      router.push(backUrl);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to save");
     } finally {

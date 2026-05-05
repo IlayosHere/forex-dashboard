@@ -47,6 +47,7 @@ where the trader can adjust SL/TP and instantly calculate lot size before execut
 | Deployment | Docker Compose + nginx | Self-hosted VPS |
 | Data feed | TradingView via tvDatafeed | PEPPERSTONE exchange, M15 |
 | Notifications | Discord webhook | Unchanged from existing code |
+| Local API port | **8070** | `http://localhost:8070` — use this for all smoke tests and curl commands |
 
 ---
 

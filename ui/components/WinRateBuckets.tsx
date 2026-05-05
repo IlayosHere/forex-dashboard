@@ -45,6 +45,9 @@ export function WinRateBuckets({ report, overallWinRate, loading }: WinRateBucke
   const pValue = testPValue(report);
   const bestBucketText = renderBestBucket(report);
 
+  const bucketTotal = report.buckets.reduce((sum, b) => sum + b.total, 0);
+  const hasCoverageGap = report.total_signals > 0 && bucketTotal < report.total_signals;
+
   return (
     <div className={`transition-opacity duration-150 ${loading ? "opacity-50" : ""}`}>
       {/* Overall baseline */}
@@ -53,6 +56,11 @@ export function WinRateBuckets({ report, overallWinRate, loading }: WinRateBucke
         <span className="text-sm font-bold tabular-nums text-text-primary">
           {overallPct.toFixed(1)}%
         </span>
+        {hasCoverageGap && (
+          <span className="text-xs text-text-dim ml-2" title={`${report.total_signals - bucketTotal} signals had no value for this parameter`}>
+            ({bucketTotal}/{report.total_signals} signals have this param)
+          </span>
+        )}
       </div>
 
       {/* Bucket rows */}

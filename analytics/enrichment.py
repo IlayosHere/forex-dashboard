@@ -30,8 +30,8 @@ from api.models import SignalModel
 
 logger = logging.getLogger(__name__)
 
-_MAX_LIMIT = 2000
-_DEFAULT_LIMIT = 2000
+_MAX_LIMIT = 10000
+_DEFAULT_LIMIT = 10000
 _DEFAULT_LOOKBACK_DAYS = 365
 
 _UNSET = object()  # three-state: unset → rolling default, None → no filter, datetime → explicit floor
