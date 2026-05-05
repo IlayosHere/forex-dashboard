@@ -89,7 +89,6 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingIct, setSavingIct] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const [ictParams, setIctParams] = useState<IctParamsState>({
@@ -165,27 +164,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const saveAssessment = async () => {
     setSaving(true);
     try {
-      await updateTrade(id, {
-        tags: editable.tags,
-        notes: editable.notes,
-        rating: editable.rating,
-        confidence: editable.confidence,
-        screenshot_url: editable.screenshotUrl || null,
-        fees: editable.fees ? parseFloat(editable.fees) : null,
-        rule_followed: editable.ruleFollowed,
-      });
-      router.push(backUrl);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveIctParams = async () => {
-    setSavingIct(true);
-    try {
-      const t = await updateTrade(id, {
+      const ictUpdate = instrumentType === "futures_mnq" ? {
         ict_setup_type: ictParams.ict_setup_type || null,
         ict_setup_detail: ictParams.ict_setup_detail || null,
         ict_tp_target: ictParams.ict_tp_target || null,
@@ -194,13 +173,22 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
         ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
         ict_htf_bias: ictParams.ict_htf_bias || null,
+      } : {};
+      await updateTrade(id, {
+        tags: editable.tags,
+        notes: editable.notes,
+        rating: editable.rating,
+        confidence: editable.confidence,
+        screenshot_url: editable.screenshotUrl || null,
+        fees: editable.fees ? parseFloat(editable.fees) : null,
+        rule_followed: editable.ruleFollowed,
+        ...ictUpdate,
       });
-      setTrade(t);
-      setIctParams(ictParamsFromTrade(t));
+      router.push(backUrl);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save ICT params");
+      alert(e instanceof Error ? e.message : "Failed to save");
     } finally {
-      setSavingIct(false);
+      setSaving(false);
     }
   };
 
@@ -275,9 +263,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         {instrumentType === "futures_mnq" && (
           <IctParamsPanel
             params={ictParams}
-            saving={savingIct}
             onChange={(key, value) => setIctParams((prev) => ({ ...prev, [key]: value }))}
-            onSave={saveIctParams}
           />
         )}
 

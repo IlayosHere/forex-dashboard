@@ -139,7 +139,11 @@ export async function updateTrade(id: string, body: TradeUpdateRequest): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Failed to update trade: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    const msg = detail?.detail ?? `HTTP ${res.status}`;
+    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
   return res.json() as Promise<Trade>;
 }
 

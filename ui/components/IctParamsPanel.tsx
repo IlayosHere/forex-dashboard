@@ -28,9 +28,7 @@ export function ictParamsFromTrade(trade: Trade): IctParamsState {
 
 interface IctParamsPanelProps {
   params: IctParamsState;
-  saving: boolean;
   onChange: <K extends keyof IctParamsState>(key: K, value: string) => void;
-  onSave: () => void;
 }
 
 const SELECT_CLASS =
@@ -109,7 +107,7 @@ const HTF_BIAS_OPTIONS = [
   { value: "neutral", label: "Neutral" },
 ];
 
-export function IctParamsPanel({ params, saving, onChange, onSave }: IctParamsPanelProps) {
+export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
   const setupDetailOptions = params.ict_setup_type
     ? SETUP_DETAIL_OPTIONS[params.ict_setup_type] ?? []
     : [];
@@ -212,13 +210,6 @@ export function IctParamsPanel({ params, saving, onChange, onSave }: IctParamsPa
         </div>
       </div>
 
-      <button
-        onClick={onSave}
-        disabled={saving}
-        className="w-full text-sm font-medium bg-bull/10 text-bull border border-bull/20 rounded px-4 py-1.5 hover:bg-bull/20 disabled:opacity-50 transition-colors cursor-pointer"
-      >
-        {saving ? "Saving..." : "Save ICT Params"}
-      </button>
     </div>
   );
 }
