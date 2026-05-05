@@ -11,9 +11,11 @@ import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
 import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
+import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
 
 import type { Trade, AccountType, LinkedMistake } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
+import type { IctParamsState } from "@/components/IctParamsPanel";
 
 import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { useAccounts } from "@/lib/useAccounts";
@@ -87,14 +89,21 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingIct, setSavingIct] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
+  const [ictParams, setIctParams] = useState<IctParamsState>({
+    ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
+    ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
+    ict_tdo_aligned: "", ict_htf_bias: "",
+  });
   const { accounts } = useAccounts();
 
   useEffect(() => {
     fetchTrade(id)
       .then((t) => {
         setTrade(t);
+        setIctParams(ictParamsFromTrade(t));
         dispatch({
           type: "LOAD",
           payload: {
@@ -173,6 +182,28 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
     }
   };
 
+  const saveIctParams = async () => {
+    setSavingIct(true);
+    try {
+      const t = await updateTrade(id, {
+        ict_setup_type: ictParams.ict_setup_type || null,
+        ict_setup_detail: ictParams.ict_setup_detail || null,
+        ict_tp_target: ictParams.ict_tp_target || null,
+        ict_ifvg_timeframe: ictParams.ict_ifvg_timeframe || null,
+        ict_ifvg_bars: ictParams.ict_ifvg_bars ? parseInt(ictParams.ict_ifvg_bars, 10) : null,
+        ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
+        ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
+        ict_htf_bias: ictParams.ict_htf_bias || null,
+      });
+      setTrade(t);
+      setIctParams(ictParamsFromTrade(t));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to save ICT params");
+    } finally {
+      setSavingIct(false);
+    }
+  };
+
   const saveEdit = async (fields: TradeEditFields) => {
     setSaving(true);
     try {
@@ -239,6 +270,16 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
 
         {/* Result */}
         <TradeResultPanel trade={trade} unitLabel={unitLabel} />
+
+        {/* ICT Params (MNQ only) */}
+        {instrumentType === "futures_mnq" && (
+          <IctParamsPanel
+            params={ictParams}
+            saving={savingIct}
+            onChange={(key, value) => setIctParams((prev) => ({ ...prev, [key]: value }))}
+            onSave={saveIctParams}
+          />
+        )}
 
         {/* Close Trade (open trades only) */}
         {isOpen && (
