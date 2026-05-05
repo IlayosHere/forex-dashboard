@@ -146,6 +146,46 @@ def build_combo_matrix(trades: list[TradeModel]) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
+# IFVG bars × timeframe matrix
+# ---------------------------------------------------------------------------
+
+_BARS_CAP = 10  # bars > this are bucketed as "10+"
+
+
+def _bars_label(bars: int) -> str:
+    return f"{bars}" if bars <= _BARS_CAP else "10+"
+
+
+def aggregate_ifvg_bars_matrix(trades: list[TradeModel]) -> list[dict[str, Any]]:
+    """Cross-tabulate ict_ifvg_bars × ict_ifvg_timeframe for MNQ trades.
+
+    Returns a flat list of rows — one per (bars_label, timeframe) cell that
+    has at least one trade. Frontend pivots this into the 2-D table.
+    """
+    Cell = tuple[str, str]
+    groups: dict[Cell, list[TradeModel]] = {}
+    for trade in trades:
+        if trade.ict_ifvg_bars is None or trade.ict_ifvg_timeframe is None:
+            continue
+        key: Cell = (_bars_label(trade.ict_ifvg_bars), trade.ict_ifvg_timeframe)
+        groups.setdefault(key, []).append(trade)
+
+    rows: list[dict[str, Any]] = []
+    for (bars_label, timeframe), group in groups.items():
+        s = _bucket_stats(group)
+        rows.append({
+            "bars_label": bars_label,
+            "timeframe": timeframe,
+            **s,
+        })
+    rows.sort(key=lambda r: (
+        int(r["bars_label"].rstrip("+")) if r["bars_label"] != "10+" else 11,
+        r["timeframe"],
+    ))
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # Top-level orchestrator
 # ---------------------------------------------------------------------------
 
@@ -162,12 +202,13 @@ def compute_ict_stats(trades: list[TradeModel]) -> dict[str, Any]:
         "wins": wins,
         "losses": losses,
         "win_rate": round(wins / decisive * 100.0, 1) if decisive > 0 else None,
-        "by_setup_type":     aggregate_by_ict_field(mnq, "ict_setup_type"),
-        "by_tp_target":      aggregate_by_ict_field(mnq, "ict_tp_target"),
-        "by_ifvg_timeframe": aggregate_by_ict_field(mnq, "ict_ifvg_timeframe"),
-        "by_mnq_session":    aggregate_by_mnq_session(mnq),
-        "by_htf_bias":       aggregate_by_ict_field(mnq, "ict_htf_bias"),
-        "by_killzone":       aggregate_by_killzone(mnq),
-        "boolean_flags":     aggregate_boolean_flags(mnq),
-        "combo_matrix":      build_combo_matrix(mnq),
+        "by_setup_type":      aggregate_by_ict_field(mnq, "ict_setup_type"),
+        "by_tp_target":       aggregate_by_ict_field(mnq, "ict_tp_target"),
+        "by_ifvg_timeframe":  aggregate_by_ict_field(mnq, "ict_ifvg_timeframe"),
+        "by_mnq_session":     aggregate_by_mnq_session(mnq),
+        "by_htf_bias":        aggregate_by_ict_field(mnq, "ict_htf_bias"),
+        "by_killzone":        aggregate_by_killzone(mnq),
+        "boolean_flags":      aggregate_boolean_flags(mnq),
+        "combo_matrix":       build_combo_matrix(mnq),
+        "ifvg_bars_matrix":   aggregate_ifvg_bars_matrix(mnq),
     }

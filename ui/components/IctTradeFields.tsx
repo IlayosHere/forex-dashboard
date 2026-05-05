@@ -157,20 +157,34 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
         <ErrMsg errors={errors} field="ict_tp_target" />
       </div>
 
-      {/* IFVG Timeframe */}
-      <div>
-        <label className={LABEL_CLASS}>IFVG Entry Timeframe *</label>
-        <select
-          className={`${SELECT_CLASS} ${errBorder(errors, "ict_ifvg_timeframe")}`}
-          value={form.ict_ifvg_timeframe ?? ""}
-          onChange={(e) => onChange("ict_ifvg_timeframe", e.target.value)}
-        >
-          <option value="">Select TF</option>
-          {IFVG_TF_OPTIONS.map((tf) => (
-            <option key={tf} value={tf}>{tf.toUpperCase()}</option>
-          ))}
-        </select>
-        <ErrMsg errors={errors} field="ict_ifvg_timeframe" />
+      {/* IFVG Timeframe + Bars to IFVG — side by side */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={LABEL_CLASS}>IFVG Entry Timeframe *</label>
+          <select
+            className={`${SELECT_CLASS} ${errBorder(errors, "ict_ifvg_timeframe")}`}
+            value={form.ict_ifvg_timeframe ?? ""}
+            onChange={(e) => onChange("ict_ifvg_timeframe", e.target.value)}
+          >
+            <option value="">Select TF</option>
+            {IFVG_TF_OPTIONS.map((tf) => (
+              <option key={tf} value={tf}>{tf.toUpperCase()}</option>
+            ))}
+          </select>
+          <ErrMsg errors={errors} field="ict_ifvg_timeframe" />
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>Bars to IFVG</label>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            placeholder="e.g. 2"
+            className={`bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+            value={form.ict_ifvg_bars ?? ""}
+            onChange={(e) => onChange("ict_ifvg_bars", e.target.value === "" ? null : Number(e.target.value))}
+          />
+        </div>
       </div>
 
       <IctExtendedFields form={form} onChange={onChange} />

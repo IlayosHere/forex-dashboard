@@ -99,6 +99,7 @@ def create_trade(
         ict_setup_detail=req.ict_setup_detail,
         ict_tp_target=req.ict_tp_target,
         ict_ifvg_timeframe=req.ict_ifvg_timeframe,
+        ict_ifvg_bars=req.ict_ifvg_bars,
         ict_smt_present=req.ict_smt_present,
         ict_tdo_aligned=req.ict_tdo_aligned,
         ict_htf_bias=req.ict_htf_bias,
