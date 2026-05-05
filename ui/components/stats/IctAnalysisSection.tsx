@@ -3,6 +3,7 @@
 import { IctBreakdowns } from "@/components/stats/IctBreakdowns";
 import { IctBooleanFlags } from "@/components/stats/IctBooleanFlags";
 import { IctComboMatrix } from "@/components/stats/IctComboMatrix";
+import { IctIfvgBarsMatrix } from "@/components/stats/IctIfvgBarsMatrix";
 
 import type { IctStatsResponse } from "@/lib/ictTypes";
 
@@ -18,6 +19,7 @@ export function IctAnalysisSection({ ictStats, loading }: IctAnalysisSectionProp
         ICT Analysis — MNQ Futures
       </p>
       <IctBreakdowns data={ictStats} loading={loading} />
+      <IctIfvgBarsMatrix rows={ictStats?.ifvg_bars_matrix ?? []} loading={loading} />
       <IctBooleanFlags booleanFlags={ictStats?.boolean_flags} loading={loading} />
       <IctComboMatrix comboMatrix={ictStats?.combo_matrix ?? []} loading={loading} />
     </div>

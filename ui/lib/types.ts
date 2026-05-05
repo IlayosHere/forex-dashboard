@@ -93,6 +93,7 @@ export interface TradeCreateRequest {
   ict_setup_detail?: string | null;
   ict_tp_target?: string | null;
   ict_ifvg_timeframe?: string | null;
+  ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
@@ -122,6 +123,7 @@ export interface TradeUpdateRequest {
   ict_setup_detail?: string | null;
   ict_tp_target?: string | null;
   ict_ifvg_timeframe?: string | null;
+  ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
@@ -161,6 +163,7 @@ export interface Trade {
   ict_setup_detail: IctSetupDetail | null;
   ict_tp_target: IctTpTarget | null;
   ict_ifvg_timeframe: IctIfvgTimeframe | null;
+  ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;

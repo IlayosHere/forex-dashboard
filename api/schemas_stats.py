@@ -57,6 +57,23 @@ class IctComboEntry(BaseModel):
     expectancy_r: float | None
 
 
+class IctIfvgBarsRow(BaseModel):
+    """Single cell in the bars-to-IFVG × timeframe matrix."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bars_label: str       # "1", "2", ..., "10", "10+"
+    timeframe: str        # ict_ifvg_timeframe value e.g. "1m", "3m"
+    total: int
+    wins: int
+    losses: int
+    win_rate: float | None
+    total_pnl_usd: float
+    avg_pnl_usd: float | None
+    avg_rr: float | None
+    expectancy_r: float | None
+
+
 class IctStatsResponse(BaseModel):
     """Full ICT statistics response for MNQ futures trades."""
 
@@ -74,6 +91,7 @@ class IctStatsResponse(BaseModel):
     by_killzone: dict[str, IctBucketStats]
     boolean_flags: dict[str, IctBooleanComparison]
     combo_matrix: list[IctComboEntry]
+    ifvg_bars_matrix: list[IctIfvgBarsRow] = Field(default_factory=list)
 
 
 class EquityCurvePoint(BaseModel):

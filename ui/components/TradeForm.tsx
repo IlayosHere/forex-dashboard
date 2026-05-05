@@ -33,6 +33,7 @@ export interface TradeFormData {
   ict_setup_detail: string;
   ict_tp_target: string;
   ict_ifvg_timeframe: string;
+  ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;
@@ -92,6 +93,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         ict_setup_detail: "",
         ict_tp_target: "",
         ict_ifvg_timeframe: "",
+        ict_ifvg_bars: null,
         ict_smt_present: null,
         ict_tdo_aligned: null,
         ict_htf_bias: null,

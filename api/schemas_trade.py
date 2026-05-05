@@ -72,6 +72,7 @@ class TradeCreateRequest(BaseModel):
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
     ict_ifvg_timeframe: str | None = None
+    ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
@@ -166,6 +167,7 @@ class TradeUpdateRequest(BaseModel):
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
     ict_ifvg_timeframe: str | None = None
+    ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
@@ -288,6 +290,7 @@ class TradeResponse(BaseModel):
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
     ict_ifvg_timeframe: str | None = None
+    ict_ifvg_bars: int | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None

@@ -27,6 +27,19 @@ export interface IctComboEntry {
   expectancy_r: number | null;
 }
 
+export interface IctIfvgBarsRow {
+  bars_label: string;    // "1", "2", ..., "10", "10+"
+  timeframe: string;     // "1m", "3m", etc.
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  total_pnl_usd: number;
+  avg_pnl_usd: number | null;
+  avg_rr: number | null;
+  expectancy_r: number | null;
+}
+
 export interface IctStatsResponse {
   total_trades: number;
   wins: number;
@@ -40,4 +53,5 @@ export interface IctStatsResponse {
   by_killzone: Record<string, IctBucketStats>;
   boolean_flags: Record<string, IctBooleanComparison>;
   combo_matrix: IctComboEntry[];
+  ifvg_bars_matrix: IctIfvgBarsRow[];
 }
