@@ -32,9 +32,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("enrich_backfill")
 
-from analytics.enrichment import ANALYTICS_PARAMS_KEY, enrich_with_candles  # noqa: E402
+import math  # noqa: E402
+
+from analytics.candle_cache import CandleCache, interval_for_strategy  # noqa: E402
+from analytics.enrichment import ANALYTICS_PARAMS_KEY, enrich_batch  # noqa: E402
 from api.db import Base, SessionLocal, engine  # noqa: E402
 from api.models import SignalModel  # noqa: E402
+from shared.market_data import get_candles  # noqa: E402
 from sqlalchemy import Text, cast, or_, select  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
@@ -86,6 +90,24 @@ def _query_candidates(
     return list(db.scalars(stmt).all())
 
 
+_INTERVAL_MINUTES: dict[str, int] = {
+    "fvg-impulse-5m": 5,
+}
+_FETCH_BUFFER_BARS = 50
+
+
+def _bars_needed(signals: list[SignalModel], strategy: str) -> int:
+    """Compute how many bars back we need to reach the oldest signal."""
+    interval_minutes = _INTERVAL_MINUTES.get(strategy, 15)
+    now = datetime.now(timezone.utc)
+    oldest = min(
+        s.candle_time if s.candle_time.tzinfo else s.candle_time.replace(tzinfo=timezone.utc)
+        for s in signals
+    )
+    elapsed_bars = math.ceil((now - oldest).total_seconds() / (interval_minutes * 60))
+    return elapsed_bars + _FETCH_BUFFER_BARS
+
+
 def _enrich_group(
     symbol: str,
     strategy: str,
@@ -97,10 +119,23 @@ def _enrich_group(
     """Enrich one (symbol, strategy) group and merge params into signal_metadata."""
     id_to_model: dict[str, SignalModel] = {s.id: s for s in signals}
 
+    interval = interval_for_strategy(strategy)
+    bar_count = _bars_needed(signals, strategy)
+    logger.info("Fetching %d bars for %s/%s", bar_count, symbol, strategy)
+
     try:
-        enriched = enrich_with_candles(signals)
+        df = get_candles(symbol, interval, count=bar_count)
+        if df is None:
+            raise ValueError("get_candles returned None")
+        # Build a cache pre-seeded with the full-history DataFrame so enrich_batch
+        # doesn't re-fetch with the default 480-bar window.
+        cache = CandleCache()
+        far_future = datetime(2099, 1, 1, tzinfo=timezone.utc)
+        from analytics.candle_cache import _CacheEntry  # noqa: PLC0415
+        cache._cache[(symbol, interval)] = _CacheEntry(df=df, expires_at=far_future)
+        enriched = enrich_batch(signals, candle_cache=cache)
     except Exception:
-        logger.exception("enrich_with_candles failed for %s/%s — skipping group", symbol, strategy)
+        logger.exception("Candle fetch/enrich failed for %s/%s — skipping group", symbol, strategy)
         report.no_candle_data += len(signals)
         return
 

@@ -115,6 +115,19 @@ def _enriched_rows(signals: list[SignalModel], params: dict[str, Any]) -> list[d
 # Test runner helper
 # ---------------------------------------------------------------------------
 
+import numpy as np
+import pandas as pd
+
+
+def _dummy_df() -> pd.DataFrame:
+    """Minimal OHLCV DataFrame to satisfy get_candles return value."""
+    idx = pd.date_range("2026-01-01", periods=5, freq="15min", tz="UTC")
+    return pd.DataFrame(
+        {"open": 1.1, "high": 1.11, "low": 1.09, "close": 1.1, "volume": 1.0},
+        index=idx,
+    )
+
+
 def _run(
     db: Session,
     signals: list[SignalModel],
@@ -133,14 +146,17 @@ def _run(
         db.add(sig)
     db.commit()
 
+    # The refactored script calls get_candles then enrich_batch.
+    # Mock get_candles to return a dummy df, mock enrich_batch for the result.
     enrich_mock = (
         enrich_side_effect
         if enrich_side_effect is not None
-        else (lambda _sigs: enriched_return)
+        else (lambda sigs, **_kw: enriched_return)
     )
 
     with (
-        patch("scripts.enrich_backfill.enrich_with_candles", side_effect=enrich_mock),
+        patch("scripts.enrich_backfill.get_candles", return_value=_dummy_df()),
+        patch("scripts.enrich_backfill.enrich_batch", side_effect=enrich_mock),
         patch("scripts.enrich_backfill.SessionLocal", return_value=db),
         patch.object(db, "close"),
     ):
@@ -226,7 +242,7 @@ def test_partial_params_written_and_counted(db: Session) -> None:
 def test_no_candle_data_enrich_returns_empty(db: Session) -> None:
     """enrich_with_candles returning [] → signal stays missing params, no_candle_data incremented."""
     sig = _make_signal()
-    report = _run(db, [sig], enriched_return=[], enrich_side_effect=lambda _: [])
+    report = _run(db, [sig], enriched_return=[], enrich_side_effect=lambda _sigs, **_kw: [])
 
     row = db.scalar(select(SignalModel).where(SignalModel.id == sig.id))
     assert ANALYTICS_PARAMS_KEY not in (row.signal_metadata or {})
@@ -238,7 +254,7 @@ def test_no_candle_data_enrich_raises(db: Session) -> None:
     """enrich_with_candles raising → signal stays missing params, no_candle_data incremented."""
     sig = _make_signal()
 
-    def _raise(_sigs: list[SignalModel]) -> list[dict[str, Any]]:
+    def _raise(_sigs: list[SignalModel], **_kw: Any) -> list[dict[str, Any]]:
         raise RuntimeError("candle fetch failed")
 
     report = _run(db, [sig], enriched_return=[], enrich_side_effect=_raise)
@@ -253,7 +269,7 @@ def test_strategy_filter(db: Session) -> None:
     target = _make_signal(strategy=STRATEGY)
     other = _make_signal(strategy=ALT_STRATEGY)
 
-    def _enrich(sigs: list[SignalModel]) -> list[dict[str, Any]]:
+    def _enrich(sigs: list[SignalModel], **_kw: Any) -> list[dict[str, Any]]:
         return _enriched_rows(sigs, GOOD_PARAMS)
 
     report = _run(
@@ -275,7 +291,7 @@ def test_from_to_date_filter(db: Session) -> None:
     inside = _make_signal(candle_time=BASE_TIME)
     outside = _make_signal(candle_time=BASE_TIME + timedelta(days=10))
 
-    def _enrich(sigs: list[SignalModel]) -> list[dict[str, Any]]:
+    def _enrich(sigs: list[SignalModel], **_kw: Any) -> list[dict[str, Any]]:
         return _enriched_rows(sigs, GOOD_PARAMS)
 
     to_boundary = BASE_TIME + timedelta(days=5)
@@ -310,7 +326,7 @@ def test_report_counts_accurate_mixed_run(db: Session) -> None:
     )
     no_data = _make_signal(strategy=ALT_STRATEGY, symbol=SYMBOL, candle_time=BASE_TIME + timedelta(hours=2))
 
-    def _enrich(sigs: list[SignalModel]) -> list[dict[str, Any]]:
+    def _enrich(sigs: list[SignalModel], **_kw: Any) -> list[dict[str, Any]]:
         if any(s.strategy == ALT_STRATEGY for s in sigs):
             return []
         return _enriched_rows(sigs, GOOD_PARAMS)
