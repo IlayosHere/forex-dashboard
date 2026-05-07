@@ -174,7 +174,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
         ict_htf_bias: ictParams.ict_htf_bias || null,
       } : {};
-      await updateTrade(id, {
+      const payload = {
         tags: editable.tags,
         notes: editable.notes,
         rating: editable.rating,
@@ -183,9 +183,13 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         fees: editable.fees ? parseFloat(editable.fees) : null,
         rule_followed: editable.ruleFollowed,
         ...ictUpdate,
-      });
+      };
+      console.log("[saveAssessment] payload:", JSON.stringify(payload));
+      const result = await updateTrade(id, payload);
+      console.log("[saveAssessment] response ict_setup_type:", result.ict_setup_type);
       router.push(backUrl);
     } catch (e) {
+      console.error("[saveAssessment] error:", e);
       alert(e instanceof Error ? e.message : "Failed to save");
     } finally {
       setSaving(false);
