@@ -78,6 +78,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     ict_htf_bias: null,
     fees: null,
     rule_followed: null,
+    criteria_met_at_entry: null,
     linked_mistakes: [],
     created_at: "2026-04-10T14:00:00Z",
     updated_at: "2026-04-10T14:00:00Z",

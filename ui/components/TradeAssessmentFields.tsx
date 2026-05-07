@@ -1,18 +1,26 @@
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
 
 import type { TradeFormData } from "./TradeForm";
 
+function checkedToBool(checked: boolean | "indeterminate"): boolean | null {
+  if (checked === true) return true;
+  if (checked === false) return false;
+  return null;
+}
+
 interface TradeAssessmentFieldsProps {
   form: TradeFormData;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
+  isBacktest?: boolean;
 }
 
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull price";
 
-export function TradeAssessmentFields({ form, onChange }: TradeAssessmentFieldsProps) {
+export function TradeAssessmentFields({ form, onChange, isBacktest = false }: TradeAssessmentFieldsProps) {
   return (
     <fieldset className="space-y-3">
       <legend className="label mb-2">Assessment</legend>
@@ -27,6 +35,19 @@ export function TradeAssessmentFields({ form, onChange }: TradeAssessmentFieldsP
           <StarRating value={form.rating} onChange={(v) => onChange("rating", v)} />
         </div>
       </div>
+
+      {isBacktest && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="criteria_met"
+            checked={form.criteria_met_at_entry === true}
+            onCheckedChange={(checked) => onChange("criteria_met_at_entry", checkedToBool(checked))}
+          />
+          <label htmlFor="criteria_met" className="label cursor-pointer select-none">
+            Setup criteria fully met at entry bar close
+          </label>
+        </div>
+      )}
 
       <div className="space-y-1">
         <label className="label">Tags</label>
@@ -45,18 +66,20 @@ export function TradeAssessmentFields({ form, onChange }: TradeAssessmentFieldsP
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="label">Broker Fees (USD)</label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.fees}
-            onChange={(e) => onChange("fees", e.target.value)}
-            placeholder="e.g. 2.40"
-            className={INPUT_CLASS}
-          />
-        </div>
+        {!isBacktest && (
+          <div className="space-y-1">
+            <label className="label">Broker Fees (USD)</label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.fees}
+              onChange={(e) => onChange("fees", e.target.value)}
+              placeholder="e.g. 2.40"
+              className={INPUT_CLASS}
+            />
+          </div>
+        )}
         <div className="space-y-1">
           <label className="label">Screenshot URL</label>
           <Input

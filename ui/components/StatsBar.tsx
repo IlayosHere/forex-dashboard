@@ -23,6 +23,7 @@ interface TradeStatsWithCompliance extends TradeStats {
 interface StatsBarProps {
   stats: TradeStatsWithCompliance | null;
   loading: boolean;
+  mode?: "default" | "backtest";
 }
 
 function pnlColorClass(v: number | null | undefined): string {
@@ -36,32 +37,58 @@ function streakText(streak: number): { text: string; colorClass: string } {
   return { text: `L${Math.abs(streak)}`, colorClass: "text-bear" };
 }
 
-export function StatsBar({ stats, loading }: StatsBarProps) {
+export function StatsBar({ stats, loading, mode = "default" }: StatsBarProps) {
   const dim = loading || !stats ? "opacity-50" : "";
   const s = stats;
   const streak = streakText(s?.current_streak ?? 0);
+  const isBacktest = mode === "backtest";
+
+  const winRateCard = (
+    <StatCard
+      title="Win Rate"
+      primary={s?.win_rate != null ? `${fmt(s.win_rate)}%` : "—"}
+      secondary={s ? `${s.wins}W ${s.losses}L` : "—"}
+    />
+  );
+  const avgRrCard = (
+    <StatCard
+      title="Avg R:R"
+      primary={s?.avg_rr != null ? fmt(s.avg_rr, 2) : "—"}
+    />
+  );
+  const pnlCard = (
+    <StatCard
+      title={isBacktest ? "P&L (notional)" : "P&L"}
+      primary={s ? `${s.total_pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(s.total_pnl_usd).toFixed(2)}` : "—"}
+      primaryColorClass={isBacktest ? "text-muted-foreground opacity-50" : pnlColorClass(s?.total_pnl_usd)}
+    />
+  );
 
   return (
     <div className={`flex gap-3 overflow-x-auto pb-1 ${dim}`}>
-      <StatCard
-        title="Win Rate"
-        primary={s?.win_rate != null ? `${fmt(s.win_rate)}%` : "—"}
-        secondary={s ? `${s.wins}W ${s.losses}L` : "—"}
-      />
-      <StatCard
-        title="Trades"
-        primary={s ? String(s.total_trades) : "—"}
-        secondary={s?.open_trades ? `${s.open_trades} open` : undefined}
-      />
-      <StatCard
-        title="P&L"
-        primary={s ? `${s.total_pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(s.total_pnl_usd).toFixed(2)}` : "—"}
-        primaryColorClass={pnlColorClass(s?.total_pnl_usd)}
-      />
-      <StatCard
-        title="Avg R:R"
-        primary={s?.avg_rr != null ? fmt(s.avg_rr, 2) : "—"}
-      />
+      {isBacktest ? (
+        <>
+          {winRateCard}
+          {avgRrCard}
+          <StatCard
+            title="Trades"
+            primary={s ? String(s.total_trades) : "—"}
+            secondary={s?.open_trades ? `${s.open_trades} open` : undefined}
+          />
+          {pnlCard}
+        </>
+      ) : (
+        <>
+          {winRateCard}
+          <StatCard
+            title="Trades"
+            primary={s ? String(s.total_trades) : "—"}
+            secondary={s?.open_trades ? `${s.open_trades} open` : undefined}
+          />
+          {pnlCard}
+          {avgRrCard}
+        </>
+      )}
       <StatCard
         title="Streak"
         primary={streak.text}

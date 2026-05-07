@@ -41,6 +41,7 @@ const SESSION_KEY = "journal_list_state";
 interface SavedListState {
   instrumentType: InstrumentType;
   filters: TradeFilterValues;
+  backtestMode: boolean;
   scrollY: number;
 }
 
@@ -67,6 +68,15 @@ export default function JournalPage() {
     return emptyFilters;
   });
 
+  const [backtestMode, setBacktestMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) return (JSON.parse(saved) as SavedListState).backtestMode ?? false;
+    } catch {}
+    return false;
+  });
+
   const { accounts } = useAccounts();
 
   // Filter accounts to the selected instrument type
@@ -88,8 +98,13 @@ export default function JournalPage() {
     else if (filters.rule_followed === "null") f.rule_followed = "null";
     if (filters.from) f.from = filters.from;
     if (filters.to) f.to = filters.to;
+    if (backtestMode) {
+      f.account_type = "backtest";
+    } else if (!filters.account_id) {
+      f.exclude_account_type = "backtest";
+    }
     return f;
-  }, [filters, instrumentType]);
+  }, [filters, instrumentType, backtestMode]);
 
   const { trades, loading, error } = useTrades(apiFilters);
   const { stats, loading: statsLoading } = useTradeStats(apiFilters);
@@ -136,6 +151,14 @@ export default function JournalPage() {
     return Array.from(set).sort();
   }, [trades]);
 
+  const isBacktestView = useMemo(() => {
+    if (backtestMode) return true;
+    if (filters.account_id) {
+      return accounts.find((a) => a.id === filters.account_id)?.account_type === "backtest";
+    }
+    return false;
+  }, [backtestMode, filters.account_id, accounts]);
+
   // Reset filters when switching instrument type
   const handleTabChange = (tab: InstrumentType) => {
     setInstrumentType(tab);
@@ -155,9 +178,30 @@ export default function JournalPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Journal</h1>
-        <Button onClick={() => router.push(newTradeUrl)}>
-          + New Trade
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex h-7 rounded border border-border bg-surface-input p-0.5 gap-0.5">
+            {(["Live", "Backtest"] as const).map((label) => {
+              const active = label === "Backtest" ? backtestMode : !backtestMode;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setBacktestMode(label === "Backtest")}
+                  className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
+                    active
+                      ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
+                      : "text-text-dim hover:text-text-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <Button onClick={() => router.push(newTradeUrl)}>
+            + New Trade
+          </Button>
+        </div>
       </div>
 
       {/* Journal tab nav */}
@@ -212,6 +256,7 @@ export default function JournalPage() {
       <StatsBar
         stats={stats}
         loading={statsLoading}
+        mode={isBacktestView ? "backtest" : "default"}
       />
 
       {/* Filters */}
@@ -253,7 +298,7 @@ export default function JournalPage() {
                 trade={trade}
                 onClick={() => {
                   try {
-                    const state: SavedListState = { instrumentType, filters, scrollY: window.scrollY };
+                    const state: SavedListState = { instrumentType, filters, backtestMode, scrollY: window.scrollY };
                     sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
                   } catch {}
                   router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`);

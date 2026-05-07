@@ -36,6 +36,7 @@ interface EditableFields {
   screenshotUrl: string;
   confirmDelete: boolean;
   ruleFollowed: boolean | null;
+  criteriaMetAtEntry: boolean | null;
   linkedMistakes: LinkedMistake[];
 }
 
@@ -53,6 +54,7 @@ const INITIAL_EDITABLE: EditableFields = {
   screenshotUrl: "",
   confirmDelete: false,
   ruleFollowed: null,
+  criteriaMetAtEntry: null,
   linkedMistakes: [],
 };
 
@@ -114,6 +116,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             confidence: t.confidence,
             screenshotUrl: t.screenshot_url ?? "",
             ruleFollowed: t.rule_followed,
+            criteriaMetAtEntry: t.criteria_met_at_entry,
             linkedMistakes: t.linked_mistakes,
           },
         });
@@ -182,14 +185,12 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         screenshot_url: editable.screenshotUrl || null,
         fees: editable.fees ? parseFloat(editable.fees) : null,
         rule_followed: editable.ruleFollowed,
+        criteria_met_at_entry: editable.criteriaMetAtEntry,
         ...ictUpdate,
       };
-      console.log("[saveAssessment] payload:", JSON.stringify(payload));
-      const result = await updateTrade(id, payload);
-      console.log("[saveAssessment] response ict_setup_type:", result.ict_setup_type);
+      await updateTrade(id, payload);
       router.push(backUrl);
     } catch (e) {
-      console.error("[saveAssessment] error:", e);
       alert(e instanceof Error ? e.message : "Failed to save");
     } finally {
       setSaving(false);
@@ -261,7 +262,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         />
 
         {/* Result */}
-        <TradeResultPanel trade={trade} unitLabel={unitLabel} />
+        <TradeResultPanel trade={trade} unitLabel={unitLabel} isBacktest={tradeAccountType === "backtest"} />
 
         {/* ICT Params (MNQ only) */}
         {instrumentType === "futures_mnq" && (
@@ -290,12 +291,15 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           notes={editable.notes}
           screenshotUrl={editable.screenshotUrl}
           fees={editable.fees}
+          isBacktest={tradeAccountType === "backtest"}
+          criteriaMetAtEntry={editable.criteriaMetAtEntry}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
           onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
           onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
           onNotesChange={(v) => dispatch({ type: "SET_FIELD", field: "notes", value: v })}
           onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
+          onCriteriaMetChange={(v) => dispatch({ type: "SET_FIELD", field: "criteriaMetAtEntry", value: v })}
         />
 
         {/* Rule Compliance */}

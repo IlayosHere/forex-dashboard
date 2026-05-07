@@ -84,6 +84,23 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
         stmt = stmt.where(TradeModel.rule_followed == rule_followed)
     if filters.account_id is not None:
         stmt = stmt.where(TradeModel.account_id == filters.account_id)
+    filter_acct_type = getattr(filters, "account_type", None)
+    if filter_acct_type is not None:
+        stmt = stmt.join(
+            AccountModel,
+            TradeModel.account_id == AccountModel.id,
+            isouter=True,
+        ).where(AccountModel.account_type == filter_acct_type)
+    exclude_acct_type = getattr(filters, "exclude_account_type", None)
+    if exclude_acct_type is not None:
+        stmt = stmt.join(
+            AccountModel,
+            TradeModel.account_id == AccountModel.id,
+            isouter=True,
+        ).where(
+            (AccountModel.account_type != exclude_acct_type)
+            | (AccountModel.id.is_(None)),
+        )
     if filters.date_from is not None:
         stmt = stmt.where(
             TradeModel.open_time >= datetime.combine(
@@ -175,6 +192,7 @@ def trade_to_response(
         "ict_tdo_aligned": trade.ict_tdo_aligned,
         "ict_htf_bias": trade.ict_htf_bias,
         "fees": trade.fees,
+        "criteria_met_at_entry": trade.criteria_met_at_entry,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }

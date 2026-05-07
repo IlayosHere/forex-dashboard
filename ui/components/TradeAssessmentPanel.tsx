@@ -1,6 +1,13 @@
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
+
+function checkedToBool(checked: boolean | "indeterminate"): boolean | null {
+  if (checked === true) return true;
+  if (checked === false) return false;
+  return null;
+}
 
 interface TradeAssessmentPanelProps {
   rating: number | null;
@@ -9,12 +16,15 @@ interface TradeAssessmentPanelProps {
   notes: string;
   screenshotUrl: string;
   fees: string;
+  isBacktest?: boolean;
+  criteriaMetAtEntry?: boolean | null;
   onRatingChange: (v: number | null) => void;
   onConfidenceChange: (v: number | null) => void;
   onTagsChange: (v: string[]) => void;
   onNotesChange: (v: string) => void;
   onScreenshotUrlChange: (v: string) => void;
   onFeesChange: (v: string) => void;
+  onCriteriaMetChange?: (v: boolean | null) => void;
 }
 
 const INPUT_CLASS =
@@ -27,12 +37,15 @@ export function TradeAssessmentPanel({
   notes,
   screenshotUrl,
   fees,
+  isBacktest = false,
+  criteriaMetAtEntry = null,
   onRatingChange,
   onConfidenceChange,
   onTagsChange,
   onNotesChange,
   onScreenshotUrlChange,
   onFeesChange,
+  onCriteriaMetChange,
 }: TradeAssessmentPanelProps) {
   return (
     <div className="border border-border rounded p-4 space-y-4 bg-card">
@@ -48,6 +61,19 @@ export function TradeAssessmentPanel({
           <StarRating value={confidence} onChange={onConfidenceChange} />
         </div>
       </div>
+
+      {isBacktest && onCriteriaMetChange && (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="criteria_met_panel"
+            checked={criteriaMetAtEntry === true}
+            onCheckedChange={(checked) => onCriteriaMetChange(checkedToBool(checked))}
+          />
+          <label htmlFor="criteria_met_panel" className="label cursor-pointer select-none">
+            Setup criteria fully met at entry bar close
+          </label>
+        </div>
+      )}
 
       <div className="space-y-1">
         <label className="label">Tags</label>
@@ -66,18 +92,20 @@ export function TradeAssessmentPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="label">Broker Fees (USD)</label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={fees}
-            onChange={(e) => onFeesChange(e.target.value)}
-            placeholder="e.g. 2.40"
-            className={INPUT_CLASS}
-          />
-        </div>
+        {!isBacktest && (
+          <div className="space-y-1">
+            <label className="label">Broker Fees (USD)</label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={fees}
+              onChange={(e) => onFeesChange(e.target.value)}
+              placeholder="e.g. 2.40"
+              className={INPUT_CLASS}
+            />
+          </div>
+        )}
         <div className="space-y-1">
           <label className="label">Screenshot URL</label>
           <Input

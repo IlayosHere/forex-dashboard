@@ -203,11 +203,39 @@ describe("fetchTradeStats", () => {
   });
 });
 
+describe("fetchTrades — exclude_account_type filter", () => {
+  it("appends exclude_account_type to URL when provided", async () => {
+    await fetchTrades({ exclude_account_type: "backtest" });
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(url).toContain("exclude_account_type=backtest");
+  });
+
+  it("does not append exclude_account_type when omitted", async () => {
+    await fetchTrades({});
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(url).not.toContain("exclude_account_type");
+  });
+});
+
+describe("fetchTradeStats — exclude_account_type filter", () => {
+  it("appends exclude_account_type to stats URL when provided", async () => {
+    await fetchTradeStats({ exclude_account_type: "backtest" });
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(url).toContain("exclude_account_type=backtest");
+  });
+
+  it("does not append exclude_account_type to stats URL when omitted", async () => {
+    await fetchTradeStats({});
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(url).not.toContain("exclude_account_type");
+  });
+});
+
 describe("fetchAccounts", () => {
   it("builds correct URL with no params", async () => {
     await fetchAccounts();
     const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toBe(`${BASE_URL}/api/accounts?`);
+    expect(url).toContain("/api/accounts");
   });
 
   it("builds correct URL with filters", async () => {

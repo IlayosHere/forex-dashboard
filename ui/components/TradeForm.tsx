@@ -38,6 +38,7 @@ export interface TradeFormData {
   ict_tdo_aligned: boolean | null;
   ict_htf_bias: string | null;
   fees: string;
+  criteria_met_at_entry: boolean | null;
 }
 
 interface TradeFormProps {
@@ -180,7 +181,11 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         <IctTradeFields form={form} errors={errors} onChange={set} />
       )}
 
-      <TradeAssessmentFields form={form} onChange={set} />
+      <TradeAssessmentFields
+        form={form}
+        onChange={set}
+        isBacktest={selectedAccount?.account_type === "backtest"}
+      />
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>

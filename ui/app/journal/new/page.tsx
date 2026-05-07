@@ -40,6 +40,7 @@ function makeEmptyForm(): TradeFormData {
     ict_tdo_aligned: null,
     ict_htf_bias: null,
     fees: "",
+    criteria_met_at_entry: null,
   };
 }
 
@@ -104,6 +105,7 @@ function NewTradeContent() {
           ict_tdo_aligned: null,
           ict_htf_bias: null,
           fees: "",
+          criteria_met_at_entry: null,
         });
         setSignalLabel(`${signal.symbol} ${signal.direction} — ${signal.strategy}`);
       })
@@ -141,6 +143,7 @@ function NewTradeContent() {
         ict_tdo_aligned: data.ict_tdo_aligned,
         ict_htf_bias: data.ict_htf_bias || null,
         fees: data.fees ? parseFloat(data.fees) : null,
+        criteria_met_at_entry: data.criteria_met_at_entry ?? null,
       };
       const trade = await createTrade(body);
       router.push(`/journal/${trade.id}`);

@@ -1,14 +1,17 @@
 "use client";
 
+import type { AccountType } from "@/lib/types";
+
 interface AccountBadgeProps {
   name: string;
-  accountType: "demo" | "live" | "funded";
+  accountType: AccountType;
 }
 
 const typeStyles: Record<string, string> = {
   demo: "bg-[#1e1e1e] text-[#888888]",
   live: "bg-[#26a69a1a] text-[#26a69a]",
   funded: "bg-[#e6a8001a] text-[#e6a800]",
+  backtest: "bg-[#1e1e1e] text-[#777777]",
 };
 
 export function AccountBadge({ name, accountType }: AccountBadgeProps) {

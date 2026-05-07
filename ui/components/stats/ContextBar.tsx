@@ -74,12 +74,32 @@ interface ContextBarProps {
 }
 
 export function ContextBar({ ctx, accounts }: ContextBarProps) {
-  const { context, setFilter, resetFilters, ribbonText, isDefault } = ctx;
+  const { context, setFilter, setBacktestMode, resetFilters, ribbonText, isDefault } = ctx;
   const hasCustom = !!(context.customFrom || context.customTo);
 
   return (
     <div className="mb-5">
       <div className="flex flex-wrap items-center gap-3 mb-2">
+        <div className="flex h-7 rounded border border-border bg-surface-input p-0.5 gap-0.5">
+          {(["Live", "Backtest"] as const).map((label) => {
+            const active = label === "Backtest" ? context.backtestMode : !context.backtestMode;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setBacktestMode(label === "Backtest")}
+                className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
+                  active
+                    ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
+                    : "text-text-dim hover:text-text-muted"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         <InstrumentPills
           value={context.instrumentType}
           onChange={(v) => setFilter("instrumentType", v)}

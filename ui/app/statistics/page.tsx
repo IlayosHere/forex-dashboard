@@ -49,7 +49,7 @@ export default function StatisticsPage() {
 
       <section id="overview" className="mb-4">
         <SectionHeader title="Overview" subtitle={stats ? `${stats.closed_trades} closed trades` : undefined} />
-        <OverviewKpiStrip stats={stats} loading={statsLoading} />
+        <OverviewKpiStrip stats={stats} loading={statsLoading} isBacktest={ctx.context.backtestMode} />
       </section>
 
       <hr className="border-border/40" />
