@@ -104,6 +104,7 @@ def create_trade(
         ict_tdo_aligned=req.ict_tdo_aligned,
         ict_htf_bias=req.ict_htf_bias,
         fees=req.fees,
+        criteria_met_at_entry=req.criteria_met_at_entry,
     )
     db.add(trade)
     db.commit()

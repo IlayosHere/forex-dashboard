@@ -13,11 +13,13 @@ export interface StatsContext {
   preset: PresetKey;
   customFrom: string;
   customTo: string;
+  backtestMode: boolean;
 }
 
 export interface UseStatsContextResult {
   context: StatsContext;
   setFilter: (key: keyof StatsContext, value: string) => void;
+  setBacktestMode: (v: boolean) => void;
   resetFilters: () => void;
   apiFilters: Record<string, string>;
   ribbonText: string;
@@ -33,6 +35,7 @@ const DEFAULTS: StatsContext = {
   preset: "30d",
   customFrom: "",
   customTo: "",
+  backtestMode: false,
 };
 
 const PRESET_LABELS: Record<PresetKey, string> = {
@@ -99,6 +102,10 @@ export function useStatsContext(): UseStatsContextResult {
     });
   }, []);
 
+  const setBacktestMode = useCallback((v: boolean) => {
+    setContext((prev) => ({ ...prev, backtestMode: v }));
+  }, []);
+
   const resetFilters = useCallback(() => setContext({ ...DEFAULTS }), []);
 
   const apiFilters = useMemo<Record<string, string>>(() => {
@@ -111,6 +118,11 @@ export function useStatsContext(): UseStatsContextResult {
     if (context.accountId) f.account_id = context.accountId;
     if (dates.from) f.from = dates.from;
     if (dates.to) f.to = dates.to;
+    if (context.backtestMode) {
+      f.account_type = "backtest";
+    } else if (!context.accountId) {
+      f.exclude_account_type = "backtest";
+    }
     return f;
   }, [context]);
 
@@ -129,5 +141,5 @@ export function useStatsContext(): UseStatsContextResult {
     return `${inst} · ${acct} · ${window}`;
   }, [context]);
 
-  return { context, setFilter, resetFilters, apiFilters, ribbonText, isDefault };
+  return { context, setFilter, setBacktestMode, resetFilters, apiFilters, ribbonText, isDefault };
 }

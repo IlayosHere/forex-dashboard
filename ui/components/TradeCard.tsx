@@ -1,11 +1,13 @@
 "use client";
 
-import type { Trade, AccountType } from "@/lib/types";
-import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
 import { StatusBadge } from "./StatusBadge";
 import { StarRating } from "./StarRating";
 import { AccountBadge } from "./AccountBadge";
+
+import type { Trade, AccountType } from "@/lib/types";
+
 import { formatShortDate } from "@/lib/dates";
+import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
 import { pnlColor } from "@/lib/format";
 
 interface TradeCardProps {
@@ -42,12 +44,20 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
           <span className={`text-xs font-medium ${isBuy ? "text-bull" : "text-bear"}`}>
             {trade.direction}
           </span>
-          <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
-            {pnlSign(trade.pnl_pips)} {unitLabel}
-          </span>
-          <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
-            {trade.pnl_usd !== null ? `${trade.pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(trade.pnl_usd).toFixed(2)}` : ""}
-          </span>
+          {accountType === "backtest" ? (
+            <span className="price text-sm" style={{ color: pnlColor(trade.rr_achieved) }}>
+              {trade.rr_achieved != null ? `${trade.rr_achieved >= 0 ? "+" : ""}${trade.rr_achieved.toFixed(2)}R` : "—"}
+            </span>
+          ) : (
+            <>
+              <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
+                {pnlSign(trade.pnl_pips)} {unitLabel}
+              </span>
+              <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
+                {trade.pnl_usd !== null ? `${trade.pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(trade.pnl_usd).toFixed(2)}` : ""}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {trade.rating != null && (
@@ -67,6 +77,9 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
             name={trade.account_name}
             accountType={accountType ?? "demo"}
           />
+        )}
+        {accountType === "backtest" && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-surface-raised text-muted-foreground font-medium">BT</span>
         )}
         <StatusBadge status={trade.status} outcome={trade.outcome} />
         {trade.rule_followed === true && (

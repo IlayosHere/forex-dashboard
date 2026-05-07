@@ -94,7 +94,9 @@ export interface TradeFilters {
   from?: string;
   to?: string;
   account_id?: string;
+  account_type?: string;
   instrument_type?: string;
+  exclude_account_type?: string;
   limit?: number;
   offset?: number;
 }
@@ -108,7 +110,9 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
   if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
+  if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset !== undefined) params.set("offset", String(filters.offset));
   const qs = params.toString();
@@ -159,7 +163,9 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
   if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
+  if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
   const qs = params.toString();
   const res = await authFetch(`${BASE_URL}/api/trades/stats${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade stats: ${res.status}`);
@@ -175,7 +181,9 @@ function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
   if (filters.account_id) params.set("account_id", filters.account_id);
+  if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
+  if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
   return params;
 }
 

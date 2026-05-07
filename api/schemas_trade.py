@@ -77,6 +77,7 @@ class TradeCreateRequest(BaseModel):
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
+    criteria_met_at_entry: bool | None = None
 
     @field_validator("direction")
     @classmethod
@@ -172,6 +173,7 @@ class TradeUpdateRequest(BaseModel):
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
+    criteria_met_at_entry: bool | None = None
 
     @field_validator("direction")
     @classmethod
@@ -295,6 +297,7 @@ class TradeResponse(BaseModel):
     ict_tdo_aligned: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = None
+    criteria_met_at_entry: bool | None = None
     created_at: datetime
     updated_at: datetime
 

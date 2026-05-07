@@ -33,7 +33,7 @@ const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull";
 const SELECT_CLASS =
   "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
-const SEGMENT_ACTIVE_CLASS = "bg-white/15 text-text-primary ring-1 ring-inset ring-white/20";
+const SEGMENT_ACTIVE_CLASS = "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40";
 
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
   { value: "forex",       label: "Forex" },
@@ -41,9 +41,10 @@ const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
 ];
 
 const ACCOUNT_TYPE_OPTIONS: SegmentOption<AccountType>[] = [
-  { value: "demo",   label: "Demo" },
-  { value: "live",   label: "Live" },
-  { value: "funded", label: "Funded" },
+  { value: "demo",      label: "Demo" },
+  { value: "live",      label: "Live" },
+  { value: "funded",    label: "Funded" },
+  { value: "backtest",  label: "Backtest" },
 ];
 
 function SegmentedControl<T extends string>({
@@ -120,14 +121,16 @@ export function AccountFormFields({
         </div>
 
         {!editingId && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             <div className="space-y-1">
               <label className="label">Instrument</label>
-              <SegmentedControl
-                value={form.instrument_type}
-                options={INSTRUMENT_OPTIONS}
-                onChange={handleInstrumentChange}
-              />
+              <div className="w-1/2 pr-1">
+                <SegmentedControl
+                  value={form.instrument_type}
+                  options={INSTRUMENT_OPTIONS}
+                  onChange={handleInstrumentChange}
+                />
+              </div>
             </div>
             <div className="space-y-1">
               <label className="label">Type</label>

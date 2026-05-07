@@ -75,7 +75,7 @@ class SignalListResponse(BaseModel):
 # Accounts
 # ---------------------------------------------------------------------------
 
-_VALID_ACCOUNT_TYPES = ("demo", "live", "funded")
+_VALID_ACCOUNT_TYPES = ("demo", "live", "funded", "backtest")
 _VALID_INSTRUMENT_TYPES = ("forex", "futures_mnq")
 _VALID_ACCOUNT_STATUSES = ("active", "passed", "failed", "closed")
 

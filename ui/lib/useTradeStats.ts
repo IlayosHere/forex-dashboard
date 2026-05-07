@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchTradeStats } from "./api";
+
 import type { TradeStats } from "./types";
+import type { StatsFiltersParam } from "./api";
+
+import { fetchTradeStats } from "./api";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -13,7 +16,7 @@ interface UseTradeStatsResult {
   refetch: () => void;
 }
 
-export function useTradeStats(filters: { strategy?: string; symbol?: string; from?: string; to?: string; instrument_type?: string; account_id?: string } = {}): UseTradeStatsResult {
+export function useTradeStats(filters: StatsFiltersParam = {}): UseTradeStatsResult {
   const [stats, setStats] = useState<TradeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

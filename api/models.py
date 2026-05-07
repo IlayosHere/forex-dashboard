@@ -154,6 +154,7 @@ class TradeModel(Base):
     ict_htf_bias: Mapped[str | None] = mapped_column(String, nullable=True)    # aligned / counter / neutral
     ict_ifvg_bars: Mapped[int | None] = mapped_column(Integer, nullable=True)   # bars from FVG to IFVG trigger
     fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)
+    criteria_met_at_entry: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)

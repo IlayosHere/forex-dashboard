@@ -41,3 +41,5 @@ When deploying a new version to the live system:
 | 004 | `004_ict_extended_fields.sql` | Adds `ict_htf_bias`, `ict_entry_model`, `ict_pd_array` to `trades` table | 2026-04-24 |
 | 005 | `005_mnq_remove_entry_fields_add_fees.sql` | Adds `fees` column to `trades` table (entry model/pd_array dropped from app, not DB) | 2026-04-30 |
 | 006 | `006_rule_compliance.sql` | Adds `rule_followed` (BOOLEAN) to `trades`; creates `trade_mistakes` join table for many-to-many mistake linking | 2026-05-02 |
+| 007 | `007_ict_ifvg_bars.sql` | Adds `ict_ifvg_bars` (INTEGER) to `trades`; tracks bars elapsed between FVG formation and IFVG trigger | 2026-05-05 |
+| 008 | `008_backtest_field.sql` | Adds `criteria_met_at_entry` (BOOLEAN) to `trades`; anti-hindsight-bias check for backtest journal | 2026-05-07 |

@@ -22,7 +22,9 @@ class TradeFilterParams:
         outcome: str | None = Query(default=None),
         instrument_type: str | None = Query(default=None),
         account_id: str | None = Query(default=None),
+        account_type: str | None = Query(default=None),
         rule_followed: bool | None = Query(default=None),
+        exclude_account_type: str | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
     ) -> None:
@@ -32,7 +34,9 @@ class TradeFilterParams:
         self.outcome = outcome
         self.instrument_type = instrument_type
         self.account_id = account_id
+        self.account_type = account_type
         self.rule_followed = rule_followed
+        self.exclude_account_type = exclude_account_type
         self.date_from = date_from
         self.date_to = date_to
 
@@ -46,6 +50,8 @@ class StatsFilterParams:
         symbol: str | None = Query(default=None),
         instrument_type: str | None = Query(default=None),
         account_id: str | None = Query(default=None),
+        account_type: str | None = Query(default=None),
+        exclude_account_type: str | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
     ) -> None:
@@ -53,5 +59,7 @@ class StatsFilterParams:
         self.symbol = symbol
         self.instrument_type = instrument_type
         self.account_id = account_id
+        self.account_type = account_type
+        self.exclude_account_type = exclude_account_type
         self.date_from = date_from
         self.date_to = date_to

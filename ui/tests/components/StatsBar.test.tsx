@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { StatsBar } from "@/components/StatsBar";
@@ -99,5 +99,47 @@ describe("StatsBar", () => {
   it("shows open trades count in secondary", () => {
     render(<StatsBar stats={MOCK_STATS} loading={false} />);
     expect(screen.getByText("3 open")).toBeInTheDocument();
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("StatsBar — backtest mode", () => {
+  it("shows P&L (notional) title in backtest mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    expect(screen.getByText("P&L (notional)")).toBeInTheDocument();
+    expect(screen.queryByText("P&L")).not.toBeInTheDocument();
+  });
+
+  it("shows plain P&L title in default mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="default" />);
+    expect(screen.getByText("P&L")).toBeInTheDocument();
+    expect(screen.queryByText("P&L (notional)")).not.toBeInTheDocument();
+  });
+
+  it("renders Avg R:R before Trades in backtest mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    const allTitles = screen.getAllByText(/Win Rate|Avg R:R|Trades|P&L/);
+    const texts = allTitles.map((el) => el.textContent);
+    const rrIdx = texts.indexOf("Avg R:R");
+    const tradesIdx = texts.indexOf("Trades");
+    expect(rrIdx).toBeLessThan(tradesIdx);
+  });
+
+  it("renders Trades before Avg R:R in default mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="default" />);
+    const allTitles = screen.getAllByText(/Win Rate|Avg R:R|Trades|P&L/);
+    const texts = allTitles.map((el) => el.textContent);
+    const rrIdx = texts.indexOf("Avg R:R");
+    const tradesIdx = texts.indexOf("Trades");
+    expect(tradesIdx).toBeLessThan(rrIdx);
+  });
+
+  it("still shows Win Rate and Streak in backtest mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    expect(screen.getByText("Win Rate")).toBeInTheDocument();
+    expect(screen.getByText("Streak")).toBeInTheDocument();
   });
 });

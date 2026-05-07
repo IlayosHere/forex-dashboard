@@ -18,7 +18,7 @@ export type IctTpTarget =
   | "unmitigated_5m_fvg" | "unmitigated_15m_fvg" | "unmitigated_1h_fvg" | "unmitigated_4h_fvg"
   | "other";
 export type IctIfvgTimeframe = "1m" | "2m" | "3m" | "4m" | "5m" | "6m" | "7m" | "8m" | "9m" | "10m" | "15m" | "other";
-export type AccountType = "demo" | "live" | "funded";
+export type AccountType = "demo" | "live" | "funded" | "backtest";
 export type AccountStatus = "active" | "passed" | "failed" | "closed";
 
 export interface Account {
@@ -98,6 +98,7 @@ export interface TradeCreateRequest {
   ict_tdo_aligned?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
+  criteria_met_at_entry?: boolean | null;
 }
 
 export interface TradeUpdateRequest {
@@ -129,6 +130,7 @@ export interface TradeUpdateRequest {
   ict_htf_bias?: string | null;
   fees?: number | null;
   rule_followed?: boolean | null;
+  criteria_met_at_entry?: boolean | null;
 }
 
 export interface Trade {
@@ -169,6 +171,7 @@ export interface Trade {
   ict_htf_bias: string | null;
   fees: number | null;
   rule_followed: boolean | null;
+  criteria_met_at_entry: boolean | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
