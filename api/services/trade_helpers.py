@@ -170,6 +170,7 @@ def trade_to_response(
         "ict_setup_detail": trade.ict_setup_detail,
         "ict_tp_target": trade.ict_tp_target,
         "ict_ifvg_timeframe": trade.ict_ifvg_timeframe,
+        "ict_ifvg_bars": trade.ict_ifvg_bars,
         "ict_smt_present": trade.ict_smt_present,
         "ict_tdo_aligned": trade.ict_tdo_aligned,
         "ict_htf_bias": trade.ict_htf_bias,
