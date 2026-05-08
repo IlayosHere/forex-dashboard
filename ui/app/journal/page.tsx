@@ -148,16 +148,13 @@ export default function JournalPage() {
   }, [accounts]);
 
   const newTradeUrl = useMemo(() => {
-    if (filters.strategy) {
-      return `/journal/new?strategy=${encodeURIComponent(filters.strategy)}`;
-    }
-    // Auto-select the first strategy matching the current instrument tab
-    const defaultStrategy = strategies.find((s) => s.instrumentType === instrumentType);
-    if (defaultStrategy) {
-      return `/journal/new?strategy=${encodeURIComponent(defaultStrategy.slug)}`;
-    }
-    return "/journal/new";
-  }, [filters.strategy, instrumentType]);
+    const params = new URLSearchParams();
+    const strategySlug = filters.strategy || strategies.find((s) => s.instrumentType === instrumentType)?.slug;
+    if (strategySlug) params.set("strategy", strategySlug);
+    if (backtestMode) params.set("account_type", "backtest");
+    const qs = params.toString();
+    return "/journal/new" + (qs ? `?${qs}` : "");
+  }, [filters.strategy, instrumentType, backtestMode]);
 
   // Collect unique symbols from trades for the filter dropdown
   const symbols = useMemo(() => {

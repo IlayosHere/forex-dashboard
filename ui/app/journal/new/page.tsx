@@ -9,7 +9,7 @@ import { TradeForm } from "@/components/TradeForm";
 import type { Signal, TradeCreateRequest } from "@/lib/types";
 import type { TradeFormData } from "@/components/TradeForm";
 
-import { createTrade, fetchSignal } from "@/lib/api";
+import { createTrade, fetchSignal, fetchAccounts } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
 import { formatPrice } from "@/lib/utils";
 import { nowNYDatetime, nyDatetimeToUtcISO, utcISOToNYDatetime } from "@/lib/dates";
@@ -49,6 +49,7 @@ function NewTradeContent() {
   const searchParams = useSearchParams();
   const signalId = searchParams.get("signal");
   const strategyParam = searchParams.get("strategy");
+  const accountTypeParam = searchParams.get("account_type");
   const slOverride = searchParams.get("sl");
   const tpOverride = searchParams.get("tp");
   const lotOverride = searchParams.get("lot_size");
@@ -65,6 +66,27 @@ function NewTradeContent() {
     }
     return makeEmptyForm();
   });
+
+  // Auto-select the first matching account when account_type param is set
+  useEffect(() => {
+    if (!accountTypeParam || signalId) return;
+    let cancelled = false;
+    fetchAccounts().then((accounts) => {
+      if (cancelled) return;
+      const strategyMeta = strategyParam ? strategies.find((s) => s.slug === strategyParam) : null;
+      const match = accounts.find(
+        (a) =>
+          a.account_type === accountTypeParam &&
+          a.status === "active" &&
+          (!strategyMeta || a.instrument_type === strategyMeta.instrumentType),
+      );
+      if (match) {
+        setInitial((prev) => ({ ...prev, account_id: match.id }));
+      }
+    });
+    return () => { cancelled = true; };
+  }, [accountTypeParam, strategyParam, signalId]);
+
   const [signalLabel, setSignalLabel] = useState<string | null>(null);
   const [signalError, setSignalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
