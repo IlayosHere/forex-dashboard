@@ -27,17 +27,6 @@ export const PARAM_META_WHEN: Record<string, ParamMeta> = {
       "4": "Friday",
     },
   },
-  spread_tier: {
-    label: "Spread Tier",
-    category: "when",
-    description: "Broker spread tier — H0 midnight, H1 transition, H2 normal",
-    unit: null,
-    bucketMap: {
-      H0: "H0 (midnight)",
-      H1: "H1 (transition)",
-      H2: "H2 (normal)",
-    },
-  },
   minutes_into_session: {
     label: "Minutes Into Session",
     category: "when",

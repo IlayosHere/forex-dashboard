@@ -18,7 +18,6 @@ from analytics.params.nova_candle import (
     bos_used,
     candle_efficiency,
     close_wick_ratio,
-    spread_tier,
 )
 from analytics.params.spread import pair_category, spread_risk_ratio
 from analytics.params.temporal import day_of_week, session_label
@@ -176,15 +175,6 @@ def test_close_wick_ratio_sell() -> None:
     result = close_wick_ratio(sig, None)
     expected = (1.08680 - 1.08500) / (1.08700 - 1.08500)
     assert result == pytest.approx(expected, abs=0.001)
-
-
-def test_spread_tier_h0() -> None:
-    # UTC hour 22 + broker offset 2 = broker hour 0
-    assert spread_tier(_signal(hour=22), None) == "H0"
-
-
-def test_spread_tier_h2() -> None:
-    assert spread_tier(_signal(hour=10), None) == "H2"
 
 
 def test_nova_ohlc_missing_returns_none() -> None:

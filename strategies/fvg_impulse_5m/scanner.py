@@ -24,6 +24,7 @@ from shared.calculator import pip_size
 from shared.signal import Signal
 
 from .calculations import calculate_midpoint_sl, calculate_trade_params
+from .config import EXCHANGE_TZ
 from .data import FVG, age_and_prune_fvgs, detect_fvgs_at_bar, get_candles
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,10 @@ def scan_symbol(candles: pd.DataFrame, symbol: str) -> list[dict[str, Any]]:
     now = datetime.now(timezone.utc)
     candle_time = candles.index[last_idx].to_pydatetime()
     if now - candle_time > timedelta(minutes=20):
+        return []
+
+    # Skip broker hours 0-1 (daily rollover / transition — bad spreads)
+    if candle_time.astimezone(EXCHANGE_TZ).hour < 2:
         return []
 
     # Dedup check

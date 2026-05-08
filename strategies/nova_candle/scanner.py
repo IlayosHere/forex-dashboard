@@ -21,7 +21,7 @@ import pandas as pd
 from tvDatafeed import Interval
 
 from shared.calculator import pip_size
-from shared.market_data import get_candles
+from shared.market_data import EXCHANGE_TZ, get_candles
 from shared.signal import Signal
 
 from .calculations import calculate_trade_params
@@ -82,6 +82,9 @@ def find_nova_candle(
     # Window is one M15 period + 20min buffer for slow nologin scan cycles.
     candle_time = c.name.to_pydatetime()
     if now - candle_time > timedelta(minutes=35):
+        return None
+
+    if candle_time.astimezone(EXCHANGE_TZ).hour < 2:
         return None
 
     # Skip if already alerted on this candle
