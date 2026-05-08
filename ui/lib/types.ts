@@ -1,4 +1,7 @@
 export type InstrumentType = "forex" | "futures_mnq";
+export type TradingFeeling =
+  | "calm" | "focused" | "confident"
+  | "anxious" | "impatient" | "fearful" | "greedy" | "distracted" | "revenge" | "tired";
 
 // ICT trade params — MNQ only
 export type IctSetupType = "liquidity_sweep" | "unmitigated_fvg" | "continuation" | "other";
@@ -99,6 +102,9 @@ export interface TradeCreateRequest {
   ict_htf_bias?: string | null;
   fees?: number | null;
   criteria_met_at_entry?: boolean | null;
+  feeling_before?: TradingFeeling | null;
+  feeling_during?: TradingFeeling | null;
+  feeling_after?: TradingFeeling | null;
 }
 
 export interface TradeUpdateRequest {
@@ -131,6 +137,9 @@ export interface TradeUpdateRequest {
   fees?: number | null;
   rule_followed?: boolean | null;
   criteria_met_at_entry?: boolean | null;
+  feeling_before?: TradingFeeling | null;
+  feeling_during?: TradingFeeling | null;
+  feeling_after?: TradingFeeling | null;
 }
 
 export interface Trade {
@@ -172,9 +181,33 @@ export interface Trade {
   fees: number | null;
   rule_followed: boolean | null;
   criteria_met_at_entry: boolean | null;
+  feeling_before: TradingFeeling | null;
+  feeling_during: TradingFeeling | null;
+  feeling_after: TradingFeeling | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
+}
+
+export interface TradingSession {
+  id: string;
+  owner: string;
+  date: string;
+  had_pre_session_plan: boolean | null;
+  feeling_pre: TradingFeeling | null;
+  feeling_during: TradingFeeling | null;
+  feeling_post: TradingFeeling | null;
+  session_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessionUpsertRequest {
+  had_pre_session_plan: boolean | null;
+  feeling_pre: TradingFeeling | null;
+  feeling_during: TradingFeeling | null;
+  feeling_post: TradingFeeling | null;
+  session_notes: string;
 }
 
 export interface LoginResponse {

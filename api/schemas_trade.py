@@ -22,6 +22,7 @@ class LinkedMistake(BaseModel):
     id: str
     name: str
 
+from shared.feelings import FEELING_VALUES
 from shared.ict_taxonomy import (
     HTF_BIAS_VALUES,
     IFVG_TIMEFRAMES,
@@ -29,6 +30,13 @@ from shared.ict_taxonomy import (
     SETUP_TYPES,
     TP_TARGETS,
 )
+
+
+def _validate_feeling(v: str | None) -> str | None:
+    """Validate that a feeling value belongs to the known enum."""
+    if v is not None and v not in FEELING_VALUES:
+        raise ValueError(f"feeling must be one of {FEELING_VALUES}")
+    return v
 
 
 def _validate_ict_detail_for_type(
@@ -78,6 +86,11 @@ class TradeCreateRequest(BaseModel):
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
+
+    # Emotional state (MNQ only in practice)
+    feeling_before: str | None = None
+    feeling_during: str | None = None
+    feeling_after: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -134,6 +147,12 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
         return v
 
+    @field_validator("feeling_before", "feeling_during", "feeling_after")
+    @classmethod
+    def validate_feeling(cls, v: str | None) -> str | None:
+        """Ensure feeling values belong to the known enum."""
+        return _validate_feeling(v)
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -174,6 +193,11 @@ class TradeUpdateRequest(BaseModel):
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
+
+    # Emotional state (MNQ only in practice)
+    feeling_before: str | None = None
+    feeling_during: str | None = None
+    feeling_after: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -246,6 +270,12 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"ict_htf_bias must be one of {HTF_BIAS_VALUES}")
         return v
 
+    @field_validator("feeling_before", "feeling_during", "feeling_after")
+    @classmethod
+    def validate_feeling(cls, v: str | None) -> str | None:
+        """Ensure feeling values belong to the known enum."""
+        return _validate_feeling(v)
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -298,6 +328,9 @@ class TradeResponse(BaseModel):
     ict_htf_bias: str | None = None
     fees: float | None = None
     criteria_met_at_entry: bool | None = None
+    feeling_before: str | None = None
+    feeling_during: str | None = None
+    feeling_after: str | None = None
     created_at: datetime
     updated_at: datetime
 

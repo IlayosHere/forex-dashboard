@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -353,4 +353,21 @@ export async function unlinkMistake(tradeId: string, mistakeId: string): Promise
     method: "DELETE",
   });
   if (!res.ok) throw new Error(`Failed to unlink mistake: ${res.status}`);
+}
+
+export async function fetchSession(date: string): Promise<TradingSession | null> {
+  const res = await authFetch(`${BASE_URL}/api/sessions/${date}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to fetch session: ${res.status}`);
+  return res.json() as Promise<TradingSession>;
+}
+
+export async function upsertSession(date: string, body: SessionUpsertRequest): Promise<TradingSession> {
+  const res = await authFetch(`${BASE_URL}/api/sessions/${date}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to save session: ${res.status}`);
+  return res.json() as Promise<TradingSession>;
 }

@@ -32,6 +32,11 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/api", () => ({
   fetchTrades: vi.fn(),
+  fetchSession: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/components/SessionJournalPanel", () => ({
+  SessionJournalPanel: () => <div data-testid="session-journal-panel" />,
 }));
 
 // Import after mocks are registered

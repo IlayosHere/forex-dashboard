@@ -12,8 +12,9 @@ import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
 import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
+import { TradeFeelingsPanel } from "@/components/TradeFeelingsPanel";
 
-import type { Trade, AccountType, LinkedMistake } from "@/lib/types";
+import type { Trade, AccountType, LinkedMistake, TradingFeeling } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
 import type { IctParamsState } from "@/components/IctParamsPanel";
 
@@ -38,6 +39,9 @@ interface EditableFields {
   ruleFollowed: boolean | null;
   criteriaMetAtEntry: boolean | null;
   linkedMistakes: LinkedMistake[];
+  feelingBefore: TradingFeeling | null;
+  feelingDuring: TradingFeeling | null;
+  feelingAfter: TradingFeeling | null;
 }
 
 type EditAction =
@@ -56,6 +60,9 @@ const INITIAL_EDITABLE: EditableFields = {
   ruleFollowed: null,
   criteriaMetAtEntry: null,
   linkedMistakes: [],
+  feelingBefore: null,
+  feelingDuring: null,
+  feelingAfter: null,
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -118,6 +125,9 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             ruleFollowed: t.rule_followed,
             criteriaMetAtEntry: t.criteria_met_at_entry,
             linkedMistakes: t.linked_mistakes,
+            feelingBefore: t.feeling_before,
+            feelingDuring: t.feeling_during,
+            feelingAfter: t.feeling_after,
           },
         });
       })
@@ -135,6 +145,19 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const unitLabel = getUnitLabel(instrumentType);
   const sizeLabel = getSizeLabel(instrumentType);
   const isBuy = trade.direction === "BUY";
+
+  const FEELING_FIELD_MAP = {
+    feeling_before: "feelingBefore",
+    feeling_during: "feelingDuring",
+    feeling_after:  "feelingAfter",
+  } as const;
+
+  function handleFeelingChange(
+    field: "feeling_before" | "feeling_during" | "feeling_after",
+    value: TradingFeeling | null,
+  ) {
+    dispatch({ type: "SET_FIELD", field: FEELING_FIELD_MAP[field], value });
+  }
 
   const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
     const ep = parseFloat(editable.exitPrice);
@@ -176,6 +199,9 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
         ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
         ict_htf_bias: ictParams.ict_htf_bias || null,
+        feeling_before: editable.feelingBefore,
+        feeling_during: editable.feelingDuring,
+        feeling_after: editable.feelingAfter,
       } : {};
       const payload = {
         tags: editable.tags,
@@ -269,6 +295,16 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           <IctParamsPanel
             params={ictParams}
             onChange={(key, value) => setIctParams((prev) => ({ ...prev, [key]: value }))}
+          />
+        )}
+
+        {/* Feelings (MNQ only) */}
+        {instrumentType === "futures_mnq" && (
+          <TradeFeelingsPanel
+            feelingBefore={editable.feelingBefore}
+            feelingDuring={editable.feelingDuring}
+            feelingAfter={editable.feelingAfter}
+            onChange={handleFeelingChange}
           />
         )}
 

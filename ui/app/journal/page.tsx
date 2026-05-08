@@ -8,11 +8,15 @@ import { useTradeStats } from "@/lib/useTradeStats";
 import { useAccounts } from "@/lib/useAccounts";
 import { StatsBar } from "@/components/StatsBar";
 import { AccountStatsStrip } from "@/components/AccountStatsStrip";
+import { SessionJournalPanel } from "@/components/SessionJournalPanel";
+import { TodaySessionCard } from "@/components/TodaySessionCard";
 import { TradeFilters, type TradeFilterValues } from "@/components/TradeFilters";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TradeCard } from "@/components/TradeCard";
 import { Button } from "@/components/ui/button";
 import type { AccountType, InstrumentType } from "@/lib/types";
 import { strategies } from "@/lib/strategies";
+import { useSession } from "@/lib/useSession";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex", label: "Forex" },
@@ -108,6 +112,16 @@ export default function JournalPage() {
 
   const { trades, loading, error } = useTrades(apiFilters);
   const { stats, loading: statsLoading } = useTradeStats(apiFilters);
+
+  const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
+
+  const todayDate = useMemo(() => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  }, []);
+  const { session: todaySession, loading: sessionLoading, saving: sessionSaving, save: saveSession } = useSession(
+    instrumentType === "futures_mnq" ? todayDate : null,
+  );
 
   // Restore scroll position once trades have loaded (list must be in DOM first)
   useEffect(() => {
@@ -241,6 +255,32 @@ export default function JournalPage() {
           </button>
         ))}
       </div>
+
+      {/* Today's session shortcut (MNQ only) */}
+      {instrumentType === "futures_mnq" && (
+        <TodaySessionCard
+          session={todaySession}
+          loading={sessionLoading}
+          onLog={() => setSessionSheetOpen(true)}
+        />
+      )}
+
+      {/* Today's session inline sheet */}
+      <Sheet open={sessionSheetOpen} onOpenChange={setSessionSheetOpen}>
+        <SheetContent side="right" className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Today&apos;s Session</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 py-3">
+            <SessionJournalPanel
+              session={todaySession}
+              saving={sessionSaving}
+              onSave={saveSession}
+              onSaved={() => setSessionSheetOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Account Stats */}
       {stats?.by_account && Object.keys(stats.by_account).length > 0 && (

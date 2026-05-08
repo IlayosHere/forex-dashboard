@@ -18,10 +18,10 @@ Indexes on strategy and candle_time support the two most common query patterns:
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base
@@ -156,6 +156,11 @@ class TradeModel(Base):
     fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)
     criteria_met_at_entry: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
+    # Emotional state (MNQ only in practice — nullable for all)
+    feeling_before: Mapped[str | None] = mapped_column(String, nullable=True)
+    feeling_during: Mapped[str | None] = mapped_column(String, nullable=True)
+    feeling_after: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
@@ -177,6 +182,29 @@ class TradeModel(Base):
         Index("ix_trades_owner", "owner"),
         Index("ix_trades_owner_open_time", "owner", "open_time"),
         Index("ix_trades_owner_status", "owner", "status"),
+    )
+
+
+class TradingSessionModel(Base):
+    """One session journal entry per trader per calendar date."""
+
+    __tablename__ = "trading_sessions"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    owner: Mapped[str] = mapped_column(String, nullable=False, default="admin")
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    had_pre_session_plan: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    feeling_pre: Mapped[str | None] = mapped_column(String, nullable=True)
+    feeling_during: Mapped[str | None] = mapped_column(String, nullable=True)
+    feeling_post: Mapped[str | None] = mapped_column(String, nullable=True)
+    session_notes: Mapped[str] = mapped_column(String, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_trading_sessions_owner", "owner"),
+        Index("ix_trading_sessions_owner_date", "owner", "date"),
+        UniqueConstraint("owner", "date", name="uq_session_owner_date"),
     )
 
 

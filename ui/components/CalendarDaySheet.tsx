@@ -10,12 +10,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { SessionJournalPanel } from "@/components/SessionJournalPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 
 import type { Trade } from "@/lib/types";
 
 import { fetchTrades } from "@/lib/api";
+import { useSession } from "@/lib/useSession";
 
 export interface CalendarDaySheetProps {
   date: string | null;
@@ -130,6 +132,9 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isMnq = instrumentType === "futures_mnq";
+  const { session, saving: sessionSaving, save: saveSession } = useSession(isMnq ? date : null);
+
   useEffect(() => {
     if (!date) return;
     setLoading(true);
@@ -169,6 +174,16 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
         </SheetHeader>
 
         <div className="px-4 py-3">
+          {/* Session journal (MNQ only) */}
+          {isMnq && date && (
+            <SessionJournalPanel
+              session={session}
+              saving={sessionSaving}
+              onSave={saveSession}
+              onSaved={onClose}
+            />
+          )}
+
           {loading && <SkeletonRows />}
 
           {!loading && error !== null && (
