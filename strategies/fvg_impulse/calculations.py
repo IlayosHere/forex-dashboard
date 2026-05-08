@@ -2,7 +2,7 @@
 calculations.py - Trade parameter calculations for FVG wick-test signals.
 
 Computes SL, TP, lot size and risk in pips for a given scanner signal dict.
-Uses per-pair spread tables from config (3-tier: H0/H1/normal)
+Uses per-pair spread tables from config (single tier: normal hours H2+)
 and a fixed 0.2 pip slippage assumption.
 
 Account assumptions
@@ -19,7 +19,7 @@ from typing import Any
 
 from shared.calculator import pip_size, pip_value_per_lot
 
-from .config import EXCHANGE_TZ, SLIPPAGE_PIPS, get_spread_pips
+from .config import SLIPPAGE_PIPS, get_spread_pips
 
 SL_BUFFER_PIPS: float = 3.0
 ACCOUNT_RISK_USD: float = 500.0  # $50k * 1%
@@ -60,14 +60,9 @@ def calculate_trade_params(signal: dict[str, Any]) -> dict[str, Any]:
     direction = signal["direction"]   # "BUY" or "SELL"
     close = signal["close"]
     far_edge = signal["fvg_far_edge"]
-    candle_time = signal["candle_time"]  # UTC datetime
 
     pip = pip_size(symbol)
-
-    # Derive broker hour from UTC candle_time using the exchange timezone.
-    # Handles DST automatically (UTC+2 winter / UTC+3 summer).
-    broker_hour = candle_time.astimezone(EXCHANGE_TZ).hour
-    spread_pips = get_spread_pips(symbol, broker_hour)
+    spread_pips = get_spread_pips(symbol)
 
     # SL price: 3 pips beyond far edge in loss direction
     if direction == "BUY":

@@ -19,7 +19,6 @@ import pandas as pd
 
 from analytics.params.candle_derived import _analytics_pip_size, _atr_pips_at_bar
 from analytics.registry import register
-from shared.market_data import EXCHANGE_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -83,22 +82,6 @@ def close_wick_ratio(signal: Any, _candles: pd.DataFrame | None) -> float | None
     if signal.direction == "BUY":
         return (high - close) / range_
     return (close - low) / range_
-
-
-@register("spread_tier", dtype="str")
-def spread_tier(signal: Any, _candles: pd.DataFrame | None) -> str:
-    """Map candle_time to broker spread tier (H0 / H1 / H2).
-
-    Uses the DST-aware broker timezone rather than a hardcoded UTC offset,
-    matching ``strategies/fvg_impulse/calculations.py``. Registered for all
-    strategies so every resolved signal carries a tier value.
-    """
-    broker_hour = signal.candle_time.astimezone(EXCHANGE_TZ).hour
-    if broker_hour == 0:
-        return "H0"
-    if broker_hour == 1:
-        return "H1"
-    return "H2"
 
 
 # ---------------------------------------------------------------------------
