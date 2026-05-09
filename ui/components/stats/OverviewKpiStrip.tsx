@@ -1,11 +1,12 @@
 import type { TradeStats } from "@/lib/types";
 
 import { fmt } from "@/lib/format";
+import { calcExpectancyR, pnlColor, signedColor, PF_THRESHOLD } from "@/lib/statsHelpers";
 
 interface OverviewKpiStripProps {
   stats: TradeStats | null;
   loading: boolean;
-  isBacktest?: boolean;
+  isBacktest: boolean;
 }
 
 interface TileProps {
@@ -25,7 +26,12 @@ function Tile({ label, value, sub, color }: TileProps) {
   );
 }
 
-export function OverviewKpiStrip({ stats, loading, isBacktest = false }: OverviewKpiStripProps) {
+function pfSub(pf: number | null): string {
+  if (pf == null) return `below ${PF_THRESHOLD}`;
+  return pf >= PF_THRESHOLD ? "above threshold" : `below ${PF_THRESHOLD}`;
+}
+
+export function OverviewKpiStrip({ stats, loading, isBacktest }: OverviewKpiStripProps) {
   const dim = loading ? "opacity-50" : "";
 
   const expectancy = stats?.expectancy_usd ?? null;
@@ -33,17 +39,14 @@ export function OverviewKpiStrip({ stats, loading, isBacktest = false }: Overvie
   const pf = stats?.profit_factor ?? null;
   const pnl = stats?.total_pnl_usd ?? null;
   const avgRr = stats?.avg_rr ?? null;
-
-  const expectancyColor = expectancy == null ? "#777777" : expectancy > 0 ? "#26a69a" : "#ef5350";
-  const pnlColor = pnl == null ? "#777777" : pnl > 0 ? "#26a69a" : "#ef5350";
-  const avgRrColor = avgRr == null ? "#777777" : avgRr >= 1 ? "#26a69a" : "#ef5350";
+  const expectancyR = calcExpectancyR(winRate, avgRr);
 
   const avgRrTile = (
     <Tile
       label="Avg R"
       value={avgRr != null ? fmt(avgRr, 2) : "--"}
       sub="avg R:R achieved"
-      color={avgRrColor}
+      color={signedColor(avgRr, 1)}
     />
   );
 
@@ -59,13 +62,13 @@ export function OverviewKpiStrip({ stats, loading, isBacktest = false }: Overvie
         <Tile
           label="Profit Factor"
           value={pf != null ? fmt(pf, 2) : "--"}
-          sub={pf != null && pf >= 1.5 ? "above threshold" : "below 1.5"}
+          sub={pfSub(pf)}
         />
         <Tile
-          label="Net P&L"
-          value={pnl != null ? `${pnl >= 0 ? "+" : ""}$${fmt(pnl, 2)} (notional)` : "--"}
-          sub={stats ? `${stats.closed_trades} closed trades` : "—"}
-          color="#777777"
+          label="Expectancy R"
+          value={expectancyR != null ? `${expectancyR >= 0 ? "+" : ""}${fmt(expectancyR, 2)}R` : "--"}
+          sub="per trade in R"
+          color={signedColor(expectancyR)}
         />
       </div>
     );
@@ -77,7 +80,7 @@ export function OverviewKpiStrip({ stats, loading, isBacktest = false }: Overvie
         label="Expectancy"
         value={expectancy != null ? `${expectancy >= 0 ? "+" : ""}$${fmt(expectancy, 2)}` : "--"}
         sub="per trade"
-        color={expectancyColor}
+        color={signedColor(expectancy)}
       />
       <Tile
         label="Win Rate"
@@ -87,13 +90,13 @@ export function OverviewKpiStrip({ stats, loading, isBacktest = false }: Overvie
       <Tile
         label="Profit Factor"
         value={pf != null ? fmt(pf, 2) : "--"}
-        sub={pf != null && pf >= 1.5 ? "above threshold" : "below 1.5"}
+        sub={pfSub(pf)}
       />
       <Tile
         label="Net P&L"
         value={pnl != null ? `${pnl >= 0 ? "+" : ""}$${fmt(pnl, 2)}` : "--"}
         sub={stats ? `${stats.closed_trades} closed trades` : "—"}
-        color={pnlColor}
+        color={pnlColor(pnl)}
       />
       {avgRrTile}
     </div>

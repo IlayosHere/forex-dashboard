@@ -144,6 +144,7 @@ class TradeStatsResponse(BaseModel):
     by_confidence: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_rating: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_rule_compliance: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_criteria_met: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
 
 class DailySummaryPoint(BaseModel):

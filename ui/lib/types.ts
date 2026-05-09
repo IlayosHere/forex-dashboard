@@ -256,6 +256,15 @@ export interface CalendarEvent {
   session_bucket: SessionBucket; // pre_market / cash_session / none
 }
 
+export interface ComplianceBucket {
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  total_pnl_usd: number;
+  avg_rr: number | null;
+}
+
 export interface TradeStats {
   total_trades: number;
   open_trades: number;
@@ -296,6 +305,8 @@ export interface TradeStats {
   by_session: Record<string, BreakdownEntry>;
   by_confidence: Record<string, BreakdownEntry>;
   by_rating: Record<string, BreakdownEntry>;
+  by_rule_compliance?: Record<string, ComplianceBucket>;
+  by_criteria_met?: Record<string, ComplianceBucket>;
 }
 
 export interface EquityCurvePoint {

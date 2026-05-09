@@ -16,6 +16,7 @@ import { useAccounts } from "@/lib/useAccounts";
 import { useEquityCurve } from "@/lib/useEquityCurve";
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useIctStats } from "@/lib/useIctStats";
+import { SMALL_SAMPLE_THRESHOLD } from "@/lib/statsHelpers";
 
 export default function StatisticsPage() {
   const ctx = useStatsContext();
@@ -27,6 +28,8 @@ export default function StatisticsPage() {
   const { data: ictData, loading: ictLoading } = useIctStats(ctx.apiFilters);
 
   const isMnq = ctx.context.instrumentType === "futures_mnq";
+  const isBacktest = ctx.context.backtestMode;
+  const smallSample = !statsLoading && stats != null && stats.closed_trades < SMALL_SAMPLE_THRESHOLD;
 
   return (
     <div className="p-6 max-w-7xl">
@@ -34,7 +37,7 @@ export default function StatisticsPage() {
 
       <ContextBar ctx={ctx} accounts={accounts} />
 
-      {ctx.context.strategy && ctx.context.strategy !== "all" && (
+      {!isBacktest && ctx.context.strategy && ctx.context.strategy !== "all" && (
         <RegimeBanner strategy={ctx.context.strategy} />
       )}
 
@@ -47,9 +50,17 @@ export default function StatisticsPage() {
         </div>
       )}
 
+      {isBacktest && smallSample && (
+        <div className="mb-4 flex items-center gap-3 rounded border border-amber-400/30 bg-amber-400/10 px-4 py-3">
+          <p className="text-xs text-amber-400">
+            Small sample — {stats?.closed_trades ?? 0} closed trades. Metrics are unreliable below {SMALL_SAMPLE_THRESHOLD} decisive trades.
+          </p>
+        </div>
+      )}
+
       <section id="overview" className="mb-4">
         <SectionHeader title="Overview" subtitle={stats ? `${stats.closed_trades} closed trades` : undefined} />
-        <OverviewKpiStrip stats={stats} loading={statsLoading} isBacktest={ctx.context.backtestMode} />
+        <OverviewKpiStrip stats={stats} loading={statsLoading} isBacktest={isBacktest} />
       </section>
 
       <hr className="border-border/40" />
@@ -65,8 +76,8 @@ export default function StatisticsPage() {
       )}
 
       <section id="edge" className="mb-4">
-        <SectionHeader title="Edge Metrics" />
-        <EdgeMetrics stats={stats} loading={statsLoading} />
+        <SectionHeader title={isBacktest ? "Edge Metrics — R-based" : "Edge Metrics"} />
+        <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} />
       </section>
 
       <hr className="border-border/40" />
@@ -79,15 +90,15 @@ export default function StatisticsPage() {
       <hr className="border-border/40" />
 
       <section id="equity" className="mb-4">
-        <SectionHeader title="Equity Curve" />
-        <EquityCurveChart data={equityData} loading={equityLoading} />
+        <SectionHeader title={isBacktest ? "Equity Curve (notional)" : "Equity Curve"} />
+        <EquityCurveChart data={equityData} loading={equityLoading} isBacktest={isBacktest} />
       </section>
 
       <hr className="border-border/40" />
 
       <section id="calendar">
         <SectionHeader title="Monthly P&amp;L" />
-        <MonthlyBars data={dailyData} loading={dailyLoading} />
+        <MonthlyBars data={dailyData} loading={dailyLoading} isBacktest={isBacktest} />
       </section>
     </div>
   );
