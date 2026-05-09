@@ -170,6 +170,8 @@ def make_trade(
     close_time: datetime | None = None,
     account_id: str | None = None,
     instrument_type: str = "forex",
+    rule_followed: bool | None = None,
+    criteria_met_at_entry: bool | None = None,
 ) -> TradeModel:
     """Insert and return a trade with sensible defaults."""
     now = datetime.now(timezone.utc)
@@ -201,6 +203,8 @@ def make_trade(
         confidence=None,
         screenshot_url=None,
         trade_metadata={},
+        rule_followed=rule_followed,
+        criteria_met_at_entry=criteria_met_at_entry,
         created_at=now,
         updated_at=now,
     )

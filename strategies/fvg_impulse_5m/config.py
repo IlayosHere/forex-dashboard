@@ -3,6 +3,9 @@ strategies/fvg_impulse_5m/config.py
 -----------------------------------
 Shared spread cost tables and slippage constant for the fvg_impulse_5m strategy.
 
+H0/H1 tiers removed: signals during broker hours 0-1 are suppressed at the
+scanner level, so only normal-hours spreads are needed.
+
 Usage:
     from config import get_spread_pips, SLIPPAGE_PIPS, EXCHANGE_TZ
 """
@@ -12,12 +15,11 @@ from shared.market_data import EXCHANGE_TZ  # noqa: F401 — re-exported for str
 
 
 # ---------------------------------------------------------------------------
-# Spread cost model (3-tier: normal / H1 / H0)
+# Spread cost model (single tier: normal hours H2+)
 # ---------------------------------------------------------------------------
 # Measured from logs/spread_monitor.csv (broker-time medians).
-# H0 = daily rollover (broker midnight), H1 = transition, H2+ = normal.
+# H0/H1 signals are suppressed in the scanner; these values cover H2-H23.
 
-# Normal hours (H2-H23)
 SPREADS_NORMAL: dict[str, float] = {
     "EURUSD": 0.2, "USDJPY": 0.3, "GBPUSD": 0.4, "USDCHF": 0.5,
     "USDCAD": 0.5, "AUDUSD": 0.3, "NZDUSD": 0.4,
@@ -29,43 +31,14 @@ SPREADS_NORMAL: dict[str, float] = {
     "CADCHF": 1.5, "AUDCHF": 1.4,
 }
 
-# H1 spreads -- still elevated after rollover (measured medians).
-SPREADS_H1: dict[str, float] = {
-    "EURUSD": 0.4, "USDJPY": 1.0, "GBPUSD": 0.8, "USDCHF": 0.8,
-    "USDCAD": 1.0, "AUDUSD": 1.0, "NZDUSD": 0.5,
-    "EURJPY": 1.7, "AUDJPY": 3.3, "CADJPY": 1.6, "CHFJPY": 4.8,
-    "AUDCAD": 3.2, "EURCHF": 1.3, "GBPJPY": 2.4,
-    "EURAUD": 4.2, "EURCAD": 2.2, "EURNZD": 2.3, "GBPAUD": 3.4,
-    "GBPCAD": 2.2, "GBPCHF": 3.0, "GBPNZD": 3.5, "NZDCAD": 1.8,
-    "NZDCHF": 1.7, "EURGBP": 0.9, "AUDNZD": 3.6, "NZDJPY": 1.5,
-    "CADCHF": 2.2, "AUDCHF": 2.3,
-}
-
-# H0 spreads -- daily rollover, extreme widening (measured medians).
-SPREADS_H0: dict[str, float] = {
-    "EURUSD": 3.6, "USDJPY": 6.7, "GBPUSD": 9.3, "USDCHF": 7.2,
-    "USDCAD": 3.2, "AUDUSD": 4.8, "NZDUSD": 2.0,
-    "EURJPY": 10.8, "AUDJPY": 14.4, "CADJPY": 9.4, "CHFJPY": 17.0,
-    "AUDCAD": 12.2, "EURCHF": 4.7, "GBPJPY": 18.6,
-    "EURAUD": 15.0, "EURCAD": 10.2, "EURNZD": 8.8, "GBPAUD": 30.0,
-    "GBPCAD": 17.7, "GBPCHF": 18.6, "GBPNZD": 9.1, "NZDCAD": 6.8,
-    "NZDCHF": 9.1, "EURGBP": 4.0, "AUDNZD": 13.8, "NZDJPY": 8.0,
-    "CADCHF": 9.6, "AUDCHF": 11.0,
-}
-
 SLIPPAGE_PIPS: float = 0.2
 
 
-def get_spread_pips(symbol: str, broker_hour: int) -> float:
-    """Return spread in pips for a symbol at a given broker hour.
+def get_spread_pips(symbol: str) -> float:
+    """Return normal-hours spread in pips for a symbol.
 
     Parameters
     ----------
-    symbol      : Currency pair (e.g. "EURUSD").
-    broker_hour : Hour in broker/server time (0-23).
+    symbol : Currency pair (e.g. "EURUSD").
     """
-    if broker_hour == 0:
-        return SPREADS_H0.get(symbol, 5.0)
-    if broker_hour == 1:
-        return SPREADS_H1.get(symbol, 2.0)
     return SPREADS_NORMAL.get(symbol, 1.0)

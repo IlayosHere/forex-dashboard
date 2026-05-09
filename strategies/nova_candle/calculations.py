@@ -22,7 +22,6 @@ import numpy as np
 import pandas as pd
 
 from shared.calculator import pip_size, pip_value_per_lot
-from shared.market_data import EXCHANGE_TZ
 # TODO: move spread tables to shared/ so nova_candle does not depend on fvg_impulse
 from strategies.fvg_impulse.config import SLIPPAGE_PIPS, get_spread_pips
 from strategies.nova_candle.sl import compute_bos_sl
@@ -91,14 +90,13 @@ def _build_params(
     sl: float,
     entry: float,
     pip: float,
-    candle_time,
+    candle_time: Any,
 ) -> dict[str, Any] | None:
     """Build the final trade parameter dict from BOS SL."""
     symbol = signal["symbol"]
     direction = signal["direction"]
 
-    broker_hour = candle_time.astimezone(EXCHANGE_TZ).hour
-    spread_pips = get_spread_pips(symbol, broker_hour)
+    spread_pips = get_spread_pips(symbol)
 
     raw_risk_pips = abs(entry - sl) / pip
     effective_risk_pips = raw_risk_pips + spread_pips + SLIPPAGE_PIPS

@@ -58,7 +58,7 @@ analytics/
     volume.py              Volume params: relative_volume, volume_percentile,
                            volume_regime
     fvg_impulse.py         FVG-specific params (shared between M15 and M5 variants)
-    nova_candle.py         Nova-specific params + spread_tier
+    nova_candle.py         Nova-specific params
 ```
 
 ---

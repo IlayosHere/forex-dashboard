@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 
 from api.services.trade_stats_extended import (
     aggregate_by_assessment,
+    aggregate_by_criteria_met,
     aggregate_by_day_of_week,
+    aggregate_by_rule_compliance,
     aggregate_by_session,
     build_daily_summary,
     build_equity_curve,
@@ -53,16 +55,16 @@ def test_equity_curve_accumulates_pnl(db: Session) -> None:
 
 
 def test_equity_curve_sorted_by_close_time(db: Session) -> None:
-    """Trades inserted out of order are sorted by close_time."""
+    """Trades inserted out of order are sorted by open_time."""
     t_late = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=200.0, pnl_pips=40.0,
-        close_time=BASE + timedelta(hours=5),
+        open_time=BASE + timedelta(hours=5),
     )
     t_early = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=50.0, pnl_pips=10.0,
-        close_time=BASE,
+        open_time=BASE,
     )
     result = build_equity_curve([t_late, t_early])
     assert result[0]["pnl_usd"] == 50.0
@@ -75,7 +77,7 @@ def test_equity_curve_date_field_is_iso_date(db: Session) -> None:
     t = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=10.0, pnl_pips=5.0,
-        close_time=datetime(2025, 6, 15, 9, 0, tzinfo=timezone.utc),
+        open_time=datetime(2025, 6, 15, 9, 0, tzinfo=timezone.utc),
     )
     result = build_equity_curve([t])
     assert result[0]["date"] == "2025-06-15"
@@ -109,12 +111,12 @@ def test_daily_summary_aggregates_by_day(db: Session) -> None:
     t1 = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=80.0, pnl_pips=16.0,
-        close_time=day,
+        open_time=day,
     )
     t2 = make_trade(
         db, status="closed", outcome="loss",
         pnl_usd=-40.0, pnl_pips=-8.0,
-        close_time=day + timedelta(hours=3),
+        open_time=day + timedelta(hours=3),
     )
     result = build_daily_summary([t1, t2])
     assert len(result) == 1
@@ -132,12 +134,12 @@ def test_daily_summary_separate_days(db: Session) -> None:
     t1 = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=50.0, pnl_pips=10.0,
-        close_time=datetime(2025, 4, 2, tzinfo=timezone.utc),
+        open_time=datetime(2025, 4, 2, tzinfo=timezone.utc),
     )
     t2 = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=30.0, pnl_pips=6.0,
-        close_time=datetime(2025, 4, 1, tzinfo=timezone.utc),
+        open_time=datetime(2025, 4, 1, tzinfo=timezone.utc),
     )
     result = build_daily_summary([t1, t2])
     assert len(result) == 2
@@ -229,12 +231,12 @@ def test_edge_metrics_consistency_ratio(db: Session) -> None:
     t1 = make_trade(
         db, status="closed", outcome="win",
         pnl_usd=100.0,
-        close_time=week1_monday,
+        open_time=week1_monday,
     )
     t2 = make_trade(
         db, status="closed", outcome="loss",
         pnl_usd=-200.0,
-        close_time=week2_monday,
+        open_time=week2_monday,
     )
     m = calculate_edge_metrics([t1, t2])
     # Week 1: +100 (positive), Week 2: -200 (negative) → 50% consistency
@@ -382,3 +384,140 @@ def test_aggregate_by_confidence_none_excluded(db: Session) -> None:
     # confidence defaults to None in make_trade
     result = aggregate_by_assessment([t], "confidence")
     assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# aggregate_by_criteria_met
+# ---------------------------------------------------------------------------
+
+
+def test_criteria_met_excludes_none(db: Session) -> None:
+    """Trades with criteria_met_at_entry=None are not included in any bucket."""
+    make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+               criteria_met_at_entry=None)
+    t2 = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                    criteria_met_at_entry=None)
+    result = aggregate_by_criteria_met([t2])
+    assert result == {}
+
+
+def test_criteria_met_buckets_correct(db: Session) -> None:
+    """True maps to 'met', False maps to 'not_met'."""
+    t_met = make_trade(db, status="closed", outcome="win", pnl_usd=80.0, pnl_pips=8.0,
+                       criteria_met_at_entry=True)
+    t_not = make_trade(db, status="closed", outcome="loss", pnl_usd=-40.0, pnl_pips=-4.0,
+                       criteria_met_at_entry=False)
+    result = aggregate_by_criteria_met([t_met, t_not])
+    assert "met" in result
+    assert "not_met" in result
+    assert result["met"]["total"] == 1
+    assert result["not_met"]["total"] == 1
+
+
+def test_criteria_met_win_rate(db: Session) -> None:
+    """Win rate is computed correctly per bucket."""
+    t1 = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                    criteria_met_at_entry=True)
+    t2 = make_trade(db, status="closed", outcome="win", pnl_usd=80.0, pnl_pips=8.0,
+                    criteria_met_at_entry=True)
+    t3 = make_trade(db, status="closed", outcome="loss", pnl_usd=-50.0, pnl_pips=-5.0,
+                    criteria_met_at_entry=False)
+    result = aggregate_by_criteria_met([t1, t2, t3])
+    assert result["met"]["win_rate"] == 100.0
+    assert result["not_met"]["win_rate"] == 0.0  # 0 wins / 1 loss → 0.0%
+
+
+def test_criteria_met_avg_rr_populated(db: Session) -> None:
+    """avg_rr is populated from rr_achieved values."""
+    t = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                   rr_achieved=2.5, criteria_met_at_entry=True)
+    result = aggregate_by_criteria_met([t])
+    assert result["met"]["avg_rr"] == 2.5
+
+
+def test_criteria_met_avg_rr_none_when_no_rr(db: Session) -> None:
+    """avg_rr is None when no rr_achieved values in the bucket."""
+    t = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                   rr_achieved=None, criteria_met_at_entry=True)
+    result = aggregate_by_criteria_met([t])
+    assert result["met"]["avg_rr"] is None
+
+
+def test_criteria_met_mixed_none_excluded(db: Session) -> None:
+    """None trades are excluded even when mixed with non-None trades."""
+    t_met = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                       criteria_met_at_entry=True)
+    t_not = make_trade(db, status="closed", outcome="loss", pnl_usd=-40.0, pnl_pips=-4.0,
+                       criteria_met_at_entry=False)
+    t_none = make_trade(db, status="closed", outcome="win", pnl_usd=60.0, pnl_pips=6.0,
+                        criteria_met_at_entry=None)
+    result = aggregate_by_criteria_met([t_met, t_not, t_none])
+    total_counted = result["met"]["total"] + result["not_met"]["total"]
+    assert total_counted == 2
+
+
+def test_criteria_met_name_field(db: Session) -> None:
+    """Each bucket has a 'name' field matching the key."""
+    t = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                   criteria_met_at_entry=True)
+    result = aggregate_by_criteria_met([t])
+    assert result["met"]["name"] == "met"
+
+
+# ---------------------------------------------------------------------------
+# aggregate_by_rule_compliance
+# ---------------------------------------------------------------------------
+
+
+def test_rule_compliance_three_way_split(db: Session) -> None:
+    """True→compliant, False→mistake, None→unreviewed; all three buckets present."""
+    t_ok = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                      rule_followed=True)
+    t_err = make_trade(db, status="closed", outcome="loss", pnl_usd=-50.0, pnl_pips=-5.0,
+                       rule_followed=False)
+    t_none = make_trade(db, status="closed", outcome="win", pnl_usd=80.0, pnl_pips=8.0,
+                        rule_followed=None)
+    result = aggregate_by_rule_compliance([t_ok, t_err, t_none])
+    assert "compliant" in result
+    assert "mistake" in result
+    assert "unreviewed" in result
+    assert result["compliant"]["total"] == 1
+    assert result["mistake"]["total"] == 1
+    assert result["unreviewed"]["total"] == 1
+
+
+def test_rule_compliance_win_rate(db: Session) -> None:
+    """Win rate is computed per bucket from decisive trades only."""
+    t1 = make_trade(db, status="closed", outcome="win", pnl_usd=80.0, pnl_pips=8.0,
+                    rule_followed=True)
+    t2 = make_trade(db, status="closed", outcome="loss", pnl_usd=-40.0, pnl_pips=-4.0,
+                    rule_followed=True)
+    result = aggregate_by_rule_compliance([t1, t2])
+    assert result["compliant"]["win_rate"] == 50.0
+
+
+def test_rule_compliance_avg_rr(db: Session) -> None:
+    """avg_rr is populated per bucket from rr_achieved."""
+    t_ok = make_trade(db, status="closed", outcome="win", pnl_usd=90.0, pnl_pips=9.0,
+                      rr_achieved=1.8, rule_followed=True)
+    t_err = make_trade(db, status="closed", outcome="loss", pnl_usd=-45.0, pnl_pips=-4.5,
+                       rr_achieved=0.5, rule_followed=False)
+    result = aggregate_by_rule_compliance([t_ok, t_err])
+    assert result["compliant"]["avg_rr"] == 1.8
+    assert result["mistake"]["avg_rr"] == 0.5
+
+
+def test_rule_compliance_unreviewed_pnl(db: Session) -> None:
+    """Unreviewed bucket accumulates pnl_usd correctly."""
+    t = make_trade(db, status="closed", outcome="win", pnl_usd=75.0, pnl_pips=7.5,
+                   rule_followed=None)
+    result = aggregate_by_rule_compliance([t])
+    assert result["unreviewed"]["total_pnl_usd"] == 75.0
+
+
+def test_rule_compliance_name_fields(db: Session) -> None:
+    """Each bucket has a 'name' field matching its key."""
+    t = make_trade(db, status="closed", outcome="win", pnl_usd=100.0, pnl_pips=10.0,
+                   rule_followed=True)
+    result = aggregate_by_rule_compliance([t])
+    assert result["compliant"]["name"] == "compliant"

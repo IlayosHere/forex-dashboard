@@ -2,8 +2,7 @@
 tests/test_structure_params.py
 ------------------------------
 Unit tests for the cross-strategy structure / macro / regime parameters
-(``analytics/params/structure.py``, ``macro.py``, ``regime.py``) plus the
-updated ``spread_tier`` (``analytics/params/nova_candle.py``).
+(``analytics/params/structure.py``, ``macro.py``, ``regime.py``).
 
 Uses deterministic DataFrame fixtures matching the style of
 ``tests/test_analytics_candle_params.py``.
@@ -22,7 +21,6 @@ from analytics.params.macro import (
     dist_to_prior_day_hl_atr,
     htf_range_position_d1,
 )
-from analytics.params.nova_candle import spread_tier
 from analytics.params.regime import (
     range_bound_efficiency,
     range_compression_ratio,
@@ -570,41 +568,3 @@ def test_spread_atr_ratio_scales_with_spread() -> None:
     assert low_r is not None and high_r is not None
     assert high_r > low_r
 
-
-# ---------------------------------------------------------------------------
-# spread_tier modification — scope broadening + DST correctness
-# ---------------------------------------------------------------------------
-
-def test_spread_tier_registered_for_fvg_impulse() -> None:
-    """After broadening scope, spread_tier must appear for every strategy."""
-    names_fvg = {p.name for p in get_params_for_strategy("fvg-impulse")}
-    names_fvg5 = {p.name for p in get_params_for_strategy("fvg-impulse-5m")}
-    names_nova = {p.name for p in get_params_for_strategy("nova-candle")}
-    assert "spread_tier" in names_fvg
-    assert "spread_tier" in names_fvg5
-    assert "spread_tier" in names_nova
-
-
-def test_spread_tier_dst_summer() -> None:
-    """July in Jerusalem is IDT (+03:00). 21:00 UTC → 00:00 broker → 'H0'."""
-    sig = _signal(candle_time=datetime(2025, 7, 1, 21, 0, tzinfo=timezone.utc))
-    assert spread_tier(sig, None) == "H0"
-
-
-def test_spread_tier_dst_summer_h1() -> None:
-    """July in Jerusalem is IDT (+03:00). 22:00 UTC → 01:00 broker → 'H1'."""
-    sig = _signal(candle_time=datetime(2025, 7, 1, 22, 0, tzinfo=timezone.utc))
-    assert spread_tier(sig, None) == "H1"
-
-
-def test_spread_tier_winter_h0() -> None:
-    """January in Jerusalem is IST (+02:00). 22:00 UTC → 00:00 broker → 'H0'."""
-    sig = _signal(candle_time=datetime(2025, 1, 15, 22, 0, tzinfo=timezone.utc))
-    assert spread_tier(sig, None) == "H0"
-
-
-def test_spread_tier_returns_h2_midday() -> None:
-    sig = _signal(candle_time=datetime(2025, 7, 1, 10, 0, tzinfo=timezone.utc))
-    result = spread_tier(sig, None)
-    assert result == "H2"
-    assert type(result) is str

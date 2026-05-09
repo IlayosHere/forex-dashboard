@@ -137,9 +137,56 @@ describe("StatsBar — backtest mode", () => {
     expect(tradesIdx).toBeLessThan(rrIdx);
   });
 
-  it("still shows Win Rate and Streak in backtest mode", () => {
+  it("shows Win Rate but not Streak in backtest mode", () => {
     render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
     expect(screen.getByText("Win Rate")).toBeInTheDocument();
-    expect(screen.getByText("Streak")).toBeInTheDocument();
+    expect(screen.queryByText("Streak")).not.toBeInTheDocument();
+  });
+
+  it("shows Criteria Met card in backtest mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    expect(screen.getByText("Criteria Met")).toBeInTheDocument();
+  });
+
+  it("shows Compliance card in live mode, not in backtest", () => {
+    const { rerender } = render(<StatsBar stats={MOCK_STATS} loading={false} mode="default" />);
+    expect(screen.getByText("Compliance")).toBeInTheDocument();
+    expect(screen.queryByText("Criteria Met")).not.toBeInTheDocument();
+
+    rerender(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    expect(screen.queryByText("Compliance")).not.toBeInTheDocument();
+    expect(screen.getByText("Criteria Met")).toBeInTheDocument();
+  });
+
+  it("computes Criteria Met rate from by_criteria_met", () => {
+    const stats = {
+      ...MOCK_STATS,
+      by_criteria_met: {
+        met: { total: 7, wins: 5, losses: 2, win_rate: 71.4, total_pnl_usd: 350, avg_rr: 1.8 },
+        not_met: { total: 3, wins: 1, losses: 2, win_rate: 33.3, total_pnl_usd: -50, avg_rr: 0.6 },
+      },
+    };
+    render(<StatsBar stats={stats} loading={false} mode="backtest" />);
+    expect(screen.getByText("70%")).toBeInTheDocument();
+    expect(screen.getByText("7 met / 3 not")).toBeInTheDocument();
+  });
+
+  it("shows 'not recorded' when no criteria_met data", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    expect(screen.getByText("not recorded")).toBeInTheDocument();
+  });
+
+  it("omits $ from P&L value in backtest mode", () => {
+    const { container } = render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);
+    const pnlCard = screen.getByText("P&L (notional)").closest("div");
+    expect(pnlCard?.textContent).not.toContain("$");
+  });
+
+  it("includes $ in P&L value in live mode", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} mode="default" />);
+    // The P&L card renders "P&L" label and value like "+$1250.75" in sibling divs
+    const pnlLabel = screen.getByText("P&L");
+    const card = pnlLabel.closest(".border.border-border.rounded");
+    expect(card?.textContent).toContain("$");
   });
 });

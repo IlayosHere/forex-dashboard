@@ -203,6 +203,10 @@ _RULE_BUCKET: dict[bool | None, str] = {
     True: "compliant", False: "mistake", None: "unreviewed",
 }
 
+_CRITERIA_BUCKET: dict[bool | None, str] = {
+    True: "met", False: "not_met",
+}
+
 
 def aggregate_by_rule_compliance(closed: list[TradeModel]) -> dict[str, dict]:
     """Group closed trades by rule_followed value.
@@ -212,6 +216,22 @@ def aggregate_by_rule_compliance(closed: list[TradeModel]) -> dict[str, dict]:
     """
     def key_fn(t: TradeModel) -> str:
         return _RULE_BUCKET[t.rule_followed]
+
+    raw = _aggregate_dimension(closed, key_fn)
+    return {k: {**v, "name": k} for k, v in raw.items()}
+
+
+def aggregate_by_criteria_met(closed: list[TradeModel]) -> dict[str, dict]:
+    """Group closed trades by criteria_met_at_entry value.
+
+    Buckets: 'met' (True), 'not_met' (False). Trades with None are excluded —
+    criteria_met_at_entry is only recorded on backtest trades.
+    """
+    def key_fn(t: TradeModel) -> str | None:
+        v = t.criteria_met_at_entry
+        if v is None:
+            return None
+        return _CRITERIA_BUCKET[v]
 
     raw = _aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}

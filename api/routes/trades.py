@@ -49,6 +49,7 @@ from api.services.trade_stats import (
 )
 from api.services.trade_stats_extended import (
     aggregate_by_assessment,
+    aggregate_by_criteria_met,
     aggregate_by_day_of_week,
     aggregate_by_rule_compliance,
     aggregate_by_session,
@@ -159,6 +160,7 @@ def trade_stats(
     metrics["by_confidence"] = aggregate_by_assessment(closed, "confidence")
     metrics["by_rating"] = aggregate_by_assessment(closed, "rating")
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
+    metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     return metrics
 
 
