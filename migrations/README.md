@@ -42,5 +42,6 @@ When deploying a new version to the live system:
 | 005 | `005_mnq_remove_entry_fields_add_fees.sql` | Adds `fees` column to `trades` table (entry model/pd_array dropped from app, not DB) | 2026-04-30 |
 | 006 | `006_rule_compliance.sql` | Adds `rule_followed` (BOOLEAN) to `trades`; creates `trade_mistakes` join table for many-to-many mistake linking | 2026-05-02 |
 | 007 | `007_ict_ifvg_bars.sql` | Adds `ict_ifvg_bars` (INTEGER) to `trades`; tracks bars elapsed between FVG formation and IFVG trigger | 2026-05-05 |
-| 008 | `008_backtest_field.sql` | Adds `criteria_met_at_entry` (BOOLEAN) to `trades`; anti-hindsight-bias check for backtest journal | 2026-05-07 |
-| 009 | `009_feelings_and_sessions.sql` | Adds `feeling_before/during/after` to `trades`; creates `trading_sessions` table for day-level session journaling | 2026-05-07 |
+| 008 | `008_backtest_field.sql` | Adds `criteria_met_at_entry` (BOOLEAN) to `trades`; anti-hindsight-bias check for backtest journal | 2026-05-08 (prod) |
+| 009 | `009_feelings_and_sessions.sql` | Adds `feeling_before/during/after` to `trades`; creates `trading_sessions` table for day-level session journaling | 2026-05-08 (prod) |
+| 010 | `010_be_outcome.sql` | Adds `be_outcome` (TEXT) to `trades`; tracks whether a breakeven stop prevented a loss or missed a valid TP | pending |

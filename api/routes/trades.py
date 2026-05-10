@@ -48,6 +48,7 @@ from api.services.trade_stats import (
     calculate_trade_metrics,
 )
 from api.services.trade_stats_extended import (
+    aggregate_be_outcome,
     aggregate_by_assessment,
     aggregate_by_criteria_met,
     aggregate_by_day_of_week,
@@ -106,6 +107,7 @@ def create_trade(
         ict_htf_bias=req.ict_htf_bias,
         fees=req.fees,
         criteria_met_at_entry=req.criteria_met_at_entry,
+        be_outcome=req.be_outcome,
     )
     db.add(trade)
     db.commit()
@@ -161,6 +163,7 @@ def trade_stats(
     metrics["by_rating"] = aggregate_by_assessment(closed, "rating")
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
+    metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
     return metrics
 
 

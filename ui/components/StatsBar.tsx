@@ -66,6 +66,21 @@ function LiveComplianceCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
+function BeOutcomeCard({ stats }: { stats: TradeStats | null }) {
+  const bd = stats?.be_outcome_breakdown;
+  if (!bd || (bd.prevented_loss === 0 && bd.missed_tp === 0 && bd.unreviewed === 0)) return null;
+  const total = bd.prevented_loss + bd.missed_tp + bd.unreviewed;
+  const savedPct = total > 0 ? Math.round((bd.prevented_loss / total) * 100) : null;
+  return (
+    <StatCard
+      title="BE Quality"
+      primary={savedPct !== null ? `${savedPct}% saved` : "—"}
+      primaryColorClass={savedPct !== null && savedPct >= 50 ? "text-bull" : "text-bear"}
+      secondary={`${bd.prevented_loss}↓ ${bd.missed_tp}↑${bd.unreviewed > 0 ? ` ${bd.unreviewed}?` : ""}`}
+    />
+  );
+}
+
 function CriteriaMetCard({ stats }: { stats: TradeStats | null }) {
   const metCount = stats?.by_criteria_met?.met?.total ?? 0;
   const notMetCount = stats?.by_criteria_met?.not_met?.total ?? 0;
@@ -148,6 +163,7 @@ export function StatsBar({ stats, loading, mode = "default" }: StatsBarProps) {
         primary={stats?.profit_factor != null ? fmt(stats.profit_factor, 2) : "—"}
       />
       <LiveComplianceCard stats={stats} />
+      <BeOutcomeCard stats={stats} />
     </div>
   );
 }

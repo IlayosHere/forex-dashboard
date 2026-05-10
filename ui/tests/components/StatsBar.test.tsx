@@ -106,6 +106,58 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("StatsBar — BeOutcomeCard", () => {
+  it("renders BE Quality card when be_outcome_breakdown has counts", () => {
+    const stats = {
+      ...MOCK_STATS,
+      be_outcome_breakdown: { prevented_loss: 3, missed_tp: 1, unreviewed: 1 },
+    };
+    render(<StatsBar stats={stats} loading={false} />);
+    expect(screen.getByText("BE Quality")).toBeInTheDocument();
+  });
+
+  it("computes saved percentage from prevented_loss / total", () => {
+    const stats = {
+      ...MOCK_STATS,
+      be_outcome_breakdown: { prevented_loss: 3, missed_tp: 1, unreviewed: 0 },
+    };
+    render(<StatsBar stats={stats} loading={false} />);
+    expect(screen.getByText("75% saved")).toBeInTheDocument();
+  });
+
+  it("renders secondary breakdown text with correct counts", () => {
+    const stats = {
+      ...MOCK_STATS,
+      be_outcome_breakdown: { prevented_loss: 2, missed_tp: 1, unreviewed: 1 },
+    };
+    render(<StatsBar stats={stats} loading={false} />);
+    expect(screen.getByText(/2↓ 1↑/)).toBeInTheDocument();
+  });
+
+  it("shows unreviewed count in secondary when unreviewed > 0", () => {
+    const stats = {
+      ...MOCK_STATS,
+      be_outcome_breakdown: { prevented_loss: 2, missed_tp: 1, unreviewed: 3 },
+    };
+    render(<StatsBar stats={stats} loading={false} />);
+    expect(screen.getByText(/3\?/)).toBeInTheDocument();
+  });
+
+  it("does not render BE Quality card when all counts are 0", () => {
+    const stats = {
+      ...MOCK_STATS,
+      be_outcome_breakdown: { prevented_loss: 0, missed_tp: 0, unreviewed: 0 },
+    };
+    render(<StatsBar stats={stats} loading={false} />);
+    expect(screen.queryByText("BE Quality")).not.toBeInTheDocument();
+  });
+
+  it("does not render BE Quality card when be_outcome_breakdown is absent", () => {
+    render(<StatsBar stats={MOCK_STATS} loading={false} />);
+    expect(screen.queryByText("BE Quality")).not.toBeInTheDocument();
+  });
+});
+
 describe("StatsBar — backtest mode", () => {
   it("shows P&L (notional) title in backtest mode", () => {
     render(<StatsBar stats={MOCK_STATS} loading={false} mode="backtest" />);

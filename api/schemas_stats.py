@@ -145,6 +145,8 @@ class TradeStatsResponse(BaseModel):
     by_rating: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_rule_compliance: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_criteria_met: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # BE outcome breakdown — counts only trades with outcome='breakeven'
+    be_outcome_breakdown: dict[str, int] = Field(default_factory=dict)
 
 
 class DailySummaryPoint(BaseModel):

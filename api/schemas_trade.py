@@ -92,6 +92,9 @@ class TradeCreateRequest(BaseModel):
     feeling_during: str | None = None
     feeling_after: str | None = None
 
+    # Breakeven outcome — only valid when outcome/status is breakeven
+    be_outcome: str | None = None
+
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str) -> str:
@@ -153,6 +156,13 @@ class TradeCreateRequest(BaseModel):
         """Ensure feeling values belong to the known enum."""
         return _validate_feeling(v)
 
+    @field_validator("be_outcome")
+    @classmethod
+    def validate_be_outcome(cls, v: str | None) -> str | None:
+        if v is not None and v not in ("prevented_loss", "missed_tp"):
+            raise ValueError("be_outcome must be 'prevented_loss' or 'missed_tp'")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -198,6 +208,9 @@ class TradeUpdateRequest(BaseModel):
     feeling_before: str | None = None
     feeling_during: str | None = None
     feeling_after: str | None = None
+
+    # Breakeven outcome — only valid when outcome/status is breakeven
+    be_outcome: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -276,6 +289,13 @@ class TradeUpdateRequest(BaseModel):
         """Ensure feeling values belong to the known enum."""
         return _validate_feeling(v)
 
+    @field_validator("be_outcome")
+    @classmethod
+    def validate_be_outcome(cls, v: str | None) -> str | None:
+        if v is not None and v not in ("prevented_loss", "missed_tp"):
+            raise ValueError("be_outcome must be 'prevented_loss' or 'missed_tp'")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -331,6 +351,7 @@ class TradeResponse(BaseModel):
     feeling_before: str | None = None
     feeling_during: str | None = None
     feeling_after: str | None = None
+    be_outcome: str | None = None
     created_at: datetime
     updated_at: datetime
 

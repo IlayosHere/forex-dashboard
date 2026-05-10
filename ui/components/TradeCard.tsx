@@ -82,6 +82,15 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
           <span className="text-xs px-1.5 py-0.5 rounded bg-surface-raised text-muted-foreground font-medium">BT</span>
         )}
         <StatusBadge status={trade.status} outcome={trade.outcome} />
+        {trade.outcome === "breakeven" && (
+          trade.be_outcome === "prevented_loss" ? (
+            <span className="text-bull text-xs font-bold" title="BE prevented loss">↓</span>
+          ) : trade.be_outcome === "missed_tp" ? (
+            <span className="text-bear text-xs font-bold" title="BE missed TP">↑</span>
+          ) : (
+            <span className="text-text-muted text-xs" title="BE outcome not reviewed">?</span>
+          )
+        )}
         {trade.rule_followed === true && (
           <span className="text-bull text-xs font-bold" aria-label="Rules followed">
             ✓

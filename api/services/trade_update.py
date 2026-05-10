@@ -31,6 +31,8 @@ _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "ict_setup_type", "ict_setup_detail", "ict_tp_target",
     "ict_ifvg_timeframe", "ict_ifvg_bars", "ict_smt_present", "ict_tdo_aligned",
     "ict_htf_bias", "fees", "criteria_met_at_entry",
+    "feeling_before", "feeling_during", "feeling_after",
+    "be_outcome",
 })
 
 

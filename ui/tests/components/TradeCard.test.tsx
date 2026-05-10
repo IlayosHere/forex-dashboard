@@ -62,6 +62,10 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     fees: null,
     rule_followed: null,
     criteria_met_at_entry: null,
+    feeling_before: null,
+    feeling_during: null,
+    feeling_after: null,
+    be_outcome: null,
     linked_mistakes: [],
     created_at: "2026-04-10T14:00:00Z",
     updated_at: "2026-04-10T14:00:00Z",
@@ -142,5 +146,61 @@ describe("TradeCard — tags", () => {
     render(<TradeCard trade={makeTrade({ tags: ["patience", "fomo"] })} onClick={() => {}} />);
     expect(screen.getByText("patience")).toBeInTheDocument();
     expect(screen.getByText("fomo")).toBeInTheDocument();
+  });
+});
+
+describe("TradeCard — BE outcome glyph", () => {
+  it("shows down arrow for prevented_loss on a breakeven trade", () => {
+    render(
+      <TradeCard
+        trade={makeTrade({ outcome: "breakeven", be_outcome: "prevented_loss" })}
+        onClick={() => {}}
+      />
+    );
+    expect(screen.getByTitle("BE prevented loss")).toBeInTheDocument();
+  });
+
+  it("shows up arrow for missed_tp on a breakeven trade", () => {
+    render(
+      <TradeCard
+        trade={makeTrade({ outcome: "breakeven", be_outcome: "missed_tp" })}
+        onClick={() => {}}
+      />
+    );
+    expect(screen.getByTitle("BE missed TP")).toBeInTheDocument();
+  });
+
+  it("shows question mark when breakeven but be_outcome is null", () => {
+    render(
+      <TradeCard
+        trade={makeTrade({ outcome: "breakeven", be_outcome: null })}
+        onClick={() => {}}
+      />
+    );
+    expect(screen.getByTitle("BE outcome not reviewed")).toBeInTheDocument();
+  });
+
+  it("shows no BE glyph when outcome is win", () => {
+    render(
+      <TradeCard
+        trade={makeTrade({ outcome: "win", be_outcome: null })}
+        onClick={() => {}}
+      />
+    );
+    expect(screen.queryByTitle("BE prevented loss")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("BE missed TP")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("BE outcome not reviewed")).not.toBeInTheDocument();
+  });
+
+  it("shows no BE glyph when outcome is loss", () => {
+    render(
+      <TradeCard
+        trade={makeTrade({ outcome: "loss", be_outcome: null })}
+        onClick={() => {}}
+      />
+    );
+    expect(screen.queryByTitle("BE prevented loss")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("BE missed TP")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("BE outcome not reviewed")).not.toBeInTheDocument();
   });
 });

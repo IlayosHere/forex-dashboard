@@ -193,6 +193,10 @@ def trade_to_response(
         "ict_htf_bias": trade.ict_htf_bias,
         "fees": trade.fees,
         "criteria_met_at_entry": trade.criteria_met_at_entry,
+        "feeling_before": trade.feeling_before,
+        "feeling_during": trade.feeling_during,
+        "feeling_after": trade.feeling_after,
+        "be_outcome": trade.be_outcome,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }
