@@ -1,8 +1,13 @@
 import { StatusBadge } from "@/components/StatusBadge";
 
-import type { Trade } from "@/lib/types";
+import type { Trade, BeOutcome } from "@/lib/types";
 
 import { pnlColor } from "@/lib/format";
+
+const BE_OUTCOME_LABEL: Record<BeOutcome, { label: string; cls: string }> = {
+  prevented_loss: { label: "Prevented Loss", cls: "text-bull" },
+  missed_tp:      { label: "Missed TP",      cls: "text-bear" },
+};
 
 interface TradeResultPanelProps {
   trade: Trade;
@@ -51,6 +56,18 @@ export function TradeResultPanel({ trade, unitLabel, isBacktest = false }: Trade
           <div className="flex justify-between">
             <span className="label">Broker Fees</span>
             <span className="price text-text-muted">-${trade.fees.toFixed(2)}</span>
+          </div>
+        )}
+        {trade.outcome === "breakeven" && (
+          <div className="flex justify-between items-center">
+            <span className="label">BE Outcome</span>
+            {trade.be_outcome ? (
+              <span className={`text-xs font-medium ${BE_OUTCOME_LABEL[trade.be_outcome].cls}`}>
+                {BE_OUTCOME_LABEL[trade.be_outcome].label}
+              </span>
+            ) : (
+              <span className="text-xs text-text-muted italic">Not reviewed</span>
+            )}
           </div>
         )}
       </div>

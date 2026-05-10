@@ -14,7 +14,7 @@ import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
 import { TradeFeelingsPanel } from "@/components/TradeFeelingsPanel";
 
-import type { Trade, AccountType, LinkedMistake, TradingFeeling } from "@/lib/types";
+import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
 import type { IctParamsState } from "@/components/IctParamsPanel";
 
@@ -42,6 +42,7 @@ interface EditableFields {
   feelingBefore: TradingFeeling | null;
   feelingDuring: TradingFeeling | null;
   feelingAfter: TradingFeeling | null;
+  beOutcome: BeOutcome | null;
 }
 
 type EditAction =
@@ -63,6 +64,7 @@ const INITIAL_EDITABLE: EditableFields = {
   feelingBefore: null,
   feelingDuring: null,
   feelingAfter: null,
+  beOutcome: null,
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -99,6 +101,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [justClosedAsBe, setJustClosedAsBe] = useState(false);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const [ictParams, setIctParams] = useState<IctParamsState>({
     ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
@@ -128,6 +131,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             feelingBefore: t.feeling_before,
             feelingDuring: t.feeling_during,
             feelingAfter: t.feeling_after,
+            beOutcome: t.be_outcome,
           },
         });
       })
@@ -168,10 +172,22 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
       const t = await updateTrade(id, { exit_price: ep, status, outcome, close_time: new Date().toISOString() });
       setTrade(t);
       dispatch({ type: "SET_FIELD", field: "exitPrice", value: t.exit_price != null ? String(t.exit_price) : "" });
+      if (outcome === "breakeven") setJustClosedAsBe(true);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to close trade");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleBeOutcomeQuickCapture = async (v: BeOutcome) => {
+    dispatch({ type: "SET_FIELD", field: "beOutcome", value: v });
+    setJustClosedAsBe(false);
+    try {
+      const t = await updateTrade(id, { be_outcome: v });
+      setTrade(t);
+    } catch {
+      // non-fatal — value is in local state, user can save via Save Changes
     }
   };
 
@@ -212,6 +228,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         fees: editable.fees ? parseFloat(editable.fees) : null,
         rule_followed: editable.ruleFollowed,
         criteria_met_at_entry: editable.criteriaMetAtEntry,
+        be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
         ...ictUpdate,
       };
       await updateTrade(id, payload);
@@ -308,14 +325,17 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           />
         )}
 
-        {/* Close Trade (open trades only) */}
-        {isOpen && (
+        {/* Close Trade (open trades only) + BE quick-capture strip */}
+        {(isOpen || justClosedAsBe) && (
           <TradeCloseActions
             exitPrice={editable.exitPrice}
             saving={saving}
+            justClosedAsBe={justClosedAsBe}
             onExitPriceChange={(v) => dispatch({ type: "SET_FIELD", field: "exitPrice", value: v })}
             onClose={closeTrade}
             onCancel={cancelTrade}
+            onBeOutcomeQuickCapture={handleBeOutcomeQuickCapture}
+            onBeOutcomeSkip={() => setJustClosedAsBe(false)}
           />
         )}
 
@@ -329,6 +349,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           fees={editable.fees}
           isBacktest={tradeAccountType === "backtest"}
           criteriaMetAtEntry={editable.criteriaMetAtEntry}
+          isBreakeven={trade.outcome === "breakeven"}
+          beOutcome={editable.beOutcome}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
           onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
           onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
@@ -336,6 +358,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
           onCriteriaMetChange={(v) => dispatch({ type: "SET_FIELD", field: "criteriaMetAtEntry", value: v })}
+          onBeOutcomeChange={(v) => dispatch({ type: "SET_FIELD", field: "beOutcome", value: v })}
         />
 
         {/* Rule Compliance */}

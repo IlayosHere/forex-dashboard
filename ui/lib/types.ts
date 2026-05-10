@@ -1,4 +1,5 @@
 export type InstrumentType = "forex" | "futures_mnq";
+export type BeOutcome = "prevented_loss" | "missed_tp";
 export type TradingFeeling =
   | "calm" | "focused" | "confident"
   | "anxious" | "impatient" | "fearful" | "greedy" | "distracted" | "revenge" | "tired";
@@ -105,6 +106,7 @@ export interface TradeCreateRequest {
   feeling_before?: TradingFeeling | null;
   feeling_during?: TradingFeeling | null;
   feeling_after?: TradingFeeling | null;
+  be_outcome?: BeOutcome | null;
 }
 
 export interface TradeUpdateRequest {
@@ -140,6 +142,7 @@ export interface TradeUpdateRequest {
   feeling_before?: TradingFeeling | null;
   feeling_during?: TradingFeeling | null;
   feeling_after?: TradingFeeling | null;
+  be_outcome?: BeOutcome | null;
 }
 
 export interface Trade {
@@ -184,6 +187,7 @@ export interface Trade {
   feeling_before: TradingFeeling | null;
   feeling_during: TradingFeeling | null;
   feeling_after: TradingFeeling | null;
+  be_outcome: BeOutcome | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
@@ -307,6 +311,7 @@ export interface TradeStats {
   by_rating: Record<string, BreakdownEntry>;
   by_rule_compliance?: Record<string, ComplianceBucket>;
   by_criteria_met?: Record<string, ComplianceBucket>;
+  be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
 }
 
 export interface EquityCurvePoint {

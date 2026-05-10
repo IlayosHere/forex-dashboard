@@ -237,6 +237,24 @@ def aggregate_by_criteria_met(closed: list[TradeModel]) -> dict[str, dict]:
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
+def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
+    """Count BE trades by be_outcome value.
+
+    Only trades with outcome='breakeven' are included.
+    Returns: {'prevented_loss': N, 'missed_tp': N, 'unreviewed': N}
+    """
+    be_trades = [t for t in closed if t.outcome == "breakeven"]
+    result: dict[str, int] = {"prevented_loss": 0, "missed_tp": 0, "unreviewed": 0}
+    for t in be_trades:
+        if t.be_outcome == "prevented_loss":
+            result["prevented_loss"] += 1
+        elif t.be_outcome == "missed_tp":
+            result["missed_tp"] += 1
+        else:
+            result["unreviewed"] += 1
+    return result
+
+
 def _aggregate_dimension(
     closed: list[TradeModel],
     key_fn: Callable[[TradeModel], int | str | None],
