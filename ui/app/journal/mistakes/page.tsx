@@ -60,7 +60,7 @@ export default function MistakesPage() {
   const displayError = mutationError ?? error;
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-6">
       {/* Back link */}
       <Link
         href="/"

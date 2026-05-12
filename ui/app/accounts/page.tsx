@@ -202,7 +202,7 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-6">
       <Link
         href="/"
         className="text-xs text-[#777777] hover:text-[#e0e0e0] transition-colors inline-flex items-center gap-1 mb-3"

@@ -57,7 +57,7 @@ export default function InteractionsPage() {
   const { data, loading, error } = useInteraction(strategy, paramA, paramB);
 
   return (
-    <div className="p-6 max-w-7xl">
+    <div className="p-6">
       <div className="flex items-center gap-3 mb-5">
         <Link
           href="/statistics"
