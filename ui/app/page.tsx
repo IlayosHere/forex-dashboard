@@ -71,7 +71,7 @@ function DashboardContent() {
   const unitLabel = activeStrategy.instrumentType === "futures_mnq" ? "pts" : "pips";
 
   return (
-    <div className="p-6 max-w-[1200px]">
+    <div className="p-6">
       <div className="mb-5">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Signals</h1>
         <p className="text-xs text-[#777777] mt-0.5">

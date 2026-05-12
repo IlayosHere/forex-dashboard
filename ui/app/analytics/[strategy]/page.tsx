@@ -65,7 +65,7 @@ export default function AnalyticsStrategyPage() {
 
   if (error && !summary) {
     return (
-      <div className="p-6 max-w-5xl">
+      <div className="p-6">
         <button
           onClick={() => router.push("/analytics")}
           className="text-text-muted hover:text-text-primary text-sm mb-4 block"
@@ -84,7 +84,7 @@ export default function AnalyticsStrategyPage() {
   const correlations = summary?.top_correlations ?? [];
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

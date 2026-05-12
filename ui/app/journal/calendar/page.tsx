@@ -98,7 +98,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-6">
       {/* Back link */}
       <Link
         href="/"

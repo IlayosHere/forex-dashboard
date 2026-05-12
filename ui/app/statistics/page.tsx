@@ -32,7 +32,7 @@ export default function StatisticsPage() {
   const smallSample = !statsLoading && stats != null && stats.closed_trades < SMALL_SAMPLE_THRESHOLD;
 
   return (
-    <div className="p-6 max-w-7xl">
+    <div className="p-6">
       <h1 className="text-lg font-semibold text-text-primary mb-4">Statistics</h1>
 
       <ContextBar ctx={ctx} accounts={accounts} />
