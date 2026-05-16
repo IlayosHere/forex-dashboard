@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import type { Mistake } from "@/lib/types";
 
 interface MistakeListProps {
   mistakes: Mistake[];
   onIncrement: (id: string) => void;
   onDelete: (id: string) => void;
+  rulesMap?: Map<string, string[]>;
 }
 
 const COUNT_HIGH = 10;
@@ -37,7 +40,7 @@ function formatRelative(iso: string): string {
   return `${diffMonths}mo ago`;
 }
 
-export function MistakeList({ mistakes, onIncrement, onDelete }: MistakeListProps) {
+export function MistakeList({ mistakes, onIncrement, onDelete, rulesMap }: MistakeListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (mistakes.length === 0) {
@@ -84,6 +87,8 @@ export function MistakeList({ mistakes, onIncrement, onDelete }: MistakeListProp
           );
         }
 
+        const linkedRules = rulesMap?.get(m.id) ?? [];
+
         return (
           <div
             key={m.id}
@@ -99,6 +104,24 @@ export function MistakeList({ mistakes, onIncrement, onDelete }: MistakeListProp
               &times;{m.count}
             </span>
             <span className="flex-1 text-sm text-foreground truncate">{m.name}</span>
+            {linkedRules.length > 0 && (
+              <Popover>
+                <PopoverTrigger
+                  className="shrink-0 text-xs text-[#555555] hover:text-muted-foreground transition-colors"
+                  aria-label={`Linked to ${linkedRules.length} rules`}
+                >
+                  Linked to {linkedRules.length} {linkedRules.length === 1 ? "rule" : "rules"}
+                </PopoverTrigger>
+                <PopoverContent side="left" className="w-56 p-2">
+                  <p className="text-xs text-muted-foreground mb-1.5">Linked rules:</p>
+                  <ul className="space-y-1">
+                    {linkedRules.map((title, idx) => (
+                      <li key={idx} className="text-xs text-foreground leading-snug">{title}</li>
+                    ))}
+                  </ul>
+                </PopoverContent>
+              </Popover>
+            )}
             <span className="text-xs text-muted-foreground shrink-0 hidden sm:block tabular-nums">
               {formatRelative(m.last_occurred_at)}
             </span>

@@ -26,7 +26,9 @@ from api.db import Base, SessionLocal, engine
 from api.routes.accounts import router as accounts_router
 from api.routes.calculate import router as calculate_router
 from api.routes.calendar import router as calendar_router
+from api.routes.categories import router as categories_router
 from api.routes.mistakes import router as mistakes_router
+from api.routes.rules import router as rules_router
 from api.routes.trade_mistakes import router as trade_mistakes_router
 from api.routes.sessions import router as sessions_router
 from api.routes.signals import router as signals_router
@@ -102,3 +104,5 @@ app.include_router(calendar_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api", tags=["analytics"])
 app.include_router(analytics_stats_router, prefix="/api", tags=["analytics"])
 app.include_router(sessions_router, prefix="/api", tags=["sessions"])
+app.include_router(rules_router, prefix="/api", tags=["rules"])
+app.include_router(categories_router, prefix="/api", tags=["rule-categories"])

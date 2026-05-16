@@ -126,6 +126,75 @@ def migrate_add_trade_owner_status_index() -> None:
     logger.info("Created index ix_trades_owner_status")
 
 
+def migrate_add_rule_categories_table() -> None:
+    """Create rule_categories table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "rule_categories" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS rule_categories ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  owner VARCHAR NOT NULL,"
+            "  name VARCHAR(100) NOT NULL,"
+            "  created_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_rule_categories_owner"
+            " ON rule_categories (owner)"
+        ))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_rule_category_owner_name"
+            " ON rule_categories (owner, name)"
+        ))
+    logger.info("Created table rule_categories")
+
+
+def migrate_add_rules_table() -> None:
+    """Create rules table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "rules" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS rules ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  owner VARCHAR NOT NULL,"
+            "  title VARCHAR(80) NOT NULL,"
+            "  body TEXT,"
+            "  category_id VARCHAR REFERENCES rule_categories(id) ON DELETE SET NULL,"
+            "  break_count INTEGER NOT NULL DEFAULT 0,"
+            "  created_at DATETIME NOT NULL,"
+            "  updated_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_rules_owner ON rules (owner)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_rules_category_id ON rules (category_id)"
+        ))
+    logger.info("Created table rules")
+
+
+def migrate_add_rule_mistake_links_table() -> None:
+    """Create rule_mistake_links table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "rule_mistake_links" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS rule_mistake_links ("
+            "  rule_id VARCHAR NOT NULL REFERENCES rules(id) ON DELETE CASCADE,"
+            "  mistake_id VARCHAR NOT NULL REFERENCES mistakes(id) ON DELETE CASCADE,"
+            "  linked_at DATETIME NOT NULL,"
+            "  PRIMARY KEY (rule_id, mistake_id)"
+            ")"
+        ))
+    logger.info("Created table rule_mistake_links")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_add_account_id_column()
@@ -135,3 +204,6 @@ def run_all() -> None:
     migrate_add_owner_to_trades()
     migrate_add_trade_owner_open_time_index()
     migrate_add_trade_owner_status_index()
+    migrate_add_rule_categories_table()
+    migrate_add_rules_table()
+    migrate_add_rule_mistake_links_table()

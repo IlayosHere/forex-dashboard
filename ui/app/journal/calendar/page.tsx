@@ -23,6 +23,7 @@ const journalTabs = [
   { label: "Trades", href: "/journal" },
   { label: "Calendar", href: "/journal/calendar" },
   { label: "Mistakes", href: "/journal/mistakes" },
+  { label: "Rules", href: "/journal/rules" },
 ];
 
 function toDateString(year: number, month: number, day: number): string {

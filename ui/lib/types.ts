@@ -516,3 +516,24 @@ export interface TopCombinationsResponse {
   reason: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// Rules
+// ---------------------------------------------------------------------------
+
+export interface RuleCategory {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface Rule {
+  id: string;
+  title: string;
+  body: string | null;
+  break_count: number;
+  created_at: string;
+  updated_at: string;
+  category: RuleCategory | null;
+  linked_mistakes: LinkedMistake[];
+}
+

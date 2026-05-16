@@ -20,8 +20,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from typing import Any
+from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.db import Base
@@ -241,3 +242,70 @@ class TradeMistakeModel(Base):
         String, ForeignKey("mistakes.id", ondelete="CASCADE"), primary_key=True,
     )
     linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RuleCategoryModel(Base):
+    """A user-defined category label that groups trading rules."""
+
+    __tablename__ = "rule_categories"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    owner: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    rules: Mapped[list[RuleModel]] = relationship(
+        "RuleModel", back_populates="category_rel", lazy="noload",
+    )
+
+    __table_args__ = (
+        Index("ix_rule_categories_owner", "owner"),
+        UniqueConstraint("owner", "name", name="uq_rule_category_owner_name"),
+    )
+
+
+class RuleModel(Base):
+    """A trading rule written by the trader."""
+
+    __tablename__ = "rules"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    owner: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String(80), nullable=False)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("rule_categories.id", ondelete="SET NULL"), nullable=True,
+    )
+    break_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    category_rel: Mapped[RuleCategoryModel | None] = relationship(
+        "RuleCategoryModel", back_populates="rules", lazy="noload",
+    )
+    mistake_links: Mapped[list[RuleMistakeLink]] = relationship(
+        "RuleMistakeLink", back_populates="rule", lazy="noload",
+    )
+
+    __table_args__ = (
+        Index("ix_rules_owner", "owner"),
+        Index("ix_rules_category_id", "category_id"),
+    )
+
+
+class RuleMistakeLink(Base):
+    """Association table linking rules to mistakes (many-to-many)."""
+
+    __tablename__ = "rule_mistake_links"
+
+    rule_id: Mapped[str] = mapped_column(
+        String, ForeignKey("rules.id", ondelete="CASCADE"), primary_key=True,
+    )
+    mistake_id: Mapped[str] = mapped_column(
+        String, ForeignKey("mistakes.id", ondelete="CASCADE"), primary_key=True,
+    )
+    linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    rule: Mapped[RuleModel] = relationship(
+        "RuleModel", back_populates="mistake_links", lazy="noload",
+    )

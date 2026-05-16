@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from api.auth import get_current_user
 from api.db import get_db
 from api.models import MistakeModel, TradeMistakeModel, TradeModel
+from api.routes.rules import recompute_rules_for_mistake
 from api.schemas_trade import LinkedMistake
 
 logger = logging.getLogger(__name__)
@@ -130,6 +131,7 @@ def link_mistake(
 
     _link_mistake(trade_id, mistake, db)
     db.commit()
+    recompute_rules_for_mistake(mistake.id, db)
     return _get_linked_mistakes(trade_id, db)
 
 
@@ -155,3 +157,5 @@ def unlink_mistake(
         logger.info("Mistake %s unlinked from trade %s count=%d", mistake_id, trade_id, mistake.count)
 
     db.commit()
+    if mistake is not None:
+        recompute_rules_for_mistake(mistake_id, db)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,11 +10,13 @@ import { MistakeList } from "@/components/MistakeList";
 
 import { createMistake, deleteMistake, incrementMistake } from "@/lib/api";
 import { useMistakes } from "@/lib/useMistakes";
+import { useRules } from "@/lib/useRules";
 
 const JOURNAL_TABS = [
   { label: "Trades", href: "/journal" },
   { label: "Calendar", href: "/journal/calendar" },
   { label: "Mistakes", href: "/journal/mistakes" },
+  { label: "Rules", href: "/journal/rules" },
 ];
 
 export default function MistakesPage() {
@@ -23,6 +25,18 @@ export default function MistakesPage() {
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const { mistakes, loading, error, refetch } = useMistakes();
+  const { rules } = useRules();
+
+  const rulesMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    rules.forEach((rule) => {
+      rule.linked_mistakes.forEach((m) => {
+        const existing = map.get(m.id) ?? [];
+        map.set(m.id, [...existing, rule.title]);
+      });
+    });
+    return map;
+  }, [rules]);
 
   async function handleAdd(): Promise<void> {
     const name = draft.trim();
@@ -125,6 +139,7 @@ export default function MistakesPage() {
           mistakes={mistakes}
           onIncrement={(id) => void handleIncrement(id)}
           onDelete={(id) => void handleDelete(id)}
+          rulesMap={rulesMap}
         />
       )}
     </div>

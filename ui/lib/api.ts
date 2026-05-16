@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest } from "./types";
+import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -370,4 +370,88 @@ export async function upsertSession(date: string, body: SessionUpsertRequest): P
   });
   if (!res.ok) throw new Error(`Failed to save session: ${res.status}`);
   return res.json() as Promise<TradingSession>;
+}
+
+// ---------------------------------------------------------------------------
+// Rules
+// ---------------------------------------------------------------------------
+
+export interface RuleCreateRequest {
+  title: string;
+  body?: string | null;
+  category_id?: string | null;
+  linked_mistake_ids: string[];
+}
+
+export interface RuleUpdateRequest {
+  title?: string;
+  body?: string | null;
+  category_id?: string | null;
+  linked_mistake_ids?: string[];
+}
+
+export async function fetchRules(): Promise<Rule[]> {
+  const res = await authFetch(`${BASE_URL}/api/rules`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch rules: ${res.status}`);
+  return res.json() as Promise<Rule[]>;
+}
+
+export async function createRule(body: RuleCreateRequest): Promise<Rule> {
+  const res = await authFetch(`${BASE_URL}/api/rules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to create rule: ${res.status}`);
+  return res.json() as Promise<Rule>;
+}
+
+export async function updateRule(id: string, body: RuleUpdateRequest): Promise<Rule> {
+  const res = await authFetch(`${BASE_URL}/api/rules/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to update rule: ${res.status}`);
+  return res.json() as Promise<Rule>;
+}
+
+export async function deleteRule(id: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/rules/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete rule: ${res.status}`);
+}
+
+// ---------------------------------------------------------------------------
+// Rule Categories
+// ---------------------------------------------------------------------------
+
+export async function fetchRuleCategories(): Promise<RuleCategory[]> {
+  const res = await authFetch(`${BASE_URL}/api/rule-categories`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch rule categories: ${res.status}`);
+  return res.json() as Promise<RuleCategory[]>;
+}
+
+export async function createRuleCategory(name: string): Promise<RuleCategory> {
+  const res = await authFetch(`${BASE_URL}/api/rule-categories`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`Failed to create rule category: ${res.status}`);
+  return res.json() as Promise<RuleCategory>;
+}
+
+export async function updateRuleCategory(id: string, name: string): Promise<RuleCategory> {
+  const res = await authFetch(`${BASE_URL}/api/rule-categories/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`Failed to update rule category: ${res.status}`);
+  return res.json() as Promise<RuleCategory>;
+}
+
+export async function deleteRuleCategory(id: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/rule-categories/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete rule category: ${res.status}`);
 }

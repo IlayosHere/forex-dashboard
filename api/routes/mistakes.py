@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from api.auth import get_current_user
 from api.db import get_db
 from api.models import MistakeModel
+from api.routes.rules import recompute_rules_for_mistake
 from api.schemas_mistake import MistakeCreateRequest, MistakeResponse
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ def increment_mistake(
     db.commit()
     db.refresh(mistake)
     logger.info("Mistake incremented: %s count=%d", mistake_id, mistake.count)
+    recompute_rules_for_mistake(mistake_id, db)
     return mistake
 
 
