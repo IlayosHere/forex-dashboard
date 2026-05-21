@@ -23,6 +23,14 @@ describe("strategies registry", () => {
     expect(mnq?.defaultSymbol).toBe("MNQ");
   });
 
+  it("contains qt-mnq strategy", () => {
+    const qt = strategies.find((s) => s.slug === "qt-mnq");
+    expect(qt).toBeDefined();
+    expect(qt?.label).toBe("QT MNQ");
+    expect(qt?.instrumentType).toBe("futures_mnq");
+    expect(qt?.defaultSymbol).toBe("MNQ");
+  });
+
   it("every strategy has required fields", () => {
     for (const s of strategies) {
       expect(s.slug).toBeTruthy();
@@ -40,6 +48,10 @@ describe("getInstrumentType", () => {
 
   it("returns futures_mnq for mnq-daily", () => {
     expect(getInstrumentType("mnq-daily")).toBe("futures_mnq");
+  });
+
+  it("returns futures_mnq for qt-mnq", () => {
+    expect(getInstrumentType("qt-mnq")).toBe("futures_mnq");
   });
 
   it("defaults to forex for unknown strategy", () => {

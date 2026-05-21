@@ -108,6 +108,13 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
     ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
     ict_tdo_aligned: "", ict_htf_bias: "",
   });
+  const [qtParams, setQtParams] = useState({
+    qt_fvg_quarter: "",
+    qt_entry_quarter: "",
+    qt_fvg_date: "",
+    qt_fvg_type: "",
+    qt_entry_type: "",
+  });
   const { accounts } = useAccounts();
 
   useEffect(() => {
@@ -115,6 +122,13 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
       .then((t) => {
         setTrade(t);
         setIctParams(ictParamsFromTrade(t));
+        setQtParams({
+          qt_fvg_quarter: t.qt_fvg_quarter ?? "",
+          qt_entry_quarter: t.qt_entry_quarter ?? "",
+          qt_fvg_date: t.qt_fvg_date ?? "",
+          qt_fvg_type: t.qt_fvg_type ?? "",
+          qt_entry_type: t.qt_entry_type ?? "",
+        });
         dispatch({
           type: "LOAD",
           payload: {
@@ -143,6 +157,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   if (error || !trade) return <div className="p-6 text-bear text-sm">Error: {error ?? "Trade not found"}</div>;
 
   const isOpen = trade.status === "open";
+  const isQtMnq = trade.strategy === "qt-mnq";
   const tradeAccount = trade.account_id ? accounts.find((a) => a.id === trade.account_id) : null;
   const tradeAccountType: AccountType = tradeAccount?.account_type ?? "demo";
   const instrumentType = trade.instrument_type ?? getInstrumentType(trade.strategy);
@@ -219,6 +234,13 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         feeling_during: editable.feelingDuring,
         feeling_after: editable.feelingAfter,
       } : {};
+      const qtUpdate = isQtMnq ? {
+        qt_fvg_quarter: qtParams.qt_fvg_quarter || null,
+        qt_entry_quarter: qtParams.qt_entry_quarter || null,
+        qt_fvg_date: qtParams.qt_fvg_date || null,
+        qt_fvg_type: qtParams.qt_fvg_type || null,
+        qt_entry_type: qtParams.qt_entry_type || null,
+      } : {};
       const payload = {
         tags: editable.tags,
         notes: editable.notes,
@@ -230,6 +252,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         criteria_met_at_entry: editable.criteriaMetAtEntry,
         be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
         ...ictUpdate,
+        ...qtUpdate,
       };
       await updateTrade(id, payload);
       router.push(backUrl);

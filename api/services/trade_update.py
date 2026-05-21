@@ -33,6 +33,8 @@ _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "ict_htf_bias", "fees", "criteria_met_at_entry",
     "feeling_before", "feeling_during", "feeling_after",
     "be_outcome",
+    "qt_fvg_quarter", "qt_entry_quarter", "qt_fvg_date",
+    "qt_fvg_type", "qt_entry_type",
 })
 
 

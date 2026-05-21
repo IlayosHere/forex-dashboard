@@ -23,6 +23,17 @@ export type IctTpTarget =
   | "unmitigated_5m_fvg" | "unmitigated_15m_fvg" | "unmitigated_30m_fvg" | "unmitigated_1h_fvg" | "unmitigated_4h_fvg"
   | "other";
 export type IctIfvgTimeframe = "1m" | "2m" | "3m" | "4m" | "5m" | "6m" | "7m" | "8m" | "9m" | "10m" | "15m" | "other";
+
+// QT trade params — qt-mnq strategy only
+export type QtQuarter =
+  | "asia_q1" | "asia_q2" | "asia_q3" | "asia_q4"
+  | "london_q1" | "london_q2" | "london_q3" | "london_q4"
+  | "ny_am_q1" | "ny_am_q2" | "ny_am_q3" | "ny_am_q4"
+  | "ny_pm_q1" | "ny_pm_q2" | "ny_pm_q3" | "ny_pm_q4";
+
+export type QtFvgType = "standard" | "inverse";
+export type QtEntryType = "limit_fvg_edge" | "market_mss";
+
 export type AccountType = "demo" | "live" | "funded" | "backtest";
 export type AccountStatus = "active" | "passed" | "failed" | "closed";
 
@@ -108,6 +119,11 @@ export interface TradeCreateRequest {
   feeling_during?: TradingFeeling | null;
   feeling_after?: TradingFeeling | null;
   be_outcome?: BeOutcome | null;
+  qt_fvg_quarter?: string | null;
+  qt_entry_quarter?: string | null;
+  qt_fvg_date?: string | null;
+  qt_fvg_type?: string | null;
+  qt_entry_type?: string | null;
 }
 
 export interface TradeUpdateRequest {
@@ -144,6 +160,11 @@ export interface TradeUpdateRequest {
   feeling_during?: TradingFeeling | null;
   feeling_after?: TradingFeeling | null;
   be_outcome?: BeOutcome | null;
+  qt_fvg_quarter?: string | null;
+  qt_entry_quarter?: string | null;
+  qt_fvg_date?: string | null;
+  qt_fvg_type?: string | null;
+  qt_entry_type?: string | null;
 }
 
 export interface Trade {
@@ -189,6 +210,11 @@ export interface Trade {
   feeling_during: TradingFeeling | null;
   feeling_after: TradingFeeling | null;
   be_outcome: BeOutcome | null;
+  qt_fvg_quarter: QtQuarter | null;
+  qt_entry_quarter: QtQuarter | null;
+  qt_fvg_date: string | null;
+  qt_fvg_type: QtFvgType | null;
+  qt_entry_type: QtEntryType | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;

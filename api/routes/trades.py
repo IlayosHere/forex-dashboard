@@ -107,7 +107,15 @@ def create_trade(
         ict_htf_bias=req.ict_htf_bias,
         fees=req.fees,
         criteria_met_at_entry=req.criteria_met_at_entry,
+        feeling_before=req.feeling_before,
+        feeling_during=req.feeling_during,
+        feeling_after=req.feeling_after,
         be_outcome=req.be_outcome,
+        qt_fvg_quarter=req.qt_fvg_quarter,
+        qt_entry_quarter=req.qt_entry_quarter,
+        qt_fvg_date=req.qt_fvg_date,
+        qt_fvg_type=req.qt_fvg_type,
+        qt_entry_type=req.qt_entry_type,
     )
     db.add(trade)
     db.commit()

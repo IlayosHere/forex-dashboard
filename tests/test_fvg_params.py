@@ -459,11 +459,12 @@ def _make_m5_candles_with_h1_fvg() -> pd.DataFrame:
 
 def test_h1_fvg_contains_entry_true_inside_gap() -> None:
     df = _make_m5_candles_with_h1_fvg()
-    # Signal late enough that all 3 FVG bars exist in the H1 resample.
+    # M5 bar 48 → H1 bar 4 (FVG formed at H1 bar 2, _H1_MAX_FVG_AGE=4 → expires at bar 6).
+    # Bar 4 is within the valid window, so the FVG is still active.
     sig = _signal(
-        candle_time=df.index[180].to_pydatetime(),
+        candle_time=df.index[48].to_pydatetime(),
         direction="BUY",
-        entry=1.0870,  # inside the gap [1.0860..1.0910]
+        entry=1.0870,  # inside the gap [1.0860..1.0918]
     )
     result = h1_fvg_contains_entry(sig, df)
     assert result is True

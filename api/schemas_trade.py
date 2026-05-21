@@ -30,6 +30,7 @@ from shared.ict_taxonomy import (
     SETUP_TYPES,
     TP_TARGETS,
 )
+from shared.qt_taxonomy import QT_ENTRY_TYPES, QT_FVG_TYPES, QT_QUARTERS, QT_TP_TARGETS
 
 
 def _validate_feeling(v: str | None) -> str | None:
@@ -94,6 +95,13 @@ class TradeCreateRequest(BaseModel):
 
     # Breakeven outcome — only valid when outcome/status is breakeven
     be_outcome: str | None = None
+
+    # QT params — nullable for all non qt-mnq strategies
+    qt_fvg_quarter: str | None = None
+    qt_entry_quarter: str | None = None
+    qt_fvg_date: str | None = None
+    qt_fvg_type: str | None = None
+    qt_entry_type: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -163,6 +171,34 @@ class TradeCreateRequest(BaseModel):
             raise ValueError("be_outcome must be 'prevented_loss' or 'missed_tp'")
         return v
 
+    @field_validator("qt_fvg_quarter")
+    @classmethod
+    def validate_qt_fvg_quarter(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_QUARTERS:
+            raise ValueError(f"qt_fvg_quarter must be one of {QT_QUARTERS}")
+        return v
+
+    @field_validator("qt_entry_quarter")
+    @classmethod
+    def validate_qt_entry_quarter(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_QUARTERS:
+            raise ValueError(f"qt_entry_quarter must be one of {QT_QUARTERS}")
+        return v
+
+    @field_validator("qt_fvg_type")
+    @classmethod
+    def validate_qt_fvg_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_FVG_TYPES:
+            raise ValueError(f"qt_fvg_type must be one of {QT_FVG_TYPES}")
+        return v
+
+    @field_validator("qt_entry_type")
+    @classmethod
+    def validate_qt_entry_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_ENTRY_TYPES:
+            raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -211,6 +247,13 @@ class TradeUpdateRequest(BaseModel):
 
     # Breakeven outcome — only valid when outcome/status is breakeven
     be_outcome: str | None = None
+
+    # QT params — nullable for all non qt-mnq strategies
+    qt_fvg_quarter: str | None = None
+    qt_entry_quarter: str | None = None
+    qt_fvg_date: str | None = None
+    qt_fvg_type: str | None = None
+    qt_entry_type: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -296,6 +339,34 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError("be_outcome must be 'prevented_loss' or 'missed_tp'")
         return v
 
+    @field_validator("qt_fvg_quarter")
+    @classmethod
+    def validate_qt_fvg_quarter(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_QUARTERS:
+            raise ValueError(f"qt_fvg_quarter must be one of {QT_QUARTERS}")
+        return v
+
+    @field_validator("qt_entry_quarter")
+    @classmethod
+    def validate_qt_entry_quarter(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_QUARTERS:
+            raise ValueError(f"qt_entry_quarter must be one of {QT_QUARTERS}")
+        return v
+
+    @field_validator("qt_fvg_type")
+    @classmethod
+    def validate_qt_fvg_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_FVG_TYPES:
+            raise ValueError(f"qt_fvg_type must be one of {QT_FVG_TYPES}")
+        return v
+
+    @field_validator("qt_entry_type")
+    @classmethod
+    def validate_qt_entry_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in QT_ENTRY_TYPES:
+            raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
@@ -352,6 +423,11 @@ class TradeResponse(BaseModel):
     feeling_during: str | None = None
     feeling_after: str | None = None
     be_outcome: str | None = None
+    qt_fvg_quarter: str | None = None
+    qt_entry_quarter: str | None = None
+    qt_fvg_date: str | None = None
+    qt_fvg_type: str | None = None
+    qt_entry_type: str | None = None
     created_at: datetime
     updated_at: datetime
 

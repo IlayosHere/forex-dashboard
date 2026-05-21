@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TradeSetupFields } from "@/components/TradeSetupFields";
 import { TradeAssessmentFields } from "@/components/TradeAssessmentFields";
 import { IctTradeFields } from "@/components/IctTradeFields";
+import { QtTradeFields } from "@/components/QtTradeFields";
 
 import type { Account } from "@/lib/types";
 
@@ -39,6 +40,11 @@ export interface TradeFormData {
   ict_htf_bias: string | null;
   fees: string;
   criteria_met_at_entry: boolean | null;
+  qt_fvg_quarter: string;
+  qt_entry_quarter: string;
+  qt_fvg_date: string;
+  qt_fvg_type: string;
+  qt_entry_type: string;
 }
 
 interface TradeFormProps {
@@ -56,6 +62,8 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const instrumentType = getInstrumentType(form.strategy);
   const isFutures = instrumentType === "futures_mnq";
+  const isMnqDaily = form.strategy === "mnq-daily";
+  const isQtMnq = form.strategy === "qt-mnq";
 
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
 
@@ -85,9 +93,9 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     }
   }, [filteredAccounts, form.account_id]);
 
-  // Clear ICT fields when switching away from a futures strategy
+  // Clear ICT fields when switching away from mnq-daily
   useEffect(() => {
-    if (!isFutures) {
+    if (!isMnqDaily) {
       setForm((prev) => ({
         ...prev,
         ict_setup_type: "",
@@ -100,7 +108,21 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         ict_htf_bias: null,
       }));
     }
-  }, [isFutures]);
+  }, [isMnqDaily]);
+
+  // Clear QT fields when switching away from qt-mnq strategy
+  useEffect(() => {
+    if (!isQtMnq) {
+      setForm((prev) => ({
+        ...prev,
+        qt_fvg_quarter: "",
+        qt_entry_quarter: "",
+        qt_fvg_date: "",
+        qt_fvg_type: "",
+        qt_entry_type: "",
+      }));
+    }
+  }, [isQtMnq]);
 
   const set = <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -139,13 +161,19 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
       if (!isFinite(tpNum) || tpNum <= 0) errs.tp_price = true;
     }
     if (!form.open_time) errs.open_time = true;
-    if (isFutures) {
+    if (isMnqDaily) {
       if (!form.ict_setup_type) errs.ict_setup_type = true;
       if (form.ict_setup_type && form.ict_setup_type !== "other" && !form.ict_setup_detail) errs.ict_setup_detail = true;
       if (!form.ict_tp_target) errs.ict_tp_target = true;
       if (!form.ict_ifvg_timeframe) errs.ict_ifvg_timeframe = true;
       if (form.ict_smt_present === null || form.ict_smt_present === undefined) errs.ict_smt_present = true;
       if (form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined) errs.ict_tdo_aligned = true;
+    }
+    if (isQtMnq) {
+      if (!form.qt_fvg_quarter) errs.qt_fvg_quarter = true;
+      if (!form.qt_entry_quarter) errs.qt_entry_quarter = true;
+      if (!form.qt_fvg_type) errs.qt_fvg_type = true;
+      if (!form.qt_entry_type) errs.qt_entry_type = true;
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -177,8 +205,12 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         onAccountCreated={handleAccountCreated}
       />
 
-      {isFutures && (
+      {isMnqDaily && (
         <IctTradeFields form={form} errors={errors} onChange={set} />
+      )}
+
+      {isQtMnq && (
+        <QtTradeFields form={form} errors={errors} onChange={set} />
       )}
 
       <TradeAssessmentFields

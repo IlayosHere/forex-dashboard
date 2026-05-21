@@ -34,6 +34,13 @@ export const strategies: StrategyMeta[] = [
     defaultSymbol: "MNQ",
     description: "MNQ (Micro Nasdaq) daily trading",
   },
+  {
+    slug: "qt-mnq",
+    label: "QT MNQ",
+    instrumentType: "futures_mnq",
+    defaultSymbol: "MNQ",
+    description: "Quarterly Theory + 15M FVG entries on MNQ during NY AM Q3",
+  },
 ];
 
 export function getInstrumentType(strategySlug: string): InstrumentType {

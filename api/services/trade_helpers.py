@@ -197,6 +197,11 @@ def trade_to_response(
         "feeling_during": trade.feeling_during,
         "feeling_after": trade.feeling_after,
         "be_outcome": trade.be_outcome,
+        "qt_fvg_quarter": trade.qt_fvg_quarter,
+        "qt_entry_quarter": trade.qt_entry_quarter,
+        "qt_fvg_date": trade.qt_fvg_date,
+        "qt_fvg_type": trade.qt_fvg_type,
+        "qt_entry_type": trade.qt_entry_type,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }

@@ -157,6 +157,13 @@ class TradeModel(Base):
     fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)
     criteria_met_at_entry: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
+    # QT trade params (qt-mnq only — nullable for all other strategies)
+    qt_fvg_quarter: Mapped[str | None] = mapped_column(String, nullable=True)
+    qt_entry_quarter: Mapped[str | None] = mapped_column(String, nullable=True)
+    qt_fvg_date: Mapped[str | None] = mapped_column(String, nullable=True)
+    qt_fvg_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    qt_entry_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Emotional state (MNQ only in practice — nullable for all)
     feeling_before: Mapped[str | None] = mapped_column(String, nullable=True)
     feeling_during: Mapped[str | None] = mapped_column(String, nullable=True)
