@@ -70,6 +70,12 @@ export function SidebarNav() {
         <NavLink href="/analytics">Analytics</NavLink>
 
         <div className="pt-3 pb-1 px-3">
+          <span className="label">Strategy Tuning</span>
+        </div>
+        <NavLink href="/gates">Gates</NavLink>
+        <NavLink href="/experiments">Experiments</NavLink>
+
+        <div className="pt-3 pb-1 px-3">
           <span className="label">Strategies</span>
         </div>
 

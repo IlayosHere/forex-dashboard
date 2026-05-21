@@ -52,6 +52,9 @@ export interface Account {
 export type SignalResolution = "TP_HIT" | "SL_HIT" | "EXPIRED" | "NOT_FILLED";
 export type SlMethod = "far_edge" | "midpoint";
 
+export type { GateStatus, SignalGrade, GateCondition, ConditionOperator, GateSet, GatePreviewResponse, GradeThresholds, BucketStat, ParamBreakdown, ExperimentResult, Experiment } from "./gatesTypes";
+import type { GateStatus, SignalGrade } from "./gatesTypes";
+
 export interface Signal {
   id: string;
   strategy: string;
@@ -71,6 +74,12 @@ export interface Signal {
   resolved_at: string | null;
   resolved_price: number | null;
   resolution_candles: number | null;
+  // Gates / grades
+  gate_status: GateStatus;
+  gate_block_reason: string | null;
+  grade: SignalGrade | null;
+  score_snapshot: number | null;
+  score_max_snapshot: number | null;
 }
 
 export interface SignalListResponse {

@@ -56,6 +56,13 @@ class SignalResponse(BaseModel):
     resolved_price: float | None = None
     resolution_candles: int | None = None
 
+    # Gate + grade fields — populated by runner at fire-time
+    gate_status: str = "no_gates"
+    gate_block_reason: str | None = None
+    grade: str | None = None
+    score_snapshot: int | None = None
+    score_max_snapshot: int | None = None
+
     @field_validator("candle_time", "created_at", "resolved_at", mode="before")
     @classmethod
     def assume_utc(cls, v: object) -> object:

@@ -11,6 +11,16 @@ import { strategies, type StrategyMeta } from "@/lib/strategies";
 
 import type { SignalFilters as ApiFilters } from "@/lib/api";
 import type { SlMethod } from "@/lib/types";
+import type { SignalGrade } from "@/lib/gatesTypes";
+
+const GRADES: SignalGrade[] = ["A", "B", "C", "D"];
+
+const GRADE_ACTIVE_CLASSES: Record<SignalGrade, string> = {
+  A: "bg-amber-500/20 text-amber-400 border-amber-500/40",
+  B: "bg-slate-400/20 text-slate-300 border-slate-400/40",
+  C: "bg-muted/40 text-muted-foreground border-border",
+  D: "bg-bear/20 text-bear border-bear/40",
+};
 
 const PAGE_SIZE = 50;
 
@@ -38,6 +48,8 @@ function DashboardContent() {
   });
   const [page, setPage] = useState(0);
   const [slMethod, setSlMethod] = useState<SlMethod>("far_edge");
+  const [gradeFilter, setGradeFilter] = useState<SignalGrade | null>(null);
+  const [showBlocked, setShowBlocked] = useState(false);
 
   const handleFilterChange = (newFilters: SignalFilterValues) => {
     setFilters(newFilters);
@@ -49,6 +61,8 @@ function DashboardContent() {
     setFilters({ ...emptyFilters, dateFrom: getYesterdayUTC() });
     setPage(0);
     setSlMethod("far_edge");
+    setGradeFilter(null);
+    setShowBlocked(false);
   };
 
   const apiFilters: ApiFilters = useMemo(() => {
@@ -65,7 +79,14 @@ function DashboardContent() {
     return f;
   }, [filters, page, activeStrategy]);
 
-  const { signals, total, loading, error } = useSignals(apiFilters);
+  const { signals: rawSignals, total, loading, error } = useSignals(apiFilters);
+
+  const signals = useMemo(() => {
+    let s = rawSignals;
+    if (!showBlocked) s = s.filter((sig) => sig.gate_status !== "blocked");
+    if (gradeFilter) s = s.filter((sig) => sig.grade === gradeFilter);
+    return s;
+  }, [rawSignals, showBlocked, gradeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const unitLabel = activeStrategy.instrumentType === "futures_mnq" ? "pts" : "pips";
@@ -103,6 +124,49 @@ function DashboardContent() {
           total={total}
           onReset={() => { setFilters(emptyFilters); setPage(0); }}
         />
+      </div>
+
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setGradeFilter(null)}
+          className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+            gradeFilter === null
+              ? "bg-surface-raised text-foreground border-border-light"
+              : "text-muted-foreground border-border hover:text-foreground"
+          }`}
+        >
+          All grades
+        </button>
+        {GRADES.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setGradeFilter(gradeFilter === g ? null : g)}
+            className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+              gradeFilter === g
+                ? GRADE_ACTIVE_CLASSES[g]
+                : "text-muted-foreground border-border hover:text-foreground"
+            }`}
+            aria-pressed={gradeFilter === g}
+          >
+            {g}
+          </button>
+        ))}
+        <div className="ml-2 border-l border-border pl-2">
+          <button
+            type="button"
+            onClick={() => setShowBlocked((v) => !v)}
+            className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+              showBlocked
+                ? "bg-bear/20 text-bear border-bear/40"
+                : "text-muted-foreground border-border hover:text-foreground"
+            }`}
+            aria-pressed={showBlocked}
+          >
+            Show blocked
+          </button>
+        </div>
       </div>
 
       {loading && signals.length === 0 && (

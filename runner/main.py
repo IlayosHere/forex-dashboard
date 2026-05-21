@@ -5,9 +5,7 @@ Scheduler that discovers all strategy scanners under strategies/, runs them
 every 5 minutes on candle boundaries, persists new signals to the database,
 and sends Discord notifications.
 
-Timing and market-hours logic copied from impulse-notifier/main.py.
-Strategy discovery uses pkgutil.iter_modules -- no runner changes needed when
-a new strategy package is added under strategies/.
+Gate-blocked signals are persisted but excluded from Discord notifications.
 """
 from __future__ import annotations
 
@@ -17,6 +15,7 @@ import sys
 import threading
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Path setup -- must happen before any project imports
@@ -47,9 +46,12 @@ logger = logging.getLogger("Runner")
 # ---------------------------------------------------------------------------
 
 from analytics.candle_cache import CandleCache  # noqa: E402
+from analytics.enrichment import enrich_batch, fetch_resolved  # noqa: E402
 from api.db import Base, SessionLocal, engine  # noqa: E402
 from api.models import SignalModel  # noqa: E402  # registers model with Base
+import api.models_gates  # noqa: E402, F401  # registers gate/grade models with Base
 from runner.helpers import (  # noqa: E402
+    PersistResult,
     discover_strategies,
     is_duplicate,
     is_market_open,
@@ -105,6 +107,36 @@ def _notify_discord(signals: list[Signal]) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Enriched snapshot (for grade computation)
+# ---------------------------------------------------------------------------
+
+def _load_enriched_snapshot(
+    db: Any,
+    strategy: str,
+    candle_cache: CandleCache,
+) -> list[dict[str, Any]]:
+    """Fetch resolved signals and enrich them for use in grade computation.
+
+    Called once per strategy per scan cycle. Results feed the confirmed-params
+    TTL cache inside grade_runner so the expensive build_summary() runs at most
+    once per 30 minutes per strategy.
+    """
+    try:
+        signals = fetch_resolved(db, strategy=strategy)
+        if not signals:
+            return []
+        _warmed, _failed = candle_cache.warm(
+            list({(s.symbol, s.strategy) for s in signals})
+        )
+        return enrich_batch(signals, candle_cache=candle_cache)
+    except Exception:
+        logger.exception(
+            "Failed to load enriched snapshot for strategy=%s", strategy,
+        )
+        return []
+
+
+# ---------------------------------------------------------------------------
 # Scan cycle
 # ---------------------------------------------------------------------------
 
@@ -129,7 +161,11 @@ def run_scan_cycle(
                 logger.exception("[%s] scan() raised an exception -- skipping", strategy_name)
                 continue
 
+            enriched_snapshot = _load_enriched_snapshot(db, strategy_name, candle_cache)
+
             new_signals: list[Signal] = []
+            notify_signals: list[Signal] = []
+
             for sig in signals:
                 if is_duplicate(db, sig):
                     logger.debug(
@@ -137,8 +173,22 @@ def run_scan_cycle(
                         strategy_name, sig.symbol, sig.direction, sig.candle_time,
                     )
                     continue
-                if persist(db, sig, candle_cache=candle_cache):
+
+                result: PersistResult = persist(
+                    db, sig,
+                    candle_cache=candle_cache,
+                    enriched_snapshot=enriched_snapshot,
+                )
+                if result.inserted:
                     new_signals.append(sig)
+                    if result.gate_status in ("passed", "no_gates"):
+                        notify_signals.append(sig)
+                    else:
+                        logger.info(
+                            "[%s] Signal %s %s BLOCKED (gate=%s, grade=%s) — not notified",
+                            strategy_name, sig.symbol, sig.direction,
+                            result.gate_status, result.grade,
+                        )
 
             if new_signals:
                 db.commit()
@@ -148,11 +198,13 @@ def run_scan_cycle(
 
             if count:
                 logger.info(
-                    "[%s] %d new signal(s): %s",
+                    "[%s] %d new signal(s): %s (%d notified, %d blocked)",
                     strategy_name, count,
                     ", ".join(f"{s.symbol} {s.direction}" for s in new_signals),
+                    len(notify_signals),
+                    count - len(notify_signals),
                 )
-                _notify_discord(new_signals)
+                _notify_discord(notify_signals)
             else:
                 logger.info("[%s] No new signals this cycle.", strategy_name)
 
@@ -198,7 +250,6 @@ def main() -> None:
     candle_cache = CandleCache()
 
     try:
-        # Run immediately on startup, then wait for candle boundaries
         run_scan_cycle(strategies, candle_cache)
 
         while True:

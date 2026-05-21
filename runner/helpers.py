@@ -2,7 +2,7 @@
 runner/helpers.py
 -----------------
 Helper functions extracted from runner/main.py: strategy discovery,
-DB persistence, and market-hours logic.
+DB persistence (with gate + grade evaluation), and market-hours logic.
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import os
 import pkgutil
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -21,6 +22,8 @@ from sqlalchemy.orm import Session
 from analytics.candle_cache import CandleCache
 from analytics.signal_enricher import compute_and_attach
 from api.models import SignalModel
+from runner.gate_runner import GateDecision, evaluate_gate_for_signal
+from runner.grade_runner import GradeDecision, compute_grade_for_signal
 from shared.signal import Signal
 
 logger = logging.getLogger("Runner")
@@ -78,7 +81,7 @@ def wait_for_next_candle() -> None:
 # ---------------------------------------------------------------------------
 
 def discover_strategies() -> dict[str, Callable[[], list[Signal]]]:
-    """Return {module_name: scan_callable} for every valid strategy package.
+    """Return {slug: scan_callable} for every valid strategy package.
 
     A valid strategy is a package under strategies/ whose scanner.py exports
     a callable ``scan() -> list[Signal]``.
@@ -106,14 +109,17 @@ def discover_strategies() -> dict[str, Callable[[], list[Signal]]]:
 # DB helpers
 # ---------------------------------------------------------------------------
 
-def is_duplicate(db: Session, sig: Signal) -> bool:
-    """Return True if a signal for (strategy, symbol, candle_time) already exists.
+@dataclass(frozen=True)
+class PersistResult:
+    """Outcome of persisting one signal."""
 
-    Matches the DB unique constraint on (strategy, symbol, candle_time).
-    direction is intentionally excluded: if a strategy emits BUY and SELL for
-    the same candle, the second insert would violate the constraint regardless
-    of direction, so we catch it here rather than letting it fail silently.
-    """
+    inserted: bool
+    gate_status: str  # "passed" | "blocked" | "no_gates" | "error"
+    grade: str | None
+
+
+def is_duplicate(db: Session, sig: Signal) -> bool:
+    """Return True if a signal for (strategy, symbol, candle_time) already exists."""
     return db.scalar(
         select(SignalModel).where(
             SignalModel.strategy == sig.strategy,
@@ -123,23 +129,45 @@ def is_duplicate(db: Session, sig: Signal) -> bool:
     ) is not None
 
 
-def persist(db: Session, sig: Signal, candle_cache: CandleCache | None = None) -> bool:
-    """Insert a Signal into the DB. Skip gracefully on duplicate.
+def persist(
+    db: Session,
+    sig: Signal,
+    candle_cache: CandleCache | None = None,
+    enriched_snapshot: list[dict] | None = None,
+) -> PersistResult:
+    """Insert a Signal into the DB with gate and grade evaluation.
 
-    Uses a savepoint (``db.begin_nested()``) so that an IntegrityError on this
-    signal only rolls back this insert, not the entire session. Previously
-    flushed signals in the same cycle are preserved and the outer commit still
-    succeeds for all successful inserts.
+    Analytics params are computed first (if candle_cache provided), then gate
+    conditions are evaluated, then the quality grade is computed. All results
+    are persisted together.
 
-    When *candle_cache* is provided, analytics params are computed while
-    candles are fresh and stored in ``sig.metadata`` before the DB insert.
-
-    Returns True if the signal was inserted, False on any IntegrityError.
+    Returns a PersistResult with inserted=False on any IntegrityError, but gate
+    and grade are still computed so callers can act on them even on duplicates.
     """
     if candle_cache is not None:
         compute_and_attach(sig, candle_cache)
 
-    signal_model = SignalModel(
+    gate: GateDecision = evaluate_gate_for_signal(db, sig)
+    grade: GradeDecision = compute_grade_for_signal(
+        db, sig, enriched_snapshot or [],
+    )
+
+    signal_model = _build_signal_model(sig, gate, grade)
+    inserted = _insert_with_savepoint(db, signal_model, sig)
+    return PersistResult(
+        inserted=inserted,
+        gate_status=gate.status,
+        grade=grade.grade,
+    )
+
+
+def _build_signal_model(
+    sig: Signal,
+    gate: GateDecision,
+    grade: GradeDecision,
+) -> SignalModel:
+    """Construct a SignalModel from a Signal + gate/grade decisions."""
+    return SignalModel(
         id=sig.id,
         strategy=sig.strategy,
         symbol=sig.symbol,
@@ -153,16 +181,29 @@ def persist(db: Session, sig: Signal, candle_cache: CandleCache | None = None) -
         spread_pips=sig.spread_pips,
         signal_metadata=sig.metadata,
         created_at=sig.created_at,
+        gate_status=gate.status,
+        gate_block_reason=gate.block_reason,
+        gate_set_id=gate.gate_set_id,
+        grade=grade.grade,
+        score_snapshot=grade.score,
+        score_max_snapshot=grade.max_possible,
     )
+
+
+def _insert_with_savepoint(db: Session, model: SignalModel, sig: Signal) -> bool:
+    """Attempt to insert model; return False on IntegrityError without aborting session."""
     try:
         with db.begin_nested():  # savepoint — rollback only undoes this signal
-            db.add(signal_model)
+            db.add(model)
             db.flush()
     except IntegrityError as e:
         orig_msg = str(e.orig).upper()
-        _is_dup_error = "UNIQUE" in orig_msg or "DUPLICATE KEY" in orig_msg or "23505" in orig_msg
-        if _is_dup_error:
-            logger.info("Duplicate signal skipped: %s %s %s", sig.strategy, sig.symbol, sig.candle_time)
+        is_dup = "UNIQUE" in orig_msg or "DUPLICATE KEY" in orig_msg or "23505" in orig_msg
+        if is_dup:
+            logger.info(
+                "Duplicate signal skipped: %s %s %s",
+                sig.strategy, sig.symbol, sig.candle_time,
+            )
         else:
             logger.error(
                 "IntegrityError persisting signal %s (non-duplicate): %s",
@@ -170,5 +211,3 @@ def persist(db: Session, sig: Signal, candle_cache: CandleCache | None = None) -
             )
         return False
     return True
-
-

@@ -1,6 +1,8 @@
 "use client";
 
 import { useSignalScore } from "@/lib/useSignalScore";
+import { GradeBadge } from "@/components/GradeBadge";
+import { GateStatusBadge } from "@/components/GateStatusBadge";
 
 import type { Signal } from "@/lib/types";
 
@@ -70,8 +72,12 @@ export function SignalCard({ signal, isSelected, onClick }: SignalCardProps) {
           >
             {signal.direction}
           </span>
+          <GradeBadge grade={signal.grade} size="xs" />
         </div>
         <div className="flex items-center gap-1.5">
+          {signal.gate_status === "blocked" && (
+            <GateStatusBadge status={signal.gate_status} />
+          )}
           {scoreData && scoreData.max_possible > 0 && (
             <ScoreBadge score={scoreData.score} maxPossible={scoreData.max_possible} />
           )}

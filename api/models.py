@@ -65,12 +65,24 @@ class SignalModel(Base):
     resolved_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     resolution_candles: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Gate evaluation (Layer 1 — populated by runner/gate_runner.py)
+    gate_status: Mapped[str] = mapped_column(String, nullable=False, default="no_gates")
+    gate_block_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    gate_set_id: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Quality grade (Layer 2 — populated by runner/grade_runner.py)
+    grade: Mapped[str | None] = mapped_column(String, nullable=True)
+    score_snapshot: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    score_max_snapshot: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     __table_args__ = (
         Index("ix_signals_strategy_candle_time", "strategy", "candle_time"),
         Index("ix_signals_candle_time", "candle_time"),
         Index("ix_signals_symbol", "symbol"),
         Index("ix_signals_resolution", "resolution"),
         Index("ix_signals_resolution_strategy_candle", "resolution", "strategy", "candle_time"),
+        Index("ix_signals_gate_status", "gate_status"),
+        Index("ix_signals_grade", "grade"),
         UniqueConstraint("strategy", "symbol", "candle_time", name="uq_signal_dedup"),
     )
 

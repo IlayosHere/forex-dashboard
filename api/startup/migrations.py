@@ -195,6 +195,85 @@ def migrate_add_rule_mistake_links_table() -> None:
     logger.info("Created table rule_mistake_links")
 
 
+def migrate_gates_grades_experiments() -> None:
+    """Create gate_sets, grade_thresholds, experiments tables and add gate/grade columns to signals."""
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+
+    with engine.begin() as conn:
+        if "gate_sets" not in tables:
+            conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS gate_sets ("
+                "  id VARCHAR PRIMARY KEY,"
+                "  owner VARCHAR NOT NULL DEFAULT 'admin',"
+                "  strategy VARCHAR NOT NULL,"
+                "  name VARCHAR(80) NOT NULL,"
+                "  description TEXT,"
+                "  is_active INTEGER NOT NULL DEFAULT 0,"
+                "  conditions TEXT NOT NULL DEFAULT '[]',"
+                "  created_at DATETIME NOT NULL,"
+                "  updated_at DATETIME NOT NULL"
+                ")"
+            ))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_gate_sets_owner_strategy ON gate_sets (owner, strategy)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_gate_sets_strategy_active ON gate_sets (strategy, is_active)"))
+            logger.info("Created table gate_sets")
+
+        if "grade_thresholds" not in tables:
+            conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS grade_thresholds ("
+                "  id VARCHAR PRIMARY KEY,"
+                "  owner VARCHAR NOT NULL DEFAULT 'admin',"
+                "  strategy VARCHAR NOT NULL,"
+                "  a_min INTEGER NOT NULL DEFAULT 60,"
+                "  b_min INTEGER NOT NULL DEFAULT 20,"
+                "  is_active INTEGER NOT NULL DEFAULT 1,"
+                "  created_at DATETIME NOT NULL"
+                ")"
+            ))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_grade_thresholds_strategy_active ON grade_thresholds (strategy, is_active)"))
+            logger.info("Created table grade_thresholds")
+
+        if "experiments" not in tables:
+            conn.execute(text(
+                "CREATE TABLE IF NOT EXISTS experiments ("
+                "  id VARCHAR PRIMARY KEY,"
+                "  owner VARCHAR NOT NULL DEFAULT 'admin',"
+                "  name VARCHAR(120) NOT NULL,"
+                "  strategy VARCHAR NOT NULL,"
+                "  conditions TEXT NOT NULL DEFAULT '[]',"
+                "  date_from DATETIME,"
+                "  date_to DATETIME,"
+                "  notes TEXT,"
+                "  last_run_at DATETIME,"
+                "  last_summary TEXT,"
+                "  created_at DATETIME NOT NULL,"
+                "  updated_at DATETIME NOT NULL"
+                ")"
+            ))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_experiments_owner_strategy ON experiments (owner, strategy)"))
+            logger.info("Created table experiments")
+
+    if "signals" in tables:
+        signal_cols = {c["name"] for c in inspector.get_columns("signals")}
+        with engine.begin() as conn:
+            if "gate_status" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN gate_status VARCHAR NOT NULL DEFAULT 'no_gates'"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_signals_gate_status ON signals (gate_status)"))
+            if "gate_block_reason" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN gate_block_reason VARCHAR"))
+            if "gate_set_id" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN gate_set_id VARCHAR"))
+            if "grade" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN grade VARCHAR"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_signals_grade ON signals (grade)"))
+            if "score_snapshot" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN score_snapshot INTEGER"))
+            if "score_max_snapshot" not in signal_cols:
+                conn.execute(text("ALTER TABLE signals ADD COLUMN score_max_snapshot INTEGER"))
+        logger.info("Migration 012: gate/grade columns added to signals")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_add_account_id_column()
@@ -207,3 +286,4 @@ def run_all() -> None:
     migrate_add_rule_categories_table()
     migrate_add_rules_table()
     migrate_add_rule_mistake_links_table()
+    migrate_gates_grades_experiments()
