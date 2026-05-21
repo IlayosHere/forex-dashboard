@@ -87,7 +87,16 @@ export function ContextBar({ ctx, accounts }: ContextBarProps) {
               <button
                 key={label}
                 type="button"
-                onClick={() => setBacktestMode(label === "Backtest")}
+                onClick={() => {
+                    const next = label === "Backtest";
+                    setBacktestMode(next);
+                    if (context.accountId) {
+                      const acct = accounts.find((a) => a.id === context.accountId);
+                      if (acct && (next ? acct.account_type !== "backtest" : acct.account_type === "backtest")) {
+                        setFilter("accountId", "");
+                      }
+                    }
+                  }}
                 className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
                   active
                     ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"

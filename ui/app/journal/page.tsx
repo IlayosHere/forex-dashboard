@@ -84,10 +84,17 @@ export default function JournalPage() {
 
   const { accounts } = useAccounts();
 
-  // Filter accounts to the selected instrument type
   const scopedAccounts = useMemo(
     () => accounts.filter((a) => a.instrument_type === instrumentType),
     [accounts, instrumentType],
+  );
+
+  // Only show accounts that match the current mode in the filter dropdown
+  const modeFilteredAccounts = useMemo(
+    () => scopedAccounts.filter((a) =>
+      backtestMode ? a.account_type === "backtest" : a.account_type !== "backtest",
+    ),
+    [scopedAccounts, backtestMode],
   );
 
   const apiFilters = useMemo(() => {
@@ -198,7 +205,17 @@ export default function JournalPage() {
                 <button
                   key={label}
                   type="button"
-                  onClick={() => setBacktestMode(label === "Backtest")}
+                  onClick={() => {
+                    const next = label === "Backtest";
+                    setBacktestMode(next);
+                    // Clear account filter if selected account belongs to wrong mode
+                    if (filters.account_id) {
+                      const acct = accounts.find((a) => a.id === filters.account_id);
+                      if (acct && (next ? acct.account_type !== "backtest" : acct.account_type === "backtest")) {
+                        setFilters((prev) => ({ ...prev, account_id: "" }));
+                      }
+                    }
+                  }}
                   className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
                     active
                       ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
@@ -302,7 +319,7 @@ export default function JournalPage() {
         values={filters}
         onChange={setFilters}
         symbols={symbols}
-        accounts={scopedAccounts}
+        accounts={modeFilteredAccounts}
         instrumentType={instrumentType}
       />
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ContextBar } from "@/components/stats/ContextBar";
 import { RegimeBanner } from "@/components/stats/RegimeBanner";
 import { SectionHeader } from "@/components/stats/SectionHeader";
@@ -29,13 +30,20 @@ export default function StatisticsPage() {
 
   const isMnq = ctx.context.instrumentType === "futures_mnq";
   const isBacktest = ctx.context.backtestMode;
+
+  const modeFilteredAccounts = useMemo(
+    () => accounts.filter((a) =>
+      isBacktest ? a.account_type === "backtest" : a.account_type !== "backtest",
+    ),
+    [accounts, isBacktest],
+  );
   const smallSample = !statsLoading && stats != null && stats.closed_trades < SMALL_SAMPLE_THRESHOLD;
 
   return (
     <div className="p-6">
       <h1 className="text-lg font-semibold text-text-primary mb-4">Statistics</h1>
 
-      <ContextBar ctx={ctx} accounts={accounts} />
+      <ContextBar ctx={ctx} accounts={modeFilteredAccounts} />
 
       {!isBacktest && ctx.context.strategy && ctx.context.strategy !== "all" && (
         <RegimeBanner strategy={ctx.context.strategy} />
