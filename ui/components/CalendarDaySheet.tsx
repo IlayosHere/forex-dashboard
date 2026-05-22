@@ -24,6 +24,7 @@ export interface CalendarDaySheetProps {
   onClose: () => void;
   instrumentType?: string;
   accountId?: string;
+  accountType?: "live" | "backtest";
 }
 
 // MNQ times are stored as ET (logged by the user in NY time, stored without conversion).
@@ -127,7 +128,7 @@ function SkeletonRows() {
   );
 }
 
-export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: CalendarDaySheetProps) {
+export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType }: CalendarDaySheetProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,13 +143,15 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
     const filters: Record<string, string> = { from: date, to: date, limit: "50" };
     if (instrumentType) filters.instrument_type = instrumentType;
     if (accountId) filters.account_id = accountId;
+    if (accountType === "backtest") filters.account_type = "backtest";
+    else if (!accountId) filters.exclude_account_type = "backtest";
     fetchTrades(filters)
       .then((data) => setTrades(data.filter((t) => t.status !== "cancelled")))
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Failed to load trades")
       )
       .finally(() => setLoading(false));
-  }, [date, instrumentType, accountId]);
+  }, [date, instrumentType, accountId, accountType]);
 
   const pnl = netPnl(trades);
   const pnlColor = pnl >= 0 ? "#26a69a" : "#ef5350";
@@ -212,7 +215,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId }: C
           {!loading && error === null && trades.length > 0 && date && (
             <div className="mt-4 pt-3 border-t border-[#1e1e1e]">
               <Link
-                href={`/journal?from=${date}&to=${date}${accountId ? `&account_id=${accountId}` : ""}`}
+                href={`/journal?from=${date}&to=${date}${accountId ? `&account_id=${accountId}` : ""}${accountType === "backtest" ? "&account_type=backtest" : ""}`}
                 className="text-xs text-[#777] hover:text-[#e0e0e0] transition-colors"
               >
                 View in Journal →
