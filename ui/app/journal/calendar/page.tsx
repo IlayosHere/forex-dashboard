@@ -46,6 +46,7 @@ export default function CalendarPage() {
   const selectedDate = searchParams.get("date") ?? null;
   const instrumentType = (searchParams.get("instrument") ?? "futures_mnq") as InstrumentType;
   const accountId = searchParams.get("account") ?? "";
+  const backtestMode = searchParams.get("mode") === "backtest";
 
   function pushParams(updates: Record<string, string | null>) {
     const p = new URLSearchParams(searchParams.toString());
@@ -59,8 +60,11 @@ export default function CalendarPage() {
   const { accounts } = useAccounts();
 
   const scopedAccounts = useMemo<Account[]>(
-    () => accounts.filter((a) => a.instrument_type === instrumentType),
-    [accounts, instrumentType],
+    () => accounts.filter((a) =>
+      a.instrument_type === instrumentType &&
+      (backtestMode ? a.account_type === "backtest" : a.account_type !== "backtest"),
+    ),
+    [accounts, instrumentType, backtestMode],
   );
 
   const fromDate = useMemo(() => toDateString(year, month, 1), [year, month]);
@@ -69,12 +73,19 @@ export default function CalendarPage() {
     [year, month],
   );
 
-  const { data: dailyData } = useDailySummary({
-    instrument_type: instrumentType,
-    from: fromDate,
-    to: toDate,
-    ...(accountId ? { account_id: accountId } : {}),
-  });
+  const dailySummaryFilters = useMemo(() => {
+    const f: Record<string, string> = {
+      instrument_type: instrumentType,
+      from: fromDate,
+      to: toDate,
+    };
+    if (accountId) f.account_id = accountId;
+    if (backtestMode) f.account_type = "backtest";
+    else f.exclude_account_type = "backtest";
+    return f;
+  }, [instrumentType, fromDate, toDate, accountId, backtestMode]);
+
+  const { data: dailyData } = useDailySummary(dailySummaryFilters);
 
   function handlePrev() {
     if (month === 1) pushParams({ year: String(year - 1), month: "12", date: null });
@@ -88,6 +99,18 @@ export default function CalendarPage() {
 
   function handleToday() {
     pushParams({ year: String(now.getUTCFullYear()), month: String(now.getUTCMonth() + 1), date: null });
+  }
+
+  function handleModeChange(mode: "live" | "backtest") {
+    const updates: Record<string, string | null> = { mode: mode === "backtest" ? "backtest" : null, date: null };
+    // Clear account if it belongs to the wrong mode
+    if (accountId) {
+      const acct = accounts.find((a) => a.id === accountId);
+      if (acct && (mode === "backtest" ? acct.account_type !== "backtest" : acct.account_type === "backtest")) {
+        updates.account = null;
+      }
+    }
+    pushParams(updates);
   }
 
   function handleInstrumentChange(tab: InstrumentType) {
@@ -111,6 +134,25 @@ export default function CalendarPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Journal</h1>
+        <div className="flex h-7 rounded border border-border bg-surface-input p-0.5 gap-0.5">
+          {(["Live", "Backtest"] as const).map((label) => {
+            const active = label === "Backtest" ? backtestMode : !backtestMode;
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleModeChange(label === "Backtest" ? "backtest" : "live")}
+                className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
+                  active
+                    ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
+                    : "text-text-dim hover:text-text-muted"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Journal tab nav */}
@@ -201,6 +243,7 @@ export default function CalendarPage() {
         onClose={() => pushParams({ date: null })}
         instrumentType={instrumentType}
         accountId={accountId || undefined}
+        accountType={backtestMode ? "backtest" : "live"}
       />
     </div>
   );
