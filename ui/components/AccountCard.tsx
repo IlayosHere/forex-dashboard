@@ -40,10 +40,7 @@ export function AccountCard({
   onDeleteConfirm,
   onDeleteCancel,
 }: AccountCardProps) {
-  const instrumentLabel =
-    account.instrument_type === "futures_mnq" ? "Futures (MNQ)" :
-    account.instrument_type === "futures_mes" ? "Futures (MES)" :
-    "Forex";
+  const instrumentLabel = account.instrument_type?.startsWith("futures") ? "Futures" : "Forex";
 
   return (
     <div className="bg-card border border-border rounded p-4">

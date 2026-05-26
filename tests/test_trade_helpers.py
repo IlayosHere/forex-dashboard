@@ -240,6 +240,19 @@ def test_filter_by_instrument_type(db: Session) -> None:
     assert results[0].instrument_type == "futures_mnq"
 
 
+def test_filter_futures_virtual_matches_mnq_and_mes(db: Session) -> None:
+    """instrument_type='futures' is a virtual filter that expands to both futures_mnq and futures_mes."""
+    make_trade(db, instrument_type="forex")
+    make_trade(db, instrument_type="futures_mnq")
+    make_trade(db, instrument_type="futures_mes")
+    stmt = select(TradeModel)
+    stmt = apply_trade_filters(stmt, _filters(instrument_type="futures"))
+    results = list(db.scalars(stmt).all())
+    assert len(results) == 2
+    instrument_types = {r.instrument_type for r in results}
+    assert instrument_types == {"futures_mnq", "futures_mes"}
+
+
 # ---------------------------------------------------------------------------
 # trade_to_response
 # ---------------------------------------------------------------------------

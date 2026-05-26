@@ -19,9 +19,8 @@ import { strategies } from "@/lib/strategies";
 import { useSession } from "@/lib/useSession";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex", label: "Forex" },
-  { value: "futures_mnq", label: "MNQ" },
-  { value: "futures_mes", label: "MES" },
+  { value: "forex",   label: "Forex" },
+  { value: "futures", label: "Futures" },
 ];
 
 const journalTabs = [
@@ -86,7 +85,11 @@ export default function JournalPage() {
   const { accounts } = useAccounts();
 
   const scopedAccounts = useMemo(
-    () => accounts.filter((a) => a.instrument_type === instrumentType),
+    () => accounts.filter((a) =>
+      instrumentType === "futures"
+        ? a.instrument_type?.startsWith("futures")
+        : a.instrument_type === instrumentType,
+    ),
     [accounts, instrumentType],
   );
 
@@ -129,7 +132,7 @@ export default function JournalPage() {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
   }, []);
   const { session: todaySession, loading: sessionLoading, saving: sessionSaving, save: saveSession } = useSession(
-    (instrumentType === "futures_mnq" || instrumentType === "futures_mes") ? todayDate : null,
+    instrumentType === "futures" || instrumentType === "futures_mnq" || instrumentType === "futures_mes" ? todayDate : null,
   );
 
   // Restore scroll position once trades have loaded (list must be in DOM first)
@@ -158,7 +161,9 @@ export default function JournalPage() {
 
   const newTradeUrl = useMemo(() => {
     const params = new URLSearchParams();
-    const strategySlug = filters.strategy || strategies.find((s) => s.instrumentType === instrumentType)?.slug;
+    const strategySlug = filters.strategy || strategies.find((s) =>
+      instrumentType === "futures" ? s.instrumentType?.startsWith("futures") : s.instrumentType === instrumentType,
+    )?.slug;
     if (strategySlug) params.set("strategy", strategySlug);
     if (backtestMode) params.set("account_type", "backtest");
     const qs = params.toString();
@@ -273,7 +278,7 @@ export default function JournalPage() {
       </div>
 
       {/* Today's session shortcut (futures only) */}
-      {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
+      {(instrumentType === "futures" || instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
         <TodaySessionCard
           session={todaySession}
           loading={sessionLoading}

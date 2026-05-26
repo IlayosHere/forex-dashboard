@@ -29,7 +29,7 @@ export interface UseStatsContextResult {
 const STORAGE_KEY = "stats:context";
 
 const DEFAULTS: StatsContext = {
-  instrumentType: "futures_mnq",
+  instrumentType: "futures",
   accountId: "",
   strategy: "",
   preset: "30d",
@@ -47,10 +47,11 @@ const PRESET_LABELS: Record<PresetKey, string> = {
 };
 
 const INSTRUMENT_LABELS: Record<string, string> = {
+  futures:     "Futures",
   futures_mnq: "MNQ",
   futures_mes: "MES",
-  forex: "Forex",
-  "": "All instruments",
+  forex:       "Forex",
+  "":          "All instruments",
 };
 
 function computePresetDates(preset: PresetKey): { from: string; to: string } {

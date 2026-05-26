@@ -6,10 +6,9 @@ import type { InstrumentType, Account } from "@/lib/types";
 import type { PresetKey, UseStatsContextResult } from "@/lib/useStatsContext";
 
 const INSTRUMENT_OPTIONS: { value: InstrumentType | ""; label: string }[] = [
-  { value: "futures_mnq", label: "MNQ" },
-  { value: "futures_mes", label: "MES" },
-  { value: "forex", label: "Forex" },
-  { value: "", label: "All" },
+  { value: "futures", label: "Futures" },
+  { value: "forex",   label: "Forex" },
+  { value: "",        label: "All" },
 ];
 
 const PRESETS: { key: PresetKey; label: string }[] = [

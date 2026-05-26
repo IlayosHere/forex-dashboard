@@ -48,8 +48,8 @@ export function getInstrumentType(strategySlug: string): InstrumentType {
   return match?.instrumentType ?? "forex";
 }
 
-export function isFutures(instrumentType: InstrumentType): boolean {
-  return instrumentType === "futures_mnq" || instrumentType === "futures_mes";
+export function isFutures(instrumentType: InstrumentType | string): boolean {
+  return instrumentType?.startsWith("futures") === true;
 }
 
 export function getUnitLabel(instrumentType: InstrumentType): string {

@@ -86,7 +86,11 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
     if getattr(filters, "outcome", None) is not None:
         stmt = stmt.where(TradeModel.outcome == filters.outcome)
     if filters.instrument_type is not None:
-        stmt = stmt.where(TradeModel.instrument_type == filters.instrument_type)
+        if filters.instrument_type == "futures":
+            # "futures" is a virtual filter — matches both futures_mnq and futures_mes
+            stmt = stmt.where(TradeModel.instrument_type.in_(("futures_mnq", "futures_mes")))
+        else:
+            stmt = stmt.where(TradeModel.instrument_type == filters.instrument_type)
     rule_followed = getattr(filters, "rule_followed", None)
     if rule_followed is not None:
         stmt = stmt.where(TradeModel.rule_followed == rule_followed)

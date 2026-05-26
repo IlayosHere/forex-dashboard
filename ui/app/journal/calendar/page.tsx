@@ -15,9 +15,8 @@ import { useDailySummary } from "@/lib/useDailySummary";
 import { useAccounts } from "@/lib/useAccounts";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex", label: "Forex" },
-  { value: "futures_mnq", label: "MNQ" },
-  { value: "futures_mes", label: "MES" },
+  { value: "forex",   label: "Forex" },
+  { value: "futures", label: "Futures" },
 ];
 
 const journalTabs = [
@@ -45,7 +44,7 @@ export default function CalendarPage() {
   const year = parseInt(searchParams.get("year") ?? String(now.getUTCFullYear()), 10);
   const month = parseInt(searchParams.get("month") ?? String(now.getUTCMonth() + 1), 10);
   const selectedDate = searchParams.get("date") ?? null;
-  const instrumentType = (searchParams.get("instrument") ?? "futures_mnq") as InstrumentType;
+  const instrumentType = (searchParams.get("instrument") ?? "futures") as InstrumentType;
   const accountId = searchParams.get("account") ?? "";
   const backtestMode = searchParams.get("mode") === "backtest";
 

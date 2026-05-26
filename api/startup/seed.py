@@ -82,8 +82,8 @@ def seed_default_accounts(db: Session) -> None:
     defaults = [
         ("Demo", "demo", "forex"),
         ("Live", "live", "forex"),
-        ("Demo", "demo", "futures_mnq"),
-        ("Live", "live", "futures_mnq"),
+        ("Demo", "demo", "futures"),
+        ("Live", "live", "futures"),
     ]
     for user in users:
         user_count = db.scalar(

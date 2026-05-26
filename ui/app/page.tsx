@@ -89,7 +89,7 @@ function DashboardContent() {
   }, [rawSignals, showBlocked, gradeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const unitLabel = (activeStrategy.instrumentType === "futures_mnq" || activeStrategy.instrumentType === "futures_mes") ? "pts" : "pips";
+  const unitLabel = activeStrategy.instrumentType?.startsWith("futures") ? "pts" : "pips";
 
   return (
     <div className="p-6">

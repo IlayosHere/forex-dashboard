@@ -11,7 +11,7 @@ import { QtTradeFields } from "@/components/QtTradeFields";
 import type { Account } from "@/lib/types";
 
 import { useAccounts } from "@/lib/useAccounts";
-import { strategies, getInstrumentType } from "@/lib/strategies";
+import { strategies, getInstrumentType, isFutures as isFuturesHelper } from "@/lib/strategies";
 
 export interface TradeFormData {
   account_id: string;
@@ -60,8 +60,13 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const { accounts, refetch: refetchAccounts } = useAccounts();
 
-  const instrumentType = getInstrumentType(form.strategy);
-  const isFutures = instrumentType === "futures_mnq" || instrumentType === "futures_mes";
+  const strategyInstrumentType = getInstrumentType(form.strategy);
+  const isFutures = isFuturesHelper(strategyInstrumentType);
+  // Derive per-trade instrument_type from the actual symbol chosen (MNQ vs MES)
+  const instrumentType: string =
+    form.symbol === "MES" ? "futures_mes" :
+    form.symbol === "MNQ" ? "futures_mnq" :
+    strategyInstrumentType;
   const isMnqDaily = form.strategy === "mnq-daily";
   const isQtMnq = form.strategy === "qt-mnq";
 
@@ -70,8 +75,11 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   // Filter accounts to match the selected strategy's instrument type
   const filteredAccounts = useMemo(() => {
     if (!form.strategy) return activeAccounts;
-    return activeAccounts.filter((a) => a.instrument_type === instrumentType);
-  }, [activeAccounts, form.strategy, instrumentType]);
+    if (isFutures) {
+      return activeAccounts.filter((a) => a.instrument_type?.startsWith("futures"));
+    }
+    return activeAccounts.filter((a) => a.instrument_type === strategyInstrumentType);
+  }, [activeAccounts, form.strategy, strategyInstrumentType, isFutures]);
 
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.id === form.account_id) ?? null,
@@ -79,7 +87,10 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   );
   const filteredStrategies = useMemo(() => {
     if (!selectedAccount) return strategies;
-    return strategies.filter((s) => s.instrumentType === selectedAccount.instrument_type);
+    const acctIsFutures = selectedAccount.instrument_type?.startsWith("futures");
+    return strategies.filter((s) =>
+      acctIsFutures ? isFuturesHelper(s.instrumentType) : s.instrumentType === selectedAccount.instrument_type,
+    );
   }, [selectedAccount]);
 
   useEffect(() => {
@@ -132,9 +143,14 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     const account = accounts.find((a) => a.id === accountId);
     if (account) {
       const currentStrategyMeta = strategies.find((s) => s.slug === form.strategy);
-      if (currentStrategyMeta && currentStrategyMeta.instrumentType !== account.instrument_type) {
-        set("strategy", "");
-        set("symbol", "");
+      if (currentStrategyMeta) {
+        const stratIsFutures = isFuturesHelper(currentStrategyMeta.instrumentType);
+        const acctIsFutures = account.instrument_type?.startsWith("futures");
+        const mismatch = stratIsFutures !== !!acctIsFutures;
+        if (mismatch) {
+          set("strategy", "");
+          set("symbol", "");
+        }
       }
     }
   };

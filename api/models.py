@@ -93,7 +93,7 @@ class AccountModel(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     account_type: Mapped[str] = mapped_column(String, nullable=False)  # demo, live, funded
-    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # forex, futures_mnq, futures_mes
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # forex, futures (account-level); futures_mnq, futures_mes (trade-level)
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")  # active, passed, failed, closed
     prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
     phase: Mapped[str | None] = mapped_column(String, nullable=True)

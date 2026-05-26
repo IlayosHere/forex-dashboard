@@ -25,9 +25,8 @@ interface FormState {
 }
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex", label: "Forex" },
-  { value: "futures_mnq", label: "MNQ" },
-  { value: "futures_mes", label: "MES" },
+  { value: "forex",    label: "Forex" },
+  { value: "futures",  label: "Futures" },
 ];
 
 function makeEmptyForm(instrumentType: InstrumentType): FormState {
@@ -95,7 +94,11 @@ export default function AccountsPage() {
   const { stats } = useTradeStats({ instrument_type: activeTab });
 
   const scopedAccounts = useMemo(
-    () => accounts.filter((a) => a.instrument_type === activeTab),
+    () => accounts.filter((a) =>
+      activeTab === "futures"
+        ? a.instrument_type?.startsWith("futures")
+        : a.instrument_type === activeTab,
+    ),
     [accounts, activeTab],
   );
 

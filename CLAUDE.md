@@ -228,6 +228,22 @@ All major decisions are already made and written down. Do not re-debate them.
 
 ---
 
+## Production Migration Safety — MANDATORY
+
+**Never add `ALTER TABLE ... ADD COLUMN NOT NULL DEFAULT` to `api/startup/migrations.py` without running it manually first.**
+
+On Postgres, any `ALTER TABLE` acquires an `ACCESS EXCLUSIVE` lock. If the live revision is serving traffic, the lock waits indefinitely. Cloud Run's startup timeout is 4 minutes — the new revision gets killed before it ever binds the port, and the deploy fails silently with `DEADLINE_EXCEEDED`.
+
+**The required workflow for any new migration that alters an existing table:**
+
+1. Write the migration function in `api/startup/migrations.py` (idempotent — checks column/table existence before running)
+2. **Before deploying**, run the DDL manually via `/prod-connect open` + psycopg2, while the live revision holds no exclusive locks
+3. Deploy — startup migration sees the columns already exist, skips them instantly, app binds port in time
+
+**Adding new tables** (no existing data) is safe to do at startup — `CREATE TABLE IF NOT EXISTS` does not block.
+
+**`ALTER TABLE` on an existing table** (especially `signals`, `trades`, `accounts`) must always be pre-applied manually.
+
 ## Build Phases — Current Status
 
 All 8 foundation phases complete. See `git log` for history. Add new phases here when starting a major feature.

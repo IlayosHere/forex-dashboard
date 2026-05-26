@@ -28,7 +28,7 @@ export default function StatisticsPage() {
   const { data: dailyData, loading: dailyLoading } = useDailySummary(ctx.apiFilters);
   const { data: ictData, loading: ictLoading } = useIctStats(ctx.apiFilters);
 
-  const isMnq = ctx.context.instrumentType === "futures_mnq" || ctx.context.instrumentType === "futures_mes";
+  const isMnq = ctx.context.instrumentType?.startsWith("futures") === true;
   const isBacktest = ctx.context.backtestMode;
 
   const modeFilteredAccounts = useMemo(

@@ -40,7 +40,7 @@ export function AccountRow({
           </span>
         </div>
         <div className="text-[11px] text-text-muted mt-0.5">
-          {account.account_type} &middot; {account.instrument_type === "futures_mnq" ? "Futures (MNQ)" : account.instrument_type === "futures_mes" ? "Futures (MES)" : "Forex"}
+          {account.account_type} &middot; {account.instrument_type?.startsWith("futures") ? "Futures" : "Forex"}
           {account.prop_firm && ` \u00B7 ${account.prop_firm}`}
           {account.phase && ` \u00B7 ${account.phase}`}
         </div>

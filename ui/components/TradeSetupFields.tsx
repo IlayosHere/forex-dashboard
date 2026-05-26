@@ -107,12 +107,23 @@ export function TradeSetupFields({
           </div>
           <div className="space-y-1">
             <label className="label">Symbol</label>
-            <Input
-              value={form.symbol}
-              onChange={(e) => onChange("symbol", e.target.value.toUpperCase())}
-              placeholder="EURUSD"
-              className={`${INPUT_CLASS} ${errBorder(errors, "symbol")}`}
-            />
+            {isFutures ? (
+              <select
+                className={`${SELECT_CLASS} ${errBorder(errors, "symbol")}`}
+                value={form.symbol}
+                onChange={(e) => onChange("symbol", e.target.value)}
+              >
+                <option value="MNQ">MNQ</option>
+                <option value="MES">MES</option>
+              </select>
+            ) : (
+              <Input
+                value={form.symbol}
+                onChange={(e) => onChange("symbol", e.target.value.toUpperCase())}
+                placeholder="EURUSD"
+                className={`${INPUT_CLASS} ${errBorder(errors, "symbol")}`}
+              />
+            )}
             <ErrMsg errors={errors} field="symbol" msg="Required" />
           </div>
         </div>
