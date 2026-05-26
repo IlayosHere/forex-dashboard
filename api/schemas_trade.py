@@ -114,9 +114,9 @@ class TradeCreateRequest(BaseModel):
     @field_validator("instrument_type")
     @classmethod
     def validate_instrument_type(cls, v: str) -> str:
-        """Ensure instrument_type is forex or futures_mnq."""
-        if v not in ("forex", "futures_mnq"):
-            raise ValueError("instrument_type must be forex or futures_mnq")
+        """Ensure instrument_type is a valid futures or forex type."""
+        if v not in ("forex", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be forex, futures_mnq, or futures_mes")
         return v
 
     @field_validator("ict_setup_type")
@@ -266,9 +266,9 @@ class TradeUpdateRequest(BaseModel):
     @field_validator("instrument_type")
     @classmethod
     def validate_instrument_type(cls, v: str | None) -> str | None:
-        """Ensure instrument_type is forex or futures_mnq when provided."""
-        if v is not None and v not in ("forex", "futures_mnq"):
-            raise ValueError("instrument_type must be forex or futures_mnq")
+        """Ensure instrument_type is a valid futures or forex type when provided."""
+        if v is not None and v not in ("forex", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be forex, futures_mnq, or futures_mes")
         return v
 
     @field_validator("status")

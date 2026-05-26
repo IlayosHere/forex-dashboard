@@ -82,15 +82,17 @@ def ict_stats(
     db: Annotated[Session, Depends(get_db)],
     filters: Annotated[StatsFilterParams, Depends()],
 ) -> dict:
-    """Return ICT breakdown statistics for MNQ futures trades.
+    """Return ICT breakdown statistics for MNQ/MES futures trades.
 
-    Implicitly filters to instrument_type='futures_mnq' unless overridden.
+    Implicitly filters to futures instruments (MNQ + MES) unless instrument_type overridden.
     Supports the same account_type/exclude_account_type filters as other stats endpoints.
     """
     stmt = select(TradeModel).where(TradeModel.owner == current_user)
     if not filters.instrument_type:
-        stmt = stmt.where(TradeModel.instrument_type == "futures_mnq")
+        stmt = stmt.where(
+            TradeModel.instrument_type.in_(("futures_mnq", "futures_mes")),
+        )
     stmt = apply_trade_filters(stmt, filters)
     trades = list(db.scalars(stmt).all())
-    logger.debug("ict_stats: fetched %d MNQ trades for user %s", len(trades), current_user)
+    logger.debug("ict_stats: fetched %d MNQ/MES trades for user %s", len(trades), current_user)
     return compute_ict_stats(trades)

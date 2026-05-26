@@ -5,6 +5,9 @@ Time-based ICT session and killzone classifiers.
 
 All functions take a datetime stored in ET (NY time — logged verbatim by trader)
 and return a string bucket label. No timezone conversion required.
+
+Session and killzone ranges apply to both MNQ (Micro E-mini Nasdaq) and
+MES (Micro E-mini S&P 500) — both trade on CME Globex with identical hours.
 """
 from __future__ import annotations
 

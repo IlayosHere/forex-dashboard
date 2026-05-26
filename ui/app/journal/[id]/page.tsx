@@ -221,7 +221,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const saveAssessment = async () => {
     setSaving(true);
     try {
-      const ictUpdate = instrumentType === "futures_mnq" ? {
+      const ictUpdate = (instrumentType === "futures_mnq" || instrumentType === "futures_mes") ? {
         ict_setup_type: ictParams.ict_setup_type || null,
         ict_setup_detail: ictParams.ict_setup_detail || null,
         ict_tp_target: ictParams.ict_tp_target || null,
@@ -330,16 +330,16 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         {/* Result */}
         <TradeResultPanel trade={trade} unitLabel={unitLabel} isBacktest={tradeAccountType === "backtest"} />
 
-        {/* ICT Params (MNQ only) */}
-        {instrumentType === "futures_mnq" && (
+        {/* ICT Params (MNQ/MES) */}
+        {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
           <IctParamsPanel
             params={ictParams}
             onChange={(key, value) => setIctParams((prev) => ({ ...prev, [key]: value }))}
           />
         )}
 
-        {/* Feelings (MNQ only) */}
-        {instrumentType === "futures_mnq" && (
+        {/* Feelings (MNQ/MES) */}
+        {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
           <TradeFeelingsPanel
             feelingBefore={editable.feelingBefore}
             feelingDuring={editable.feelingDuring}

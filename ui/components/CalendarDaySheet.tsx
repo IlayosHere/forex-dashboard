@@ -47,7 +47,7 @@ function groupBySession(trades: Trade[], instrumentType?: string): Map<string, T
   const map = new Map<string, Trade[]>();
   for (const trade of trades) {
     const label =
-      instrumentType === "futures_mnq"
+      (instrumentType === "futures_mnq" || instrumentType === "futures_mes")
         ? sessionLabel(storedMinutes(trade.open_time))
         : "All";
     const existing = map.get(label) ?? [];
@@ -133,7 +133,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isMnq = instrumentType === "futures_mnq";
+  const isMnq = instrumentType === "futures_mnq" || instrumentType === "futures_mes";
   const { session, saving: sessionSaving, save: saveSession } = useSession(isMnq ? date : null);
 
   useEffect(() => {

@@ -133,6 +133,67 @@ def test_pnl_sell_futures_loss() -> None:
 
 
 # ---------------------------------------------------------------------------
+# calculate_pnl — futures_mes
+# ---------------------------------------------------------------------------
+
+
+def test_pnl_buy_mes_profit() -> None:
+    # 50 pts * $5/pt * 2 contracts = $500
+    pips, usd, rr = calculate_pnl(PnlInput(
+        symbol="MES", direction="BUY",
+        entry_price=5000, exit_price=5050,
+        lot_size=2, risk_pips=25.0,
+        instrument_type="futures_mes",
+    ))
+    assert pips == 50.0
+    assert usd == 500.0  # 50 * 5.0 * 2
+    assert rr == 2.0
+
+
+def test_pnl_sell_mes_profit() -> None:
+    # 30 pts * $5/pt * 1 contract = $150
+    pips, usd, rr = calculate_pnl(PnlInput(
+        symbol="MES", direction="SELL",
+        entry_price=5030, exit_price=5000,
+        lot_size=1, risk_pips=15.0,
+        instrument_type="futures_mes",
+    ))
+    assert pips == 30.0
+    assert usd == 150.0
+    assert rr == 2.0
+
+
+def test_pnl_buy_mes_loss() -> None:
+    # -20 pts * $5/pt * 1 contract = -$100
+    pips, usd, rr = calculate_pnl(PnlInput(
+        symbol="MES", direction="BUY",
+        entry_price=5050, exit_price=5030,
+        lot_size=1, risk_pips=20.0,
+        instrument_type="futures_mes",
+    ))
+    assert pips == -20.0
+    assert usd == -100.0
+    assert rr == -1.0
+
+
+def test_pnl_mes_vs_mnq_ratio() -> None:
+    """Same move, same contracts: MES P&L should be 2.5x larger than MNQ."""
+    _, mnq_usd, _ = calculate_pnl(PnlInput(
+        symbol="MNQ", direction="BUY",
+        entry_price=20000, exit_price=20040,
+        lot_size=1, risk_pips=20.0,
+        instrument_type="futures_mnq",
+    ))
+    _, mes_usd, _ = calculate_pnl(PnlInput(
+        symbol="MES", direction="BUY",
+        entry_price=5000, exit_price=5040,
+        lot_size=1, risk_pips=20.0,
+        instrument_type="futures_mes",
+    ))
+    assert mes_usd == pytest.approx(mnq_usd * 2.5)
+
+
+# ---------------------------------------------------------------------------
 # apply_trade_filters
 # ---------------------------------------------------------------------------
 

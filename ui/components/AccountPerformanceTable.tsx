@@ -55,7 +55,7 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
                 <div className="flex items-center gap-2">
                   <AccountBadge name={row.name} accountType={row.accountType} />
                   <span className="text-xs text-[#777777]">
-                    {row.instrumentType === "futures_mnq" ? "Futures" : "Forex"}
+                    {row.instrumentType === "futures_mnq" ? "Futures (MNQ)" : row.instrumentType === "futures_mes" ? "Futures (MES)" : "Forex"}
                   </span>
                 </div>
               </td>

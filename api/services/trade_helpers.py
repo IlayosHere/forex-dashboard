@@ -21,6 +21,7 @@ from shared.calculator import pip_size, pip_value_per_lot
 logger = logging.getLogger(__name__)
 
 _MNQ_DOLLARS_PER_POINT: float = 2.0
+_MES_DOLLARS_PER_POINT: float = 5.0
 
 
 def compute_risk_pips(
@@ -28,7 +29,7 @@ def compute_risk_pips(
 ) -> float:
     """Derive risk in pips/points from entry and SL prices."""
     distance = abs(entry_price - sl_price)
-    if instrument_type == "futures_mnq":
+    if instrument_type in ("futures_mnq", "futures_mes"):
         return round(distance, 2)
     return round(distance / pip_size(symbol), 1)
 
@@ -50,12 +51,19 @@ def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
 
     For futures_mnq, pnl_pips stores points and lot_size stores contracts.
     MNQ tick value is $0.50 per 0.25 point = $2.00 per point per contract.
+    MES tick value is $1.25 per 0.25 point = $5.00 per point per contract.
     """
     direction_mult = 1.0 if pnl.direction == "BUY" else -1.0
 
     if pnl.instrument_type == "futures_mnq":
         pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
         pnl_usd = round(pnl_points * _MNQ_DOLLARS_PER_POINT * pnl.lot_size, 2)
+        rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
+        return pnl_points, pnl_usd, rr
+
+    if pnl.instrument_type == "futures_mes":
+        pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
+        pnl_usd = round(pnl_points * _MES_DOLLARS_PER_POINT * pnl.lot_size, 2)
         rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
         return pnl_points, pnl_usd, rr
 

@@ -1,4 +1,4 @@
-export type InstrumentType = "forex" | "futures_mnq";
+export type InstrumentType = "forex" | "futures_mnq" | "futures_mes";
 export type BeOutcome = "prevented_loss" | "missed_tp";
 export type TradingFeeling =
   | "calm" | "focused" | "confident"

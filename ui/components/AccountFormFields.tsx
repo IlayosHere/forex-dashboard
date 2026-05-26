@@ -37,7 +37,8 @@ const SEGMENT_ACTIVE_CLASS = "bg-bull/20 text-bull ring-1 ring-inset ring-bull/4
 
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
   { value: "forex",       label: "Forex" },
-  { value: "futures_mnq", label: "Futures" },
+  { value: "futures_mnq", label: "MNQ" },
+  { value: "futures_mes", label: "MES" },
 ];
 
 const ACCOUNT_TYPE_OPTIONS: SegmentOption<AccountType>[] = [
@@ -94,8 +95,10 @@ export function AccountFormFields({
 }: AccountFormFieldsProps) {
   const isFunded = form.account_type === "funded";
 
+  const isFuturesInstrument = form.instrument_type === "futures_mnq" || form.instrument_type === "futures_mes";
+
   const accountTypeOptions = ACCOUNT_TYPE_OPTIONS.map((opt) =>
-    opt.value === "funded" && form.instrument_type !== "futures_mnq"
+    opt.value === "funded" && !isFuturesInstrument
       ? { ...opt, disabled: true, disabledReason: "Funded accounts require Futures instrument" }
       : opt
   );

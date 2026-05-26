@@ -27,6 +27,7 @@ interface FormState {
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex", label: "Forex" },
   { value: "futures_mnq", label: "MNQ" },
+  { value: "futures_mes", label: "MES" },
 ];
 
 function makeEmptyForm(instrumentType: InstrumentType): FormState {

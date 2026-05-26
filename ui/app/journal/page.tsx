@@ -21,6 +21,7 @@ import { useSession } from "@/lib/useSession";
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex", label: "Forex" },
   { value: "futures_mnq", label: "MNQ" },
+  { value: "futures_mes", label: "MES" },
 ];
 
 const journalTabs = [
@@ -128,7 +129,7 @@ export default function JournalPage() {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
   }, []);
   const { session: todaySession, loading: sessionLoading, saving: sessionSaving, save: saveSession } = useSession(
-    instrumentType === "futures_mnq" ? todayDate : null,
+    (instrumentType === "futures_mnq" || instrumentType === "futures_mes") ? todayDate : null,
   );
 
   // Restore scroll position once trades have loaded (list must be in DOM first)
@@ -271,8 +272,8 @@ export default function JournalPage() {
         ))}
       </div>
 
-      {/* Today's session shortcut (MNQ only) */}
-      {instrumentType === "futures_mnq" && (
+      {/* Today's session shortcut (futures only) */}
+      {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
         <TodaySessionCard
           session={todaySession}
           loading={sessionLoading}

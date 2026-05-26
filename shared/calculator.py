@@ -56,7 +56,7 @@ def calculate_lot_size(
     account_balance : Account equity in USD
     risk_percent    : Fraction of balance to risk, e.g. 1.0 for 1%
     tp_pips         : Take-profit distance in pips/points (optional — enables rr)
-    instrument_type : "forex" (default) or "futures_mnq"
+    instrument_type : "forex" (default), "futures_mnq", or "futures_mes"
 
     Returns
     -------
@@ -69,7 +69,7 @@ def calculate_lot_size(
     """
     if sl_pips <= 0:
         return {
-            "lot_size": 1 if instrument_type == "futures_mnq" else 0.01,
+            "lot_size": 1 if instrument_type in ("futures_mnq", "futures_mes") else 0.01,
             "risk_usd": 0.0,
             "sl_pips": 0.0,
             "rr": None,
@@ -85,6 +85,18 @@ def calculate_lot_size(
     if instrument_type == "futures_mnq":
         # MNQ: $2.00 per point per contract
         raw_contracts = risk_usd / (sl_pips * 2.0)
+        contracts = max(math.floor(raw_contracts), 1)
+        return {
+            "lot_size": contracts,
+            "risk_usd": round(risk_usd, 2),
+            "sl_pips": round(sl_pips, 2),
+            "rr": rr,
+            "instrument_type": instrument_type,
+        }
+
+    if instrument_type == "futures_mes":
+        # MES: $5.00 per point per contract (2.5× MNQ)
+        raw_contracts = risk_usd / (sl_pips * 5.0)
         contracts = max(math.floor(raw_contracts), 1)
         return {
             "lot_size": contracts,

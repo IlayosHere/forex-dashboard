@@ -17,6 +17,7 @@ import { useAccounts } from "@/lib/useAccounts";
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex", label: "Forex" },
   { value: "futures_mnq", label: "MNQ" },
+  { value: "futures_mes", label: "MES" },
 ];
 
 const journalTabs = [

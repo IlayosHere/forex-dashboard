@@ -48,6 +48,7 @@ const PRESET_LABELS: Record<PresetKey, string> = {
 
 const INSTRUMENT_LABELS: Record<string, string> = {
   futures_mnq: "MNQ",
+  futures_mes: "MES",
   forex: "Forex",
   "": "All instruments",
 };

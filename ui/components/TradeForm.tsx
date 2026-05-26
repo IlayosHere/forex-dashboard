@@ -61,7 +61,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   const { accounts, refetch: refetchAccounts } = useAccounts();
 
   const instrumentType = getInstrumentType(form.strategy);
-  const isFutures = instrumentType === "futures_mnq";
+  const isFutures = instrumentType === "futures_mnq" || instrumentType === "futures_mes";
   const isMnqDaily = form.strategy === "mnq-daily";
   const isQtMnq = form.strategy === "qt-mnq";
 
