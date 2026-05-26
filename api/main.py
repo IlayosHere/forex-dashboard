@@ -25,6 +25,7 @@ from api.auth import router as auth_router
 from api.db import Base, SessionLocal, engine
 import api.models_gates  # noqa: F401 — registers gate/grade/experiment models with Base
 from api.routes.accounts import router as accounts_router
+from api.routes.auto_gate import router as auto_gate_router
 from api.routes.calculate import router as calculate_router
 from api.routes.calendar import router as calendar_router
 from api.routes.categories import router as categories_router
@@ -113,3 +114,4 @@ app.include_router(categories_router, prefix="/api", tags=["rule-categories"])
 app.include_router(gates_router, prefix="/api", tags=["gates"])
 app.include_router(grades_router, prefix="/api", tags=["grades"])
 app.include_router(experiments_router, prefix="/api", tags=["experiments"])
+app.include_router(auto_gate_router, prefix="/api", tags=["auto-gate"])
