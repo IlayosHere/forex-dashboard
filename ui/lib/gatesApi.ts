@@ -119,6 +119,51 @@ export async function recomputeGrades(strategy: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-gate optimizer
+// ---------------------------------------------------------------------------
+
+export interface OptimizeRequest {
+  strategy: string;
+  min_pass_rate?: number;
+  dry_run?: boolean;
+}
+
+export interface OptimizeResponse {
+  strategy: string;
+  conditions_selected: { param: string; op: string; value: string }[];
+  win_rate_baseline: number | null;
+  win_rate_optimized: number | null;
+  delta: number | null;
+  pass_rate: number | null;
+  pass_count: number;
+  total_signals: number;
+  confirmed_params_found: number;
+  dry_run: boolean;
+  gate_set_id: string | null;
+  reason: string | null;
+}
+
+export async function runAutoOptimize(body: OptimizeRequest): Promise<OptimizeResponse> {
+  const res = await authFetch(`${BASE_URL}/api/auto-gate/optimize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Auto-optimize failed: ${res.status}`);
+  return res.json() as Promise<OptimizeResponse>;
+}
+
+export async function runAutoRecomputeGrades(strategy: string): Promise<{ strategy: string; recomputed: number }> {
+  const res = await authFetch(`${BASE_URL}/api/auto-gate/recompute-grades`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ strategy }),
+  });
+  if (!res.ok) throw new Error(`Grade recompute failed: ${res.status}`);
+  return res.json() as Promise<{ strategy: string; recomputed: number }>;
+}
+
+// ---------------------------------------------------------------------------
 // Experiments
 // ---------------------------------------------------------------------------
 
