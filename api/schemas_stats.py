@@ -103,8 +103,10 @@ class EquityCurvePoint(BaseModel):
     close_time: str | None
     pnl_usd: float
     pnl_pips: float
+    pnl_r: float = 0.0
     cumulative_pnl_usd: float
     cumulative_pnl_pips: float
+    cumulative_r: float = 0.0
     trade_count: int
     outcome: str | None
 
@@ -122,6 +124,7 @@ class TradeStatsResponse(BaseModel):
     breakevens: int
     win_rate: float | None
     avg_rr: float | None
+    total_r: float = 0.0
     total_pnl_pips: float
     total_pnl_usd: float
     best_trade_pnl: float | None
@@ -161,5 +164,6 @@ class DailySummaryPoint(BaseModel):
     breakevens: int
     pnl_usd: float
     pnl_pips: float
+    pnl_r: float = 0.0
     compliant: int = 0
     mistakes: int = 0
