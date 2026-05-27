@@ -61,7 +61,9 @@ export default function CalendarPage() {
 
   const scopedAccounts = useMemo<Account[]>(
     () => accounts.filter((a) =>
-      a.instrument_type === instrumentType &&
+      (instrumentType === "futures"
+        ? a.instrument_type?.startsWith("futures")
+        : a.instrument_type === instrumentType) &&
       (backtestMode ? a.account_type === "backtest" : a.account_type !== "backtest"),
     ),
     [accounts, instrumentType, backtestMode],
