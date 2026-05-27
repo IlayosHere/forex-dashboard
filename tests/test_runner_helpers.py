@@ -174,7 +174,7 @@ def test_persist_inserts_new_signal(db: Session) -> None:
     """persist() on a fresh Signal must return True and write to the DB."""
     sig = _make_signal()
     result = persist(db, sig)
-    assert result is True
+    assert result.inserted is True
     row = db.get(SignalModel, sig.id)
     assert row is not None
     assert row.strategy == sig.strategy
@@ -189,7 +189,7 @@ def test_persist_returns_false_on_duplicate(db: Session) -> None:
     duplicate = _make_signal()
     duplicate.id = str(uuid.uuid4())  # different PK so we hit the unique constraint, not PK dupe
     result = persist(db, duplicate)
-    assert result is False
+    assert result.inserted is False
 
 
 def test_persist_session_usable_after_integrity_error(db: Session) -> None:
@@ -204,7 +204,7 @@ def test_persist_session_usable_after_integrity_error(db: Session) -> None:
     # Session must still accept new valid inserts
     new_sig = _make_signal(symbol="GBPUSD")
     result = persist(db, new_sig)
-    assert result is True
+    assert result.inserted is True
     assert db.get(SignalModel, new_sig.id) is not None
 
 
