@@ -8,7 +8,7 @@ resource "google_sql_database_instance" "forex_db" {
   database_version = "POSTGRES_16"
   region           = var.region
 
-  deletion_protection = true
+  deletion_protection = false
 
   settings {
     tier              = "db-f1-micro"
