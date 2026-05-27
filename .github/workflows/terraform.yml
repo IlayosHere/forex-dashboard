@@ -49,7 +49,7 @@ jobs:
         run: terraform -chdir=infra/terraform fmt -check
 
       - name: Terraform init
-        run: terraform -chdir=infra/terraform init
+        run: terraform -chdir=infra/terraform init -backend-config="bucket=forex-dashboard-tfstate-${{ secrets.GCP_PROJECT_ID }}"
 
       - name: Terraform validate
         run: terraform -chdir=infra/terraform validate
