@@ -55,7 +55,11 @@ jobs:
         run: terraform -chdir=infra/terraform validate
 
       - name: Terraform plan
-        run: terraform -chdir=infra/terraform plan -no-color -out=tfplan
+        run: |
+          terraform -chdir=infra/terraform plan -no-color -out=tfplan \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="github_repo=${{ github.repository }}" \
+            -var="cors_origins=${{ secrets.TF_VAR_CORS_ORIGINS }}"
 
       # Apply only runs under manual workflow_dispatch with apply=true.
       # Push-triggered runs stop after plan so a human reviews infra changes.
