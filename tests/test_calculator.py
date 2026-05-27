@@ -103,26 +103,27 @@ def test_calc_lot_size_zero_sl_returns_minimum() -> None:
 
 
 # ---------------------------------------------------------------------------
-# calculate_lot_size — futures
+# calculate_lot_size — futures (symbol-based routing, instrument_type="futures")
 # ---------------------------------------------------------------------------
 
 
 def test_calc_lot_size_futures_mnq() -> None:
+    # MNQ: $2/pt — $500 risk / (50 pts * $2) = 5 contracts
     result = calculate_lot_size(
         symbol="MNQ", entry=20000, sl_pips=50.0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     )
     assert result["risk_usd"] == 500.0
     assert result["lot_size"] == 5
-    assert result["instrument_type"] == "futures_mnq"
+    assert result["instrument_type"] == "futures"
 
 
 def test_calc_lot_size_futures_zero_sl() -> None:
     result = calculate_lot_size(
         symbol="MNQ", entry=20000, sl_pips=0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     )
     assert result["lot_size"] == 1
 
@@ -131,26 +132,36 @@ def test_calc_lot_size_futures_min_one_contract() -> None:
     result = calculate_lot_size(
         symbol="MNQ", entry=20000, sl_pips=500.0,
         account_balance=10_000, risk_percent=0.5,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     )
     assert result["lot_size"] >= 1
 
 
+def test_calc_lot_size_symbol_detection_without_instrument_type() -> None:
+    """Symbol alone (MNQ) triggers futures path even if instrument_type is 'forex'."""
+    result = calculate_lot_size(
+        symbol="MNQ", entry=20000, sl_pips=50.0,
+        account_balance=50_000, risk_percent=1.0,
+        instrument_type="forex",  # intentionally wrong — symbol wins
+    )
+    assert result["lot_size"] == 5  # MNQ path used
+
+
 # ---------------------------------------------------------------------------
-# calculate_lot_size — futures_mes
+# calculate_lot_size — MES (symbol-based, same instrument_type="futures")
 # ---------------------------------------------------------------------------
 
 
 def test_calc_lot_size_futures_mes() -> None:
-    # $5/point: $500 risk / (20 pts * $5) = 5 contracts
+    # MES: $5/pt — $500 risk / (20 pts * $5) = 5 contracts
     result = calculate_lot_size(
         symbol="MES", entry=5000, sl_pips=20.0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     )
     assert result["risk_usd"] == 500.0
     assert result["lot_size"] == 5
-    assert result["instrument_type"] == "futures_mes"
+    assert result["instrument_type"] == "futures"
 
 
 def test_calc_lot_size_futures_mes_larger_sl() -> None:
@@ -158,7 +169,7 @@ def test_calc_lot_size_futures_mes_larger_sl() -> None:
     result = calculate_lot_size(
         symbol="MES", entry=5000, sl_pips=50.0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     )
     assert result["lot_size"] == 2
 
@@ -167,33 +178,31 @@ def test_calc_lot_size_futures_mes_zero_sl() -> None:
     result = calculate_lot_size(
         symbol="MES", entry=5000, sl_pips=0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     )
     assert result["lot_size"] == 1
 
 
 def test_calc_lot_size_futures_mes_min_one_contract() -> None:
-    # Large SL, small balance — should still floor to 1
     result = calculate_lot_size(
         symbol="MES", entry=5000, sl_pips=500.0,
         account_balance=5_000, risk_percent=0.5,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     )
     assert result["lot_size"] >= 1
 
 
 def test_calc_lot_size_futures_mes_vs_mnq_ratio() -> None:
-    """MES needs 2.5x fewer contracts than MNQ for the same risk/SL (point value ratio)."""
+    """Same risk/SL: MES needs fewer contracts than MNQ (MES=$5/pt vs MNQ=$2/pt)."""
     mnq = calculate_lot_size(
         symbol="MNQ", entry=20000, sl_pips=20.0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     )
     mes = calculate_lot_size(
         symbol="MES", entry=5000, sl_pips=20.0,
         account_balance=50_000, risk_percent=1.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     )
-    # MNQ: 500 / (20 * 2) = 12.5 → 12 contracts
-    # MES: 500 / (20 * 5) = 5 contracts
+    # MNQ: 500 / (20 * 2) = 12 contracts; MES: 500 / (20 * 5) = 5 contracts
     assert mes["lot_size"] < mnq["lot_size"]

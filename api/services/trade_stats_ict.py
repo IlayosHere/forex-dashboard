@@ -194,7 +194,7 @@ def compute_ict_stats(trades: list[TradeModel]) -> dict[str, Any]:
 
     Includes both MNQ and MES trades — they share ICT methodology and session times.
     """
-    mnq = [t for t in trades if t.instrument_type in ("futures_mnq", "futures_mes")]
+    mnq = [t for t in trades if t.instrument_type in ("futures", "futures_mnq", "futures_mes")]
     logger.debug("compute_ict_stats: %d MNQ/MES trades", len(mnq))
     closed = [t for t in mnq if t.status in _CLOSED_STATUSES]
     wins = sum(1 for t in closed if t.outcome == "win")

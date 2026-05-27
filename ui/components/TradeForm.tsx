@@ -62,11 +62,9 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const strategyInstrumentType = getInstrumentType(form.strategy);
   const isFutures = isFuturesHelper(strategyInstrumentType);
-  // Derive per-trade instrument_type from the actual symbol chosen (MNQ vs MES)
-  const instrumentType: string =
-    form.symbol === "MES" ? "futures_mes" :
-    form.symbol === "MNQ" ? "futures_mnq" :
-    strategyInstrumentType;
+  // instrument_type is always "futures" for futures trades — the symbol (MNQ/MES)
+  // carries the contract identity. P&L and lot sizing branch on symbol, not this field.
+  const instrumentType: string = isFutures ? "futures" : strategyInstrumentType;
   const isMnqDaily = form.strategy === "mnq-daily";
   const isQtMnq = form.strategy === "qt-mnq";
 

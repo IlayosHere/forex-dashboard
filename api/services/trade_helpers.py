@@ -16,20 +16,27 @@ from sqlalchemy.orm import Session
 
 from api.models import AccountModel, MistakeModel, TradeMistakeModel, TradeModel
 from api.services.trade_filters import StatsFilterParams, TradeFilterParams
-from shared.calculator import pip_size, pip_value_per_lot
+from shared.calculator import (
+    futures_dollars_per_point,
+    is_futures_symbol,
+    pip_size,
+    pip_value_per_lot,
+)
 
 logger = logging.getLogger(__name__)
-
-_MNQ_DOLLARS_PER_POINT: float = 2.0
-_MES_DOLLARS_PER_POINT: float = 5.0
 
 
 def compute_risk_pips(
     entry_price: float, sl_price: float, symbol: str, instrument_type: str = "forex",
 ) -> float:
-    """Derive risk in pips/points from entry and SL prices."""
+    """Derive risk in pips/points from entry and SL prices.
+
+    Futures contracts report distance in points (not pips). Detection is
+    symbol-first: MNQ, MES, etc. are recognised as futures. instrument_type
+    starting with 'futures' is the fallback for older records.
+    """
     distance = abs(entry_price - sl_price)
-    if instrument_type in ("futures_mnq", "futures_mes"):
+    if is_futures_symbol(symbol) or instrument_type.startswith("futures"):
         return round(distance, 2)
     return round(distance / pip_size(symbol), 1)
 
@@ -49,21 +56,17 @@ class PnlInput:
 def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
     """Return (pnl_pips, pnl_usd, rr_achieved).
 
-    For futures_mnq, pnl_pips stores points and lot_size stores contracts.
-    MNQ tick value is $0.50 per 0.25 point = $2.00 per point per contract.
-    MES tick value is $1.25 per 0.25 point = $5.00 per point per contract.
+    For futures, pnl_pips stores points and lot_size stores contracts.
+    The dollar-per-point multiplier comes from the symbol (MNQ=$2, MES=$5),
+    not from instrument_type. instrument_type is only used as a fallback for
+    older trade records that may not have a recognised symbol.
     """
     direction_mult = 1.0 if pnl.direction == "BUY" else -1.0
 
-    if pnl.instrument_type == "futures_mnq":
+    if is_futures_symbol(pnl.symbol) or pnl.instrument_type.startswith("futures"):
+        dollars_per_point = futures_dollars_per_point(pnl.symbol) if is_futures_symbol(pnl.symbol) else 2.0
         pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
-        pnl_usd = round(pnl_points * _MNQ_DOLLARS_PER_POINT * pnl.lot_size, 2)
-        rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
-        return pnl_points, pnl_usd, rr
-
-    if pnl.instrument_type == "futures_mes":
-        pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
-        pnl_usd = round(pnl_points * _MES_DOLLARS_PER_POINT * pnl.lot_size, 2)
+        pnl_usd = round(pnl_points * dollars_per_point * pnl.lot_size, 2)
         rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
         return pnl_points, pnl_usd, rr
 
@@ -87,8 +90,10 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
         stmt = stmt.where(TradeModel.outcome == filters.outcome)
     if filters.instrument_type is not None:
         if filters.instrument_type == "futures":
-            # "futures" is a virtual filter — matches both futures_mnq and futures_mes
-            stmt = stmt.where(TradeModel.instrument_type.in_(("futures_mnq", "futures_mes")))
+            # "futures" matches all futures trades: new canonical value + legacy values
+            stmt = stmt.where(
+                TradeModel.instrument_type.in_(("futures", "futures_mnq", "futures_mes")),
+            )
         else:
             stmt = stmt.where(TradeModel.instrument_type == filters.instrument_type)
     rule_followed = getattr(filters, "rule_followed", None)

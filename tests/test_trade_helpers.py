@@ -105,19 +105,20 @@ def test_pnl_zero_risk_pips_returns_none_rr() -> None:
 
 
 # ---------------------------------------------------------------------------
-# calculate_pnl — futures
+# calculate_pnl — futures (symbol-based routing, instrument_type="futures")
 # ---------------------------------------------------------------------------
 
 
 def test_pnl_buy_futures_profit() -> None:
+    # MNQ: 50 pts * $2/pt * 2 contracts = $200
     pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MNQ", direction="BUY",
         entry_price=20000, exit_price=20050,
         lot_size=2, risk_pips=25.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     ))
     assert pips == 50.0
-    assert usd == 200.0  # 50 * 2.0 * 2
+    assert usd == 200.0
     assert rr == 2.0
 
 
@@ -126,37 +127,49 @@ def test_pnl_sell_futures_loss() -> None:
         symbol="MNQ", direction="SELL",
         entry_price=20000, exit_price=20030,
         lot_size=1, risk_pips=25.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     ))
     assert pips == -30.0
     assert usd == -60.0
 
 
+def test_pnl_symbol_detection_without_instrument_type() -> None:
+    """MNQ symbol alone triggers futures path even when instrument_type='forex'."""
+    pips, usd, _ = calculate_pnl(PnlInput(
+        symbol="MNQ", direction="BUY",
+        entry_price=20000, exit_price=20010,
+        lot_size=1, risk_pips=10.0,
+        instrument_type="forex",  # intentionally wrong — symbol wins
+    ))
+    assert pips == 10.0
+    assert usd == 20.0  # 10 pts * $2/pt * 1 contract
+
+
 # ---------------------------------------------------------------------------
-# calculate_pnl — futures_mes
+# calculate_pnl — MES (symbol-based, same instrument_type="futures")
 # ---------------------------------------------------------------------------
 
 
 def test_pnl_buy_mes_profit() -> None:
-    # 50 pts * $5/pt * 2 contracts = $500
+    # MES: 50 pts * $5/pt * 2 contracts = $500
     pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MES", direction="BUY",
         entry_price=5000, exit_price=5050,
         lot_size=2, risk_pips=25.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     ))
     assert pips == 50.0
-    assert usd == 500.0  # 50 * 5.0 * 2
+    assert usd == 500.0
     assert rr == 2.0
 
 
 def test_pnl_sell_mes_profit() -> None:
-    # 30 pts * $5/pt * 1 contract = $150
+    # MES: 30 pts * $5/pt * 1 contract = $150
     pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MES", direction="SELL",
         entry_price=5030, exit_price=5000,
         lot_size=1, risk_pips=15.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     ))
     assert pips == 30.0
     assert usd == 150.0
@@ -164,12 +177,12 @@ def test_pnl_sell_mes_profit() -> None:
 
 
 def test_pnl_buy_mes_loss() -> None:
-    # -20 pts * $5/pt * 1 contract = -$100
+    # MES: -20 pts * $5/pt * 1 contract = -$100
     pips, usd, rr = calculate_pnl(PnlInput(
         symbol="MES", direction="BUY",
         entry_price=5050, exit_price=5030,
         lot_size=1, risk_pips=20.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     ))
     assert pips == -20.0
     assert usd == -100.0
@@ -177,18 +190,18 @@ def test_pnl_buy_mes_loss() -> None:
 
 
 def test_pnl_mes_vs_mnq_ratio() -> None:
-    """Same move, same contracts: MES P&L should be 2.5x larger than MNQ."""
+    """Same move, same contracts: MES P&L is 2.5x larger than MNQ ($5 vs $2/pt)."""
     _, mnq_usd, _ = calculate_pnl(PnlInput(
         symbol="MNQ", direction="BUY",
         entry_price=20000, exit_price=20040,
         lot_size=1, risk_pips=20.0,
-        instrument_type="futures_mnq",
+        instrument_type="futures",
     ))
     _, mes_usd, _ = calculate_pnl(PnlInput(
         symbol="MES", direction="BUY",
         entry_price=5000, exit_price=5040,
         lot_size=1, risk_pips=20.0,
-        instrument_type="futures_mes",
+        instrument_type="futures",
     ))
     assert mes_usd == pytest.approx(mnq_usd * 2.5)
 
@@ -240,17 +253,18 @@ def test_filter_by_instrument_type(db: Session) -> None:
     assert results[0].instrument_type == "futures_mnq"
 
 
-def test_filter_futures_virtual_matches_mnq_and_mes(db: Session) -> None:
-    """instrument_type='futures' is a virtual filter that expands to both futures_mnq and futures_mes."""
+def test_filter_futures_virtual_matches_all_futures(db: Session) -> None:
+    """instrument_type='futures' matches canonical 'futures' plus legacy futures_mnq/futures_mes."""
     make_trade(db, instrument_type="forex")
-    make_trade(db, instrument_type="futures_mnq")
-    make_trade(db, instrument_type="futures_mes")
+    make_trade(db, instrument_type="futures")        # new canonical
+    make_trade(db, instrument_type="futures_mnq")    # legacy
+    make_trade(db, instrument_type="futures_mes")    # legacy
     stmt = select(TradeModel)
     stmt = apply_trade_filters(stmt, _filters(instrument_type="futures"))
     results = list(db.scalars(stmt).all())
-    assert len(results) == 2
+    assert len(results) == 3
     instrument_types = {r.instrument_type for r in results}
-    assert instrument_types == {"futures_mnq", "futures_mes"}
+    assert instrument_types == {"futures", "futures_mnq", "futures_mes"}
 
 
 # ---------------------------------------------------------------------------

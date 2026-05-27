@@ -9,11 +9,36 @@ Used by:
 
 Pip value logic mirrors impulse-notifier/calculations.py so both paths
 produce consistent numbers.
+
+Futures multipliers are driven by symbol, not instrument_type:
+  MNQ → $2.00/point/contract
+  MES → $5.00/point/contract
+instrument_type is only used to distinguish "futures" (any) from "forex".
 """
 from __future__ import annotations
 
 import math
 from typing import Any
+
+# Dollars per point per contract, keyed by futures symbol.
+# Add new contracts here — no other code changes needed.
+_FUTURES_DOLLARS_PER_POINT: dict[str, float] = {
+    "MNQ": 2.0,   # Micro E-mini Nasdaq-100
+    "MES": 5.0,   # Micro E-mini S&P 500
+}
+
+
+def is_futures_symbol(symbol: str) -> bool:
+    """Return True if symbol is a known futures contract."""
+    return symbol.upper() in _FUTURES_DOLLARS_PER_POINT
+
+
+def futures_dollars_per_point(symbol: str) -> float:
+    """Return the dollar-per-point multiplier for a futures symbol.
+
+    Raises KeyError if the symbol is not a known futures contract.
+    """
+    return _FUTURES_DOLLARS_PER_POINT[symbol.upper()]
 
 
 def pip_size(symbol: str) -> float:
@@ -50,13 +75,15 @@ def calculate_lot_size(
 
     Parameters
     ----------
-    symbol          : Currency pair or instrument, e.g. "EURUSD" or "MNQ"
+    symbol          : Currency pair or futures contract, e.g. "EURUSD", "MNQ", "MES"
     entry           : Entry price (needed for pip value on USD-base pairs)
     sl_pips         : Stop-loss distance in pips (forex) or points (futures)
     account_balance : Account equity in USD
     risk_percent    : Fraction of balance to risk, e.g. 1.0 for 1%
     tp_pips         : Take-profit distance in pips/points (optional — enables rr)
-    instrument_type : "forex" (default), "futures_mnq", or "futures_mes"
+    instrument_type : "forex" (default) or "futures" — only used to select
+                      the forex vs futures calculation path; contract multiplier
+                      is derived from symbol, not this field.
 
     Returns
     -------
@@ -67,9 +94,13 @@ def calculate_lot_size(
         rr              : float | None — reward:risk ratio (None when tp_pips not given)
         instrument_type : str    — echoed back for the response
     """
+    # Resolve whether this is a futures trade from the symbol itself
+    sym_upper = symbol.upper()
+    is_futures = instrument_type.startswith("futures") or is_futures_symbol(sym_upper)
+
     if sl_pips <= 0:
         return {
-            "lot_size": 1 if instrument_type in ("futures_mnq", "futures_mes") else 0.01,
+            "lot_size": 1 if is_futures else 0.01,
             "risk_usd": 0.0,
             "sl_pips": 0.0,
             "rr": None,
@@ -82,21 +113,10 @@ def calculate_lot_size(
     if tp_pips is not None:
         rr = round(tp_pips / sl_pips, 2)
 
-    if instrument_type == "futures_mnq":
-        # MNQ: $2.00 per point per contract
-        raw_contracts = risk_usd / (sl_pips * 2.0)
-        contracts = max(math.floor(raw_contracts), 1)
-        return {
-            "lot_size": contracts,
-            "risk_usd": round(risk_usd, 2),
-            "sl_pips": round(sl_pips, 2),
-            "rr": rr,
-            "instrument_type": instrument_type,
-        }
-
-    if instrument_type == "futures_mes":
-        # MES: $5.00 per point per contract (2.5× MNQ)
-        raw_contracts = risk_usd / (sl_pips * 5.0)
+    if is_futures:
+        # Contract multiplier comes from symbol: MNQ=$2/pt, MES=$5/pt
+        dollars_per_point = _FUTURES_DOLLARS_PER_POINT.get(sym_upper, 2.0)
+        raw_contracts = risk_usd / (sl_pips * dollars_per_point)
         contracts = max(math.floor(raw_contracts), 1)
         return {
             "lot_size": contracts,

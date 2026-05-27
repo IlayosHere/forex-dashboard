@@ -114,9 +114,13 @@ class TradeCreateRequest(BaseModel):
     @field_validator("instrument_type")
     @classmethod
     def validate_instrument_type(cls, v: str) -> str:
-        """Ensure instrument_type is a valid futures or forex type."""
-        if v not in ("forex", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex, futures_mnq, or futures_mes")
+        """Ensure instrument_type is a valid type.
+
+        'futures' is the canonical value for new trades.
+        'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
+        """
+        if v not in ("forex", "futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be forex or futures")
         return v
 
     @field_validator("ict_setup_type")
@@ -266,9 +270,13 @@ class TradeUpdateRequest(BaseModel):
     @field_validator("instrument_type")
     @classmethod
     def validate_instrument_type(cls, v: str | None) -> str | None:
-        """Ensure instrument_type is a valid futures or forex type when provided."""
-        if v is not None and v not in ("forex", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex, futures_mnq, or futures_mes")
+        """Ensure instrument_type is a valid type when provided.
+
+        'futures' is the canonical value for new trades.
+        'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
+        """
+        if v is not None and v not in ("forex", "futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be forex or futures")
         return v
 
     @field_validator("status")

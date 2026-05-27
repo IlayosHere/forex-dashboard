@@ -90,7 +90,7 @@ def ict_stats(
     stmt = select(TradeModel).where(TradeModel.owner == current_user)
     if not filters.instrument_type:
         stmt = stmt.where(
-            TradeModel.instrument_type.in_(("futures_mnq", "futures_mes")),
+            TradeModel.instrument_type.in_(("futures", "futures_mnq", "futures_mes")),
         )
     stmt = apply_trade_filters(stmt, filters)
     trades = list(db.scalars(stmt).all())
