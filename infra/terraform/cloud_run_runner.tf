@@ -13,11 +13,6 @@ resource "google_cloud_run_v2_service" "forex_runner" {
       max_instance_count = 1
     }
 
-    vpc_access {
-      connector = google_vpc_access_connector.forex_connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
-    }
-
     containers {
       image = "gcr.io/cloudrun/hello"
 
@@ -25,10 +20,6 @@ resource "google_cloud_run_v2_service" "forex_runner" {
         container_port = 8080
       }
 
-      # APScheduler needs CPU between HTTP requests to tick — disable CPU throttling.
-      resources {
-        cpu_idle = false
-      }
 
       env {
         name = "DATABASE_URL"

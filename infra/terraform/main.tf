@@ -34,5 +34,5 @@ locals {
   # references — it cannot interpolate a partial secret (the password) into a
   # template string. So we compose the full URL in Terraform and seed it as
   # secret `database_url`, then mount it as a single env var.
-  database_url = "postgresql://forex:${random_password.db.result}@${google_sql_database_instance.forex_db.private_ip_address}:5432/forex"
+  database_url = "postgresql://forex:${random_password.db.result}@${google_sql_database_instance.forex_db.public_ip_address}:5432/forex?sslmode=require"
 }

@@ -5,8 +5,7 @@ locals {
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
     "compute.googleapis.com",
-    "servicenetworking.googleapis.com",
-    "vpcaccess.googleapis.com",
+
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",

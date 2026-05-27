@@ -12,11 +12,6 @@ resource "google_cloud_run_v2_service" "forex_api" {
       max_instance_count = 3
     }
 
-    vpc_access {
-      connector = google_vpc_access_connector.forex_connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
-    }
-
     containers {
       # Placeholder image — GitHub Actions rolls forward with the real image via
       # `gcloud run deploy`. lifecycle.ignore_changes below keeps Terraform from

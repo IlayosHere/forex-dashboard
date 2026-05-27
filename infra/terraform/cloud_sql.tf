@@ -19,20 +19,19 @@ resource "google_sql_database_instance" "forex_db" {
 
     backup_configuration {
       enabled                        = true
-      point_in_time_recovery_enabled = true
+      point_in_time_recovery_enabled = false
       start_time                     = "02:00"
     }
 
     ip_configuration {
-      ipv4_enabled    = false
-      private_network = data.google_compute_network.default.id
+      ipv4_enabled = true
+      ssl_mode     = "ENCRYPTED_ONLY"
     }
 
     user_labels = local.common_labels
   }
 
   depends_on = [
-    google_service_networking_connection.private_vpc_connection,
     google_project_service.enabled,
   ]
 }
