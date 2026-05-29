@@ -24,9 +24,3 @@ variable "cors_origins" {
   EOT
   type        = string
 }
-
-variable "runner_min_instances" {
-  description = "Minimum instance count for the always-on runner service."
-  type        = number
-  default     = 1
-}

@@ -1,4 +1,4 @@
-import type { Signal, SignalListResponse, CalculateResponse, Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -20,66 +20,6 @@ export async function authFetch(url: string, init: RequestInit = {}): Promise<Re
     throw new Error("Session expired");
   }
   return res;
-}
-
-export interface CalculateRequest {
-  symbol: string;
-  entry: number;
-  sl_pips: number;
-  tp_pips?: number;
-  account_balance: number;
-  risk_percent: number;
-}
-
-export interface SignalFilters {
-  strategy?: string;
-  symbol?: string;
-  direction?: string;
-  from?: string;
-  to?: string;
-  resolution?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export async function fetchSignals(
-  filters: SignalFilters = {}
-): Promise<SignalListResponse> {
-  const params = new URLSearchParams();
-  if (filters.strategy) params.set("strategy", filters.strategy);
-  if (filters.symbol) params.set("symbol", filters.symbol);
-  if (filters.direction) params.set("direction", filters.direction);
-  if (filters.from) params.set("from", filters.from);
-  if (filters.to) params.set("to", filters.to);
-  if (filters.resolution) params.set("resolution", filters.resolution);
-  params.set("limit", String(filters.limit ?? 50));
-  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
-  const qs = params.toString();
-  const res = await authFetch(`${BASE_URL}/api/signals${qs ? `?${qs}` : ""}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Failed to fetch signals: ${res.status}`);
-  return res.json() as Promise<SignalListResponse>;
-}
-
-export async function fetchSignal(id: string): Promise<Signal> {
-  const res = await authFetch(`${BASE_URL}/api/signals/${id}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Failed to fetch signal ${id}: ${res.status}`);
-  return res.json() as Promise<Signal>;
-}
-
-export async function postCalculate(
-  body: CalculateRequest
-): Promise<CalculateResponse> {
-  const res = await authFetch(`${BASE_URL}/api/calculate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Calculate failed: ${res.status}`);
-  return res.json() as Promise<CalculateResponse>;
 }
 
 // ---------------------------------------------------------------------------

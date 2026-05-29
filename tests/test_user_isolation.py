@@ -14,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from api.models import AccountModel, SignalModel
+from api.models import AccountModel
 from tests.conftest import TEST_USER, TEST_USER_2, make_trade
 
 
@@ -154,39 +154,3 @@ def test_trade_stats_scoped_to_current_user(
     assert data["wins"] >= 1
     assert data["losses"] == 0
 
-
-# ---------------------------------------------------------------------------
-# Signals are global (visible to all users)
-# ---------------------------------------------------------------------------
-
-
-def test_signals_visible_to_all_users(
-    db: Session, client: TestClient, client_other_user: TestClient,
-) -> None:
-    signal = SignalModel(
-        id=str(uuid.uuid4()),
-        strategy="fvg-impulse",
-        symbol="GBPUSD",
-        direction="SELL",
-        candle_time=datetime(2025, 1, 15, 12, 0, tzinfo=timezone.utc),
-        entry=1.27000,
-        sl=1.27300,
-        tp=1.26400,
-        lot_size=0.5,
-        risk_pips=30.0,
-        spread_pips=1.5,
-        signal_metadata={},
-        created_at=datetime.now(timezone.utc),
-    )
-    db.add(signal)
-    db.commit()
-
-    resp_user1 = client.get("/api/signals")
-    resp_user2 = client_other_user.get("/api/signals")
-    assert resp_user1.status_code == 200
-    assert resp_user2.status_code == 200
-    items1 = resp_user1.json()["items"] if "items" in resp_user1.json() else resp_user1.json()
-    items2 = resp_user2.json()["items"] if "items" in resp_user2.json() else resp_user2.json()
-    assert len(items1) == 1
-    assert len(items2) == 1
-    assert items1[0]["id"] == items2[0]["id"]

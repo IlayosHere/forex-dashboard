@@ -6,13 +6,12 @@ import Link from "next/link";
 
 import { TradeForm } from "@/components/TradeForm";
 
-import type { Signal, TradeCreateRequest } from "@/lib/types";
+import type { TradeCreateRequest } from "@/lib/types";
 import type { TradeFormData } from "@/components/TradeForm";
 
-import { createTrade, fetchSignal, fetchAccounts } from "@/lib/api";
+import { createTrade, fetchAccounts } from "@/lib/api";
 import { getInstrumentType, strategies } from "@/lib/strategies";
-import { formatPrice } from "@/lib/utils";
-import { nowNYDatetime, nyDatetimeToUtcISO, utcISOToNYDatetime } from "@/lib/dates";
+import { nowNYDatetime, nyDatetimeToUtcISO } from "@/lib/dates";
 
 function makeEmptyForm(): TradeFormData {
   return {
@@ -55,9 +54,6 @@ function NewTradeContent() {
   const signalId = searchParams.get("signal");
   const strategyParam = searchParams.get("strategy");
   const accountTypeParam = searchParams.get("account_type");
-  const slOverride = searchParams.get("sl");
-  const tpOverride = searchParams.get("tp");
-  const lotOverride = searchParams.get("lot_size");
 
   const [initial, setInitial] = useState<TradeFormData>(() => {
     if (strategyParam && !signalId) {
@@ -92,58 +88,7 @@ function NewTradeContent() {
     return () => { cancelled = true; };
   }, [accountTypeParam, strategyParam, signalId]);
 
-  const [signalLabel, setSignalLabel] = useState<string | null>(null);
-  const [signalError, setSignalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Pre-fill from signal if query param present, with calculator overrides
-  useEffect(() => {
-    if (!signalId) return;
-    let cancelled = false;
-    setSignalError(null);
-    fetchSignal(signalId)
-      .then((signal: Signal) => {
-        if (cancelled) return;
-        const sl = slOverride ? parseFloat(slOverride) : signal.sl;
-        const tp = tpOverride ? parseFloat(tpOverride) : signal.tp;
-        const lotSize = lotOverride ? parseFloat(lotOverride) : signal.lot_size;
-        setInitial({
-          account_id: "",
-          signal_id: signal.id,
-          strategy: signal.strategy,
-          symbol: signal.symbol,
-          direction: signal.direction,
-          entry_price: formatPrice(signal.entry, signal.symbol),
-          sl_price: formatPrice(sl, signal.symbol),
-          tp_price: formatPrice(tp, signal.symbol),
-          lot_size: String(lotSize),
-          open_time: utcISOToNYDatetime(signal.candle_time),
-          tags: [],
-          notes: "",
-          rating: null,
-          confidence: null,
-          screenshot_url: "",
-          ict_setup_type: "",
-          ict_setup_detail: "",
-          ict_tp_target: "",
-          ict_ifvg_timeframe: "",
-          ict_ifvg_bars: null,
-          ict_smt_present: null,
-          ict_tdo_aligned: null,
-          ict_htf_bias: null,
-          fees: "",
-          criteria_met_at_entry: null,
-          qt_fvg_quarter: "",
-          qt_entry_quarter: "",
-          qt_fvg_date: "",
-          qt_fvg_type: "",
-          qt_entry_type: "",
-        });
-        setSignalLabel(`${signal.symbol} ${signal.direction} — ${signal.strategy}`);
-      })
-      .catch(() => { if (!cancelled) setSignalError("Could not load signal"); });
-    return () => { cancelled = true; };
-  }, [signalId, slOverride, tpOverride, lotOverride]);
 
   const handleSubmit = async (data: TradeFormData) => {
     setLoading(true);
@@ -192,18 +137,12 @@ function NewTradeContent() {
   };
 
   return (
-    <>
-      {signalError && (
-        <p className="text-bear text-sm mb-3">{signalError}</p>
-      )}
-      <TradeForm
-        initial={initial}
-        onSubmit={handleSubmit}
-        onCancel={() => router.back()}
-        loading={loading}
-        signalLabel={signalLabel}
-      />
-    </>
+    <TradeForm
+      initial={initial}
+      onSubmit={handleSubmit}
+      onCancel={() => router.back()}
+      loading={loading}
+    />
   );
 }
 

@@ -33,21 +33,6 @@ services:
     networks:
       - internal
 
-  # ── Strategy runner ───────────────────────────────────────────────────────
-  runner:
-    build:
-      context: .
-      dockerfile: runner/Dockerfile
-    restart: unless-stopped
-    environment:
-      DATABASE_URL:        postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - internal
-
   # ── Next.js UI ────────────────────────────────────────────────────────────
   ui:
     build:

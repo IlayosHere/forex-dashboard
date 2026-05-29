@@ -44,6 +44,11 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     ict_htf_bias: null,
     fees: "",
     criteria_met_at_entry: null,
+    qt_fvg_quarter: "",
+    qt_entry_quarter: "",
+    qt_fvg_date: "",
+    qt_fvg_type: "",
+    qt_entry_type: "",
     ...overrides,
   };
 }

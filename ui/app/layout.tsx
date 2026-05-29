@@ -5,8 +5,8 @@ import { AuthGate } from "@/components/AuthGate";
 import { LayoutShell } from "@/components/LayoutShell";
 
 export const metadata: Metadata = {
-  title: "Forex Signal Dashboard",
-  description: "Private forex signal dashboard",
+  title: "Trade Journal",
+  description: "Private trade journal",
 };
 
 export default function RootLayout({

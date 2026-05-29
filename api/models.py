@@ -1,20 +1,12 @@
 """
 api/models.py
 -------------
-SQLAlchemy 2.0 ORM models for the Forex Signal Dashboard.
+SQLAlchemy 2.0 ORM models for the Forex Trade Journal.
 
 Models:
-  - SignalModel: strategy signals
-  - TradeModel: trade journal entries
+  - UserModel: authenticated users
   - AccountModel: trading accounts (demo, live, funded)
-
-Fields mirror shared.signal.Signal exactly. The `metadata` dict is stored as
-a JSON column named `signal_metadata` — "metadata" is a reserved attribute name
-on SQLAlchemy's DeclarativeBase and cannot be used as a mapped column name.
-
-Indexes on strategy and candle_time support the two most common query patterns:
-  - Filter by strategy (GET /api/signals?strategy=fvg-impulse)
-  - Sort by recency (ORDER BY candle_time DESC)
+  - TradeModel: trade journal entries
 """
 from __future__ import annotations
 
@@ -39,51 +31,6 @@ class UserModel(Base):
 
     __table_args__ = (
         Index("ix_users_username", "username", unique=True),
-    )
-
-
-class SignalModel(Base):
-    __tablename__ = "signals"
-
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    strategy: Mapped[str] = mapped_column(String, nullable=False)
-    symbol: Mapped[str] = mapped_column(String, nullable=False)
-    direction: Mapped[str] = mapped_column(String, nullable=False)
-    candle_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    entry: Mapped[float] = mapped_column(Float, nullable=False)
-    sl: Mapped[float] = mapped_column(Float, nullable=False)
-    tp: Mapped[float] = mapped_column(Float, nullable=False)
-    lot_size: Mapped[float] = mapped_column(Float, nullable=False)
-    risk_pips: Mapped[float] = mapped_column(Float, nullable=False)
-    spread_pips: Mapped[float] = mapped_column(Float, nullable=False)
-    signal_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-
-    # Resolution tracking (populated by runner/resolver.py after candles close)
-    resolution: Mapped[str | None] = mapped_column(String, nullable=True)
-    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    resolved_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    resolution_candles: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    # Gate evaluation (Layer 1 — populated by runner/gate_runner.py)
-    gate_status: Mapped[str] = mapped_column(String, nullable=False, default="no_gates")
-    gate_block_reason: Mapped[str | None] = mapped_column(String, nullable=True)
-    gate_set_id: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    # Quality grade (Layer 2 — populated by runner/grade_runner.py)
-    grade: Mapped[str | None] = mapped_column(String, nullable=True)
-    score_snapshot: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    score_max_snapshot: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    __table_args__ = (
-        Index("ix_signals_strategy_candle_time", "strategy", "candle_time"),
-        Index("ix_signals_candle_time", "candle_time"),
-        Index("ix_signals_symbol", "symbol"),
-        Index("ix_signals_resolution", "resolution"),
-        Index("ix_signals_resolution_strategy_candle", "resolution", "strategy", "candle_time"),
-        Index("ix_signals_gate_status", "gate_status"),
-        Index("ix_signals_grade", "grade"),
-        UniqueConstraint("strategy", "symbol", "candle_time", name="uq_signal_dedup"),
     )
 
 
@@ -114,14 +61,11 @@ class TradeModel(Base):
 
     # Identity
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    signal_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("signals.id", ondelete="SET NULL"), nullable=True
-    )
+    signal_id: Mapped[str | None] = mapped_column(String, nullable=True)
     account_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True
     )
 
-    signal: Mapped[SignalModel | None] = relationship(lazy="noload")
     account: Mapped[AccountModel | None] = relationship(lazy="noload")
 
     # Trade setup

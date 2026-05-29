@@ -1,7 +1,7 @@
 """
 api/schemas.py
 --------------
-Pydantic v2 request/response models for the Forex Signal Dashboard API.
+Pydantic v2 request/response models for the Forex Trade Journal API.
 
 All models use ConfigDict(from_attributes=True) so they can be built directly
 from SQLAlchemy ORM instances with model_validate().
@@ -30,52 +30,6 @@ from api.schemas_trade import (  # noqa: F401 -- re-export
     TradeStatsResponse,
     TradeUpdateRequest,
 )
-
-
-class SignalResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-    id: str
-    strategy: str
-    symbol: str
-    direction: str
-    candle_time: datetime
-    entry: float
-    sl: float
-    tp: float
-    lot_size: float
-    risk_pips: float
-    spread_pips: float
-    # DB column is signal_metadata; expose as metadata in JSON
-    metadata: dict[str, Any] = Field(validation_alias="signal_metadata")
-    created_at: datetime
-
-    # Resolution fields — populated by runner/resolver.py
-    resolution: str | None = None
-    resolved_at: datetime | None = None
-    resolved_price: float | None = None
-    resolution_candles: int | None = None
-
-    # Gate + grade fields — populated by runner at fire-time
-    gate_status: str = "no_gates"
-    gate_block_reason: str | None = None
-    grade: str | None = None
-    score_snapshot: int | None = None
-    score_max_snapshot: int | None = None
-
-    @field_validator("candle_time", "created_at", "resolved_at", mode="before")
-    @classmethod
-    def assume_utc(cls, v: object) -> object:
-        if isinstance(v, datetime) and v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v
-
-
-class SignalListResponse(BaseModel):
-    model_config = ConfigDict()
-
-    items: list[SignalResponse]
-    total: int
 
 
 # ---------------------------------------------------------------------------

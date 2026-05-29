@@ -22,7 +22,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite://")
 
 from api.auth import get_current_user, reset_login_rate_limits
 from api.db import Base, get_db
-from api.models import AccountModel, SignalModel, TradeModel
+from api.models import AccountModel, TradeModel
 
 TEST_USER = "testuser"
 TEST_USER_2 = "otheruser"
@@ -122,30 +122,6 @@ def sample_account(db: Session) -> AccountModel:
     db.commit()
     db.refresh(account)
     return account
-
-
-@pytest.fixture()
-def sample_signal(db: Session) -> SignalModel:
-    """Insert and return a single signal."""
-    signal = SignalModel(
-        id=str(uuid.uuid4()),
-        strategy="fvg-impulse",
-        symbol="EURUSD",
-        direction="BUY",
-        candle_time=datetime(2025, 1, 15, 12, 0, tzinfo=timezone.utc),
-        entry=1.08500,
-        sl=1.08200,
-        tp=1.09100,
-        lot_size=0.50,
-        risk_pips=30.0,
-        spread_pips=1.2,
-        signal_metadata={"fvg_size": 15},
-        created_at=datetime.now(timezone.utc),
-    )
-    db.add(signal)
-    db.commit()
-    db.refresh(signal)
-    return signal
 
 
 def make_trade(

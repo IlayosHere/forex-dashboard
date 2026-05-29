@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from api.models import SignalModel
 from tests.conftest import make_trade
 
 
