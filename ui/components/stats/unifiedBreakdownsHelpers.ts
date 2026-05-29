@@ -21,6 +21,7 @@ export interface UnifiedRow {
   avgRr: number | null;
   expectancyR: number | null;
   netPnl: number;
+  netR: number;
 }
 
 export interface TabDef {
@@ -93,6 +94,7 @@ function fromIctBucket(key: string, label: string, b: IctBucketStats): UnifiedRo
     avgRr: b.avg_rr,
     expectancyR: b.expectancy_r,
     netPnl: b.total_pnl_usd,
+    netR: 0,
   };
 }
 
@@ -105,6 +107,7 @@ function fromBreakdownEntry(key: string, entry: BreakdownEntry): UnifiedRow {
     avgRr: entry.avg_rr,
     expectancyR: null,
     netPnl: entry.total_pnl_usd,
+    netR: entry.total_r ?? 0,
   };
 }
 

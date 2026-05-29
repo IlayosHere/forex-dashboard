@@ -17,11 +17,13 @@ import { useAccounts } from "@/lib/useAccounts";
 import { useEquityCurve } from "@/lib/useEquityCurve";
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useIctStats } from "@/lib/useIctStats";
+import { useShowMoney } from "@/lib/useShowMoney";
 import { SMALL_SAMPLE_THRESHOLD } from "@/lib/statsHelpers";
 
 export default function StatisticsPage() {
   const ctx = useStatsContext();
   const { accounts } = useAccounts();
+  const [showMoney] = useShowMoney();
 
   const { stats, loading: statsLoading, error, refetch } = useTradeStats(ctx.apiFilters);
   const { data: equityData, loading: equityLoading } = useEquityCurve(ctx.apiFilters);
@@ -68,7 +70,7 @@ export default function StatisticsPage() {
 
       <section id="overview" className="mb-4">
         <SectionHeader title="Overview" subtitle={stats ? `${stats.closed_trades} closed trades` : undefined} />
-        <OverviewKpiStrip stats={stats} loading={statsLoading} isBacktest={isBacktest} />
+        <OverviewKpiStrip stats={stats} loading={statsLoading} isBacktest={isBacktest} showMoney={showMoney} />
       </section>
 
       <hr className="border-border/40" />
@@ -85,14 +87,14 @@ export default function StatisticsPage() {
 
       <section id="edge" className="mb-4">
         <SectionHeader title={isBacktest ? "Edge Metrics — R-based" : "Edge Metrics"} />
-        <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} />
+        <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} showMoney={showMoney} />
       </section>
 
       <hr className="border-border/40" />
 
       <section id="breakdowns" className="mb-4">
         <SectionHeader title="Performance Breakdowns" />
-        <UnifiedBreakdowns stats={stats} ictStats={isMnq ? ictData : null} loading={statsLoading || ictLoading} />
+        <UnifiedBreakdowns stats={stats} ictStats={isMnq ? ictData : null} loading={statsLoading || ictLoading} showMoney={showMoney} />
       </section>
 
       <hr className="border-border/40" />
@@ -105,7 +107,7 @@ export default function StatisticsPage() {
       <hr className="border-border/40" />
 
       <section id="calendar">
-        <SectionHeader title="Monthly P&amp;L" />
+        <SectionHeader title={showMoney ? "Monthly P&L" : "Monthly R"} />
         <MonthlyBars data={dailyData} loading={dailyLoading} isBacktest={isBacktest} />
       </section>
     </div>

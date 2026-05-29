@@ -7,6 +7,7 @@ interface OverviewKpiStripProps {
   stats: TradeStats | null;
   loading: boolean;
   isBacktest: boolean;
+  showMoney?: boolean;
 }
 
 interface TileProps {
@@ -31,7 +32,7 @@ function pfSub(pf: number | null): string {
   return pf >= PF_THRESHOLD ? "above threshold" : `below ${PF_THRESHOLD}`;
 }
 
-export function OverviewKpiStrip({ stats, loading, isBacktest }: OverviewKpiStripProps) {
+export function OverviewKpiStrip({ stats, loading, isBacktest, showMoney = true }: OverviewKpiStripProps) {
   const dim = loading ? "opacity-50" : "";
 
   const expectancy = stats?.expectancy_usd ?? null;
@@ -74,14 +75,41 @@ export function OverviewKpiStrip({ stats, loading, isBacktest }: OverviewKpiStri
     );
   }
 
+  const expectancyTile = showMoney ? (
+    <Tile
+      label="Expectancy"
+      value={expectancy != null ? `${expectancy >= 0 ? "+" : ""}$${fmt(expectancy, 2)}` : "--"}
+      sub="per trade"
+      color={signedColor(expectancy)}
+    />
+  ) : (
+    <Tile
+      label="Expectancy"
+      value={avgRr != null ? `${avgRr >= 0 ? "+" : ""}${avgRr.toFixed(2)}R` : "--"}
+      sub="per trade in R"
+      color={signedColor(avgRr)}
+    />
+  );
+
+  const pnlTile = showMoney ? (
+    <Tile
+      label="Net P&L"
+      value={pnl != null ? `${pnl >= 0 ? "+" : ""}$${fmt(pnl, 2)}` : "--"}
+      sub={stats ? `${stats.closed_trades} closed trades` : "—"}
+      color={pnlColor(pnl)}
+    />
+  ) : (
+    <Tile
+      label="Net R"
+      value={stats?.total_r != null ? `${stats.total_r >= 0 ? "+" : ""}${stats.total_r.toFixed(2)}R` : "--"}
+      sub={stats ? `${stats.closed_trades} closed trades` : "—"}
+      color={pnlColor(stats?.total_r ?? null)}
+    />
+  );
+
   return (
     <div className={`grid grid-cols-5 gap-px bg-border rounded-lg overflow-hidden ${dim}`}>
-      <Tile
-        label="Expectancy"
-        value={expectancy != null ? `${expectancy >= 0 ? "+" : ""}$${fmt(expectancy, 2)}` : "--"}
-        sub="per trade"
-        color={signedColor(expectancy)}
-      />
+      {expectancyTile}
       <Tile
         label="Win Rate"
         value={winRate != null ? `${fmt(winRate)}%` : "--"}
@@ -92,12 +120,7 @@ export function OverviewKpiStrip({ stats, loading, isBacktest }: OverviewKpiStri
         value={pf != null ? fmt(pf, 2) : "--"}
         sub={pfSub(pf)}
       />
-      <Tile
-        label="Net P&L"
-        value={pnl != null ? `${pnl >= 0 ? "+" : ""}$${fmt(pnl, 2)}` : "--"}
-        sub={stats ? `${stats.closed_trades} closed trades` : "—"}
-        color={pnlColor(pnl)}
-      />
+      {pnlTile}
       {avgRrTile}
     </div>
   );
