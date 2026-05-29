@@ -20,6 +20,7 @@ interface UnifiedBreakdownsProps {
   stats: TradeStats | null;
   ictStats: IctStatsResponse | null;
   loading: boolean;
+  showMoney?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,12 +53,21 @@ function NumCell({ v, decimals = 2 }: { v: number | null; decimals?: number }) {
   );
 }
 
-function PnlCell({ v }: { v: number }) {
+function PnlCell({ netPnl, netR, showMoney }: { netPnl: number; netR: number; showMoney: boolean }) {
+  const v = showMoney ? netPnl : netR;
   const color = v >= 0 ? "text-bull" : "text-bear";
-  const sign = v >= 0 ? "+" : "−";
+  if (showMoney) {
+    const sign = v >= 0 ? "+" : "−";
+    return (
+      <span className={`text-xs tabular-nums ${color}`}>
+        {sign}${Math.abs(v).toFixed(0)}
+      </span>
+    );
+  }
+  const sign = v >= 0 ? "+" : "";
   return (
     <span className={`text-xs tabular-nums ${color}`}>
-      {sign}${Math.abs(v).toFixed(0)}
+      {sign}{v.toFixed(2)}R
     </span>
   );
 }
@@ -68,7 +78,7 @@ function PnlCell({ v }: { v: number }) {
 
 const COL_GRID = "grid-cols-[1fr_3rem_4rem_4.5rem_4.5rem_4.5rem]";
 
-function TableHeader() {
+function TableHeader({ showMoney }: { showMoney: boolean }) {
   return (
     <div className={`grid ${COL_GRID} pb-1 mb-1 border-b border-border`}>
       <span className="text-xs text-text-dim">Bucket</span>
@@ -76,12 +86,12 @@ function TableHeader() {
       <span className="text-xs text-text-dim text-right">Win%</span>
       <span className="text-xs text-text-dim text-right">Avg R</span>
       <span className="text-xs text-text-dim text-right">Exp(R)</span>
-      <span className="text-xs text-text-dim text-right">Net P&L</span>
+      <span className="text-xs text-text-dim text-right">{showMoney ? "Net P&L" : "Net R"}</span>
     </div>
   );
 }
 
-function TableRow({ row }: { row: UnifiedRow }) {
+function TableRow({ row, showMoney }: { row: UnifiedRow; showMoney: boolean }) {
   return (
     <div className={`grid ${COL_GRID} items-center py-1.5 border-b border-b-[#1a1a1a]`}>
       <span className="text-xs text-text-primary truncate pr-2">{row.label}</span>
@@ -89,19 +99,19 @@ function TableRow({ row }: { row: UnifiedRow }) {
       <div className="flex justify-end"><WinRateCell v={row.winRate} /></div>
       <div className="flex justify-end"><NumCell v={row.avgRr} /></div>
       <div className="flex justify-end"><NumCell v={row.expectancyR} /></div>
-      <div className="flex justify-end"><PnlCell v={row.netPnl} /></div>
+      <div className="flex justify-end"><PnlCell netPnl={row.netPnl} netR={row.netR} showMoney={showMoney} /></div>
     </div>
   );
 }
 
-function BreakdownTable({ rows }: { rows: UnifiedRow[] }) {
+function BreakdownTable({ rows, showMoney }: { rows: UnifiedRow[]; showMoney: boolean }) {
   if (rows.length === 0) {
     return <p className="text-text-dim text-sm py-8 text-center">No data available</p>;
   }
   return (
     <>
-      <TableHeader />
-      {rows.map((r) => <TableRow key={r.key} row={r} />)}
+      <TableHeader showMoney={showMoney} />
+      {rows.map((r) => <TableRow key={r.key} row={r} showMoney={showMoney} />)}
     </>
   );
 }
@@ -110,25 +120,25 @@ function BreakdownTable({ rows }: { rows: UnifiedRow[] }) {
 // SMT/TDO special layout
 // ---------------------------------------------------------------------------
 
-function SmtTdoSubTable({ section }: { section: SmtTdoSection }) {
+function SmtTdoSubTable({ section, showMoney }: { section: SmtTdoSection; showMoney: boolean }) {
   return (
     <div className="flex-1 min-w-0">
       <p className="text-xs text-text-muted mb-2 font-medium">{section.title}</p>
-      <TableHeader />
-      <TableRow row={section.trueRow} />
-      <TableRow row={section.falseRow} />
+      <TableHeader showMoney={showMoney} />
+      <TableRow row={section.trueRow} showMoney={showMoney} />
+      <TableRow row={section.falseRow} showMoney={showMoney} />
     </div>
   );
 }
 
-function SmtTdoTab({ ictStats }: { ictStats: IctStatsResponse }) {
+function SmtTdoTab({ ictStats, showMoney }: { ictStats: IctStatsResponse; showMoney: boolean }) {
   const sections = useMemo(() => buildSmtTdoSections(ictStats), [ictStats]);
   if (sections.length === 0) {
     return <p className="text-text-dim text-sm py-8 text-center">No data available</p>;
   }
   return (
     <div className="flex gap-6 flex-wrap">
-      {sections.map((s) => <SmtTdoSubTable key={s.title} section={s} />)}
+      {sections.map((s) => <SmtTdoSubTable key={s.title} section={s} showMoney={showMoney} />)}
     </div>
   );
 }
@@ -171,7 +181,7 @@ function TabBar({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function UnifiedBreakdowns({ stats, ictStats, loading }: UnifiedBreakdownsProps) {
+export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true }: UnifiedBreakdownsProps) {
   const [activeTab, setActiveTab] = useState<UnifiedTabKey>("session");
 
   const rows = useMemo(
@@ -186,9 +196,9 @@ export function UnifiedBreakdowns({ stats, ictStats, loading }: UnifiedBreakdown
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
       <TabBar activeTab={activeTab} hasIct={ictStats !== null} onSelect={setActiveTab} />
       {isSmtTdo && ictStats ? (
-        <SmtTdoTab ictStats={ictStats} />
+        <SmtTdoTab ictStats={ictStats} showMoney={showMoney} />
       ) : (
-        <BreakdownTable rows={rows} />
+        <BreakdownTable rows={rows} showMoney={showMoney} />
       )}
     </div>
   );

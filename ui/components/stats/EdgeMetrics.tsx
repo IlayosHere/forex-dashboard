@@ -20,6 +20,7 @@ interface EdgeMetricsProps {
   stats: TradeStats | null;
   loading: boolean;
   isBacktest: boolean;
+  showMoney?: boolean;
 }
 
 interface MetricRowProps {
@@ -134,7 +135,7 @@ function EdgeMarginCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
-export function EdgeMetrics({ stats, loading, isBacktest }: EdgeMetricsProps) {
+export function EdgeMetrics({ stats, loading, isBacktest, showMoney = true }: EdgeMetricsProps) {
   const dim = loading ? "opacity-50" : "";
 
   if (isBacktest) {
@@ -157,26 +158,32 @@ export function EdgeMetrics({ stats, loading, isBacktest }: EdgeMetricsProps) {
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${dim}`}>
       <MetricCard title="Expectancy">
-        <MetricRow
-          label="Per Trade (USD)"
-          value={stats?.expectancy_usd != null ? `${stats.expectancy_usd >= 0 ? "+" : ""}$${fmt(stats.expectancy_usd, 2)}` : "--"}
-          color={signedColor(stats?.expectancy_usd ?? null)}
-        />
+        {showMoney !== false && (
+          <MetricRow
+            label="Per Trade (USD)"
+            value={stats?.expectancy_usd != null ? `${stats.expectancy_usd >= 0 ? "+" : ""}$${fmt(stats.expectancy_usd, 2)}` : "--"}
+            color={signedColor(stats?.expectancy_usd ?? null)}
+          />
+        )}
         <MetricRow
           label="Per Trade (Pips)"
           value={stats?.expectancy_pips != null ? fmt(stats.expectancy_pips, 1) : "--"}
           color={signedColor(stats?.expectancy_pips ?? null)}
         />
-        <MetricRow
-          label="Avg Win"
-          value={stats?.avg_win_usd != null ? `$${fmt(stats.avg_win_usd, 2)}` : "--"}
-          color={COLOR_BULL}
-        />
-        <MetricRow
-          label="Avg Loss"
-          value={stats?.avg_loss_usd != null ? `-$${fmt(Math.abs(stats.avg_loss_usd), 2)}` : "--"}
-          color={COLOR_BEAR}
-        />
+        {showMoney !== false && (
+          <MetricRow
+            label="Avg Win"
+            value={stats?.avg_win_usd != null ? `$${fmt(stats.avg_win_usd, 2)}` : "--"}
+            color={COLOR_BULL}
+          />
+        )}
+        {showMoney !== false && (
+          <MetricRow
+            label="Avg Loss"
+            value={stats?.avg_loss_usd != null ? `-$${fmt(Math.abs(stats.avg_loss_usd), 2)}` : "--"}
+            color={COLOR_BEAR}
+          />
+        )}
         <MetricRow
           label="Consistency"
           value={stats?.consistency_ratio != null ? `${fmt(stats.consistency_ratio)}%` : "--"}

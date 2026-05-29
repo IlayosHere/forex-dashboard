@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import type { AccountType, InstrumentType } from "@/lib/types";
 import { strategies } from "@/lib/strategies";
 import { useSession } from "@/lib/useSession";
+import { useShowMoney } from "@/lib/useShowMoney";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex",   label: "Forex" },
@@ -124,6 +125,8 @@ export default function JournalPage() {
 
   const { trades, loading, error } = useTrades(apiFilters);
   const { stats, loading: statsLoading } = useTradeStats(apiFilters);
+
+  const [showMoney, toggleShowMoney] = useShowMoney();
 
   const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
 
@@ -233,6 +236,30 @@ export default function JournalPage() {
               );
             })}
           </div>
+          <button
+            type="button"
+            onClick={toggleShowMoney}
+            aria-label={showMoney ? "Hide money amounts" : "Show money amounts"}
+            title={showMoney ? "Hide $" : "Show $"}
+            className={`h-7 w-7 rounded flex items-center justify-center border transition-colors cursor-pointer ${
+              showMoney
+                ? "border-[#777777] text-[#e0e0e0] bg-[#2a2d3e]"
+                : "border-[#2a2d3e] text-[#777777] bg-transparent hover:border-[#777777] hover:text-[#9e9e9e]"
+            }`}
+          >
+            {showMoney ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            )}
+          </button>
           <Button onClick={() => router.push(newTradeUrl)}>
             + New Trade
           </Button>
@@ -310,6 +337,7 @@ export default function JournalPage() {
           selectedAccountId={filters.account_id}
           onSelect={(accountId) => setFilters((prev) => ({ ...prev, account_id: accountId }))}
           loading={statsLoading}
+          showMoney={showMoney}
         />
       )}
 
@@ -318,6 +346,7 @@ export default function JournalPage() {
         stats={stats}
         loading={statsLoading}
         mode={isBacktestView ? "backtest" : "default"}
+        showMoney={showMoney}
       />
 
       {/* Filters */}
@@ -365,6 +394,7 @@ export default function JournalPage() {
                   router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`);
                 }}
                 accountType={trade.account_id ? accountTypeMap[trade.account_id] : undefined}
+                showMoney={showMoney}
               />
             );
           })}

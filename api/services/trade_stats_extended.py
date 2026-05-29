@@ -59,20 +59,25 @@ def build_equity_curve(closed: list[TradeModel]) -> list[dict[str, Any]]:
     )
     cum_usd = 0.0
     cum_pips = 0.0
+    cum_r = 0.0
     result: list[dict[str, Any]] = []
     for t in sorted_trades:
         pnl_usd = t.pnl_usd or 0.0
         pnl_pips = t.pnl_pips or 0.0
+        pnl_r = t.rr_achieved or 0.0
         cum_usd += pnl_usd
         cum_pips += pnl_pips
+        cum_r += pnl_r
         ct = t.open_time
         result.append({
             "date": ct.date().isoformat() if ct else None,
             "close_time": ct.isoformat() if ct else None,
             "pnl_usd": round(pnl_usd, 2),
             "pnl_pips": round(pnl_pips, 1),
+            "pnl_r": round(pnl_r, 2),
             "cumulative_pnl_usd": round(cum_usd, 2),
             "cumulative_pnl_pips": round(cum_pips, 1),
+            "cumulative_r": round(cum_r, 2),
             "trade_count": 1,
             "outcome": t.outcome,
         })
@@ -92,7 +97,7 @@ def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
                 "date": d.isoformat(),
                 "trades": 0, "wins": 0, "losses": 0,
                 "breakevens": 0, "pnl_usd": 0.0, "pnl_pips": 0.0,
-                "compliant": 0, "mistakes": 0,
+                "pnl_r": 0.0, "compliant": 0, "mistakes": 0,
             }
         buckets[d]["trades"] += 1
         if t.outcome == "win":
@@ -103,6 +108,7 @@ def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
             buckets[d]["breakevens"] += 1
         buckets[d]["pnl_usd"] += t.pnl_usd or 0.0
         buckets[d]["pnl_pips"] += t.pnl_pips or 0.0
+        buckets[d]["pnl_r"] += t.rr_achieved or 0.0
         if t.rule_followed is True:
             buckets[d]["compliant"] += 1
         elif t.rule_followed is False:
@@ -110,6 +116,7 @@ def build_daily_summary(closed: list[TradeModel]) -> list[dict[str, Any]]:
     for v in buckets.values():
         v["pnl_usd"] = round(v["pnl_usd"], 2)
         v["pnl_pips"] = round(v["pnl_pips"], 1)
+        v["pnl_r"] = round(v["pnl_r"], 2)
     return sorted(buckets.values(), key=lambda x: x["date"])
 
 
@@ -163,10 +170,10 @@ def _calc_consistency(closed: list[TradeModel]) -> float | None:
     weekly_pnl: dict[tuple[int, int], float] = defaultdict(float)
     for t in closed:
         ct = t.open_time
-        if ct is None or t.pnl_usd is None:
+        if ct is None or t.rr_achieved is None:
             continue
         iso = ct.isocalendar()
-        weekly_pnl[(iso[0], iso[1])] += t.pnl_usd
+        weekly_pnl[(iso[0], iso[1])] += t.rr_achieved
     if not weekly_pnl:
         return None
     positive = sum(1 for v in weekly_pnl.values() if v > 0)
@@ -293,4 +300,5 @@ def _aggregate_dimension(
             v["avg_pnl_usd"] = round(v["total_pnl_usd"] / v["total"], 2)
         rr = v.pop("_rr")
         v["avg_rr"] = round(sum(rr) / len(rr), 2) if rr else None
+        v["total_r"] = round(sum(rr), 2) if rr else 0.0
     return buckets

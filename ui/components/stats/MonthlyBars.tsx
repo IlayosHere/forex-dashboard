@@ -10,6 +10,7 @@ interface MonthlyBarsProps {
   data: DailySummaryPoint[];
   loading: boolean;
   isBacktest?: boolean;
+  showMoney?: boolean;
 }
 
 interface MonthBucket {
@@ -17,11 +18,11 @@ interface MonthBucket {
   pnl: number;
 }
 
-function aggregateMonthly(data: DailySummaryPoint[]): MonthBucket[] {
+function aggregateMonthly(data: DailySummaryPoint[], useR: boolean): MonthBucket[] {
   const map = new Map<string, number>();
   for (const d of data) {
     const key = d.date.slice(0, 7);
-    map.set(key, (map.get(key) ?? 0) + d.pnl_usd);
+    map.set(key, (map.get(key) ?? 0) + (useR ? (d.pnl_r ?? 0) : d.pnl_usd));
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
@@ -34,16 +35,20 @@ function aggregateMonthly(data: DailySummaryPoint[]): MonthBucket[] {
     });
 }
 
-export function MonthlyBars({ data, loading, isBacktest = false }: MonthlyBarsProps) {
-  const monthly = useMemo(() => aggregateMonthly(data), [data]);
+export function MonthlyBars({ data, loading, isBacktest = false, showMoney = true }: MonthlyBarsProps) {
+  const monthly = useMemo(() => aggregateMonthly(data, !showMoney), [data, showMoney]);
   const dim = loading ? "opacity-50" : "";
 
   const maxAbs = monthly.reduce((acc, m) => Math.max(acc, Math.abs(m.pnl)), 0);
 
+  const title = showMoney
+    ? (isBacktest ? "Monthly P&L (notional)" : "Monthly P&L")
+    : "Monthly R";
+
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
       <h3 className="text-xs uppercase tracking-wide text-text-muted mb-3">
-        Monthly P&amp;L{isBacktest ? " (notional)" : ""}
+        {title}
       </h3>
 
       {monthly.length === 0 ? (
@@ -53,10 +58,10 @@ export function MonthlyBars({ data, loading, isBacktest = false }: MonthlyBarsPr
           {monthly.map((m) => {
             const isPositive = m.pnl >= 0;
             const fillPct = maxAbs > 0 ? (Math.abs(m.pnl) / maxAbs) * 100 : 0;
-            const barColor = isBacktest
+            const barColor = (showMoney && isBacktest)
               ? (isPositive ? "bg-bull/40" : "bg-bear/40")
               : (isPositive ? "bg-bull" : "bg-bear");
-            const textColor = isBacktest
+            const textColor = (showMoney && isBacktest)
               ? "text-text-muted"
               : (isPositive ? "text-bull" : "text-bear");
             return (
@@ -70,7 +75,10 @@ export function MonthlyBars({ data, loading, isBacktest = false }: MonthlyBarsPr
                   />
                 </div>
                 <span className={`text-xs tabular-nums shrink-0 w-20 text-right ${textColor}`}>
-                  {isPositive ? "+" : ""}{isBacktest ? "" : "$"}{fmt(m.pnl, 0)}
+                  {isPositive ? "+" : ""}
+                  {showMoney && !isBacktest ? "$" : ""}
+                  {fmt(m.pnl, showMoney ? 0 : 2)}
+                  {!showMoney ? "R" : ""}
                 </span>
               </div>
             );

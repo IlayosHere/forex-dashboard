@@ -26,6 +26,12 @@ resource "google_sql_database_instance" "forex_db" {
     ip_configuration {
       ipv4_enabled = true
       ssl_mode     = "ENCRYPTED_ONLY"
+
+      # Cloud Run uses dynamic IPs — allow all, SSL required for security.
+      authorized_networks {
+        name  = "all"
+        value = "0.0.0.0/0"
+      }
     }
 
     user_labels = local.common_labels

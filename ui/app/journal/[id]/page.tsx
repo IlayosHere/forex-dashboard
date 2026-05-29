@@ -22,6 +22,7 @@ import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { useAccounts } from "@/lib/useAccounts";
 import { getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
 import { formatDateTime } from "@/lib/dates";
+import { useShowMoney } from "@/lib/useShowMoney";
 
 /* ------------------------------------------------------------------ */
 /*  Editable state for assessment + close actions                      */
@@ -115,6 +116,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
     qt_fvg_type: "",
     qt_entry_type: "",
   });
+  const [showMoney] = useShowMoney();
   const { accounts } = useAccounts();
 
   useEffect(() => {
@@ -328,7 +330,12 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         />
 
         {/* Result */}
-        <TradeResultPanel trade={trade} unitLabel={unitLabel} isBacktest={tradeAccountType === "backtest"} />
+        <TradeResultPanel
+          trade={trade}
+          unitLabel={unitLabel}
+          isBacktest={tradeAccountType === "backtest"}
+          showMoney={showMoney}
+        />
 
         {/* ICT Params (MNQ/MES) */}
         {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (

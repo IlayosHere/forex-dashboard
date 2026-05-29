@@ -225,21 +225,21 @@ def test_edge_metrics_empty_returns_nones() -> None:
 
 
 def test_edge_metrics_consistency_ratio(db: Session) -> None:
-    """Weeks with net positive P&L count toward consistency_ratio."""
+    """Weeks with net positive R count toward consistency_ratio."""
     week1_monday = datetime(2025, 3, 3, 10, 0, tzinfo=timezone.utc)
     week2_monday = datetime(2025, 3, 10, 10, 0, tzinfo=timezone.utc)
     t1 = make_trade(
         db, status="closed", outcome="win",
-        pnl_usd=100.0,
+        pnl_usd=100.0, rr_achieved=2.0,
         open_time=week1_monday,
     )
     t2 = make_trade(
         db, status="closed", outcome="loss",
-        pnl_usd=-200.0,
+        pnl_usd=-200.0, rr_achieved=-1.0,
         open_time=week2_monday,
     )
     m = calculate_edge_metrics([t1, t2])
-    # Week 1: +100 (positive), Week 2: -200 (negative) → 50% consistency
+    # Week 1: +2.0R (positive), Week 2: -1.0R (negative) → 50% consistency
     assert m["consistency_ratio"] == 50.0
 
 

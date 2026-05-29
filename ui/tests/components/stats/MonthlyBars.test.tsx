@@ -13,6 +13,7 @@ function makeDay(date: string, pnl_usd: number): DailySummaryPoint {
     breakevens: 0,
     pnl_usd,
     pnl_pips: pnl_usd * 2,
+    pnl_r: pnl_usd / 100,
     compliant: 0,
     mistakes: 0,
   };
