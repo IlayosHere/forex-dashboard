@@ -101,14 +101,14 @@ export default function StatisticsPage() {
 
       <section id="equity" className="mb-4">
         <SectionHeader title={isBacktest ? "Equity Curve (notional)" : "Equity Curve"} />
-        <EquityCurveChart data={equityData} loading={equityLoading} isBacktest={isBacktest} />
+        <EquityCurveChart data={equityData} loading={equityLoading} isBacktest={isBacktest} showMoney={showMoney} />
       </section>
 
       <hr className="border-border/40" />
 
       <section id="calendar">
         <SectionHeader title={showMoney ? "Monthly P&L" : "Monthly R"} />
-        <MonthlyBars data={dailyData} loading={dailyLoading} isBacktest={isBacktest} />
+        <MonthlyBars data={dailyData} loading={dailyLoading} isBacktest={isBacktest} showMoney={showMoney} />
       </section>
     </div>
   );
