@@ -337,9 +337,6 @@ export default function JournalPage() {
           selectedAccountId={filters.account_id}
           onSelect={(accountId) => setFilters((prev) => ({ ...prev, account_id: accountId }))}
           loading={statsLoading}
-          // TODO Task 3: remove ts-ignore when prop is added
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           showMoney={showMoney}
         />
       )}
@@ -349,9 +346,6 @@ export default function JournalPage() {
         stats={stats}
         loading={statsLoading}
         mode={isBacktestView ? "backtest" : "default"}
-        // TODO Task 3: remove ts-ignore when prop is added
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         showMoney={showMoney}
       />
 
@@ -400,9 +394,6 @@ export default function JournalPage() {
                   router.push(`/journal/${trade.id}?back=${encodeURIComponent(backUrl)}`);
                 }}
                 accountType={trade.account_id ? accountTypeMap[trade.account_id] : undefined}
-                // TODO Task 3: remove ts-ignore when prop is added
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
                 showMoney={showMoney}
               />
             );

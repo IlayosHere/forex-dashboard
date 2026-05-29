@@ -334,9 +334,6 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           trade={trade}
           unitLabel={unitLabel}
           isBacktest={tradeAccountType === "backtest"}
-          // TODO Task 4: remove ts-ignore when prop is added
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           showMoney={showMoney}
         />
 

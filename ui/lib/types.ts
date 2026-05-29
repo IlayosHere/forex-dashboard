@@ -316,6 +316,7 @@ export interface TradeStats {
   avg_rr: number | null;
   total_pnl_pips: number;
   total_pnl_usd: number;
+  total_r?: number;
   best_trade_pnl: number | null;
   worst_trade_pnl: number | null;
   current_streak: number;
@@ -340,6 +341,7 @@ export interface TradeStats {
     win_rate: number | null;
     total_pnl_pips: number;
     total_pnl_usd: number;
+    total_r?: number;
   }>;
   by_day_of_week: Record<string, BreakdownEntry>;
   by_session: Record<string, BreakdownEntry>;

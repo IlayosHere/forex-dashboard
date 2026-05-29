@@ -4,11 +4,13 @@ import type { TradeStats } from "@/lib/types";
 
 import { fmt } from "@/lib/format";
 import { complianceRateClass, computeComplianceRate } from "@/lib/statsHelpers";
+import { formatR } from "@/lib/formatR";
 
 interface StatsBarProps {
   stats: TradeStats | null;
   loading: boolean;
   mode?: "default" | "backtest";
+  showMoney?: boolean;
 }
 
 function pnlColorClass(v: number | null | undefined): string {
@@ -97,7 +99,7 @@ function CriteriaMetCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
-export function StatsBar({ stats, loading, mode = "default" }: StatsBarProps) {
+export function StatsBar({ stats, loading, mode = "default", showMoney = true }: StatsBarProps) {
   const dim = loading || !stats ? "opacity-50" : "";
   const isBacktest = mode === "backtest";
   const streak = streakText(stats?.current_streak ?? 0);
@@ -115,7 +117,13 @@ export function StatsBar({ stats, loading, mode = "default" }: StatsBarProps) {
       primary={stats?.avg_rr != null ? fmt(stats.avg_rr, 2) : "—"}
     />
   );
-  const pnlCard = (
+  const pnlCard = !showMoney ? (
+    <StatCard
+      title="Net R"
+      primary={stats?.total_r != null ? formatR(stats.total_r) : "—"}
+      primaryColorClass={pnlColorClass(stats?.total_r ?? null)}
+    />
+  ) : (
     <StatCard
       title={isBacktest ? "P&L (notional)" : "P&L"}
       primary={formatPnl(stats, isBacktest)}

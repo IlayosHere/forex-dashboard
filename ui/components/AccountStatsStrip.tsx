@@ -4,15 +4,17 @@ import type { TradeStats } from "@/lib/types";
 import { AccountBadge } from "./AccountBadge";
 import type { AccountType } from "@/lib/types";
 import { fmt } from "@/lib/format";
+import { formatR } from "@/lib/formatR";
 
 interface AccountStatsStripProps {
   byAccount: TradeStats["by_account"];
   selectedAccountId: string;
   onSelect: (accountId: string) => void;
   loading: boolean;
+  showMoney?: boolean;
 }
 
-export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, loading }: AccountStatsStripProps) {
+export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, loading, showMoney = true }: AccountStatsStripProps) {
   const entries = Object.entries(byAccount ?? {});
   if (entries.length === 0 && !loading) return null;
 
@@ -56,9 +58,21 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
               <span className={winRateColor}>
                 {data.win_rate !== null ? `${fmt(data.win_rate)}%` : "--"}
               </span>
-              <span className={`price ${pnlColorClass}`}>
-                {data.total_pnl_usd >= 0 ? "+$" : "-$"}{Math.abs(data.total_pnl_usd).toFixed(2)}
-              </span>
+              {!showMoney ? (
+                <span className={`price ${
+                  (data.total_r ?? 0) >= 0
+                    ? "text-bull"
+                    : (data.total_r ?? 0) < 0
+                      ? "text-bear"
+                      : "text-text-muted"
+                }`}>
+                  {formatR(data.total_r ?? null)}
+                </span>
+              ) : (
+                <span className={`price ${pnlColorClass}`}>
+                  {data.total_pnl_usd >= 0 ? "+$" : "-$"}{Math.abs(data.total_pnl_usd).toFixed(2)}
+                </span>
+              )}
             </div>
           </div>
         );

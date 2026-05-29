@@ -14,6 +14,7 @@ interface TradeCardProps {
   trade: Trade;
   onClick: () => void;
   accountType?: AccountType;
+  showMoney?: boolean;
 }
 
 function pnlSign(v: number | null, decimals = 1): string {
@@ -22,7 +23,7 @@ function pnlSign(v: number | null, decimals = 1): string {
   return `${prefix}${v.toFixed(decimals)}`;
 }
 
-export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
+export function TradeCard({ trade, onClick, accountType, showMoney = true }: TradeCardProps) {
   const isBuy = trade.direction === "BUY";
   const unitLabel = getUnitLabel(trade.instrument_type ?? getInstrumentType(trade.strategy));
 
@@ -44,9 +45,11 @@ export function TradeCard({ trade, onClick, accountType }: TradeCardProps) {
           <span className={`text-xs font-medium ${isBuy ? "text-bull" : "text-bear"}`}>
             {trade.direction}
           </span>
-          {accountType === "backtest" ? (
+          {(accountType === "backtest" || !showMoney) ? (
             <span className="price text-sm" style={{ color: pnlColor(trade.rr_achieved) }}>
-              {trade.rr_achieved != null ? `${trade.rr_achieved >= 0 ? "+" : ""}${trade.rr_achieved.toFixed(2)}R` : "—"}
+              {trade.rr_achieved != null
+                ? `${trade.rr_achieved >= 0 ? "+" : ""}${trade.rr_achieved.toFixed(2)}R`
+                : "—"}
             </span>
           ) : (
             <>
