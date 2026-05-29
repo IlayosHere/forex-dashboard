@@ -12,6 +12,8 @@ function makePoint(cumulative: number, pnl: number, outcome: string): EquityCurv
     pnl_pips: pnl * 2,
     cumulative_pnl_usd: cumulative,
     cumulative_pnl_pips: cumulative * 2,
+    pnl_r: pnl / 100,
+    cumulative_r: cumulative / 100,
     trade_count: 1,
     outcome,
   };

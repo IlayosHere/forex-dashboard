@@ -20,6 +20,7 @@ interface EquityCurveChartProps {
   data: EquityCurvePoint[];
   loading: boolean;
   isBacktest?: boolean;
+  showMoney?: boolean;
 }
 
 interface ChartPoint {
@@ -39,15 +40,17 @@ function CustomTooltip({
   active,
   payload,
   isBacktest,
+  showMoney = true,
 }: {
   active?: boolean;
   payload?: { payload: ChartPoint }[];
   isBacktest?: boolean;
+  showMoney?: boolean;
 }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const prefix = isBacktest ? "" : "$";
-  const suffix = isBacktest ? " (notional)" : "";
+  const prefix = !showMoney ? "" : (isBacktest ? "" : "$");
+  const suffix = !showMoney ? "R" : (isBacktest ? " (notional)" : "");
   return (
     <div className="bg-surface-raised border border-border rounded px-3 py-2 text-xs">
       <p className="text-text-primary mb-1">{d.label}</p>
@@ -61,17 +64,22 @@ function CustomTooltip({
   );
 }
 
-export function EquityCurveChart({ data, loading, isBacktest = false }: EquityCurveChartProps) {
+export function EquityCurveChart({
+  data,
+  loading,
+  isBacktest = false,
+  showMoney = true,
+}: EquityCurveChartProps) {
   const chartData = useMemo<ChartPoint[]>(() =>
     data.map((p) => ({
       date: formatDate(p.close_time ?? p.date),
-      cumulative: p.cumulative_pnl_usd,
-      pnl: p.pnl_usd,
+      cumulative: showMoney ? p.cumulative_pnl_usd : (p.cumulative_r ?? 0),
+      pnl: showMoney ? p.pnl_usd : (p.pnl_r ?? 0),
       label: p.close_time
         ? new Date(p.close_time).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
         : p.date ?? "",
     })),
-  [data]);
+  [data, showMoney]);
 
   const isPositive = chartData.length > 0 && chartData[chartData.length - 1].cumulative >= 0;
   const gradientColor = isPositive ? "#26a69a" : "#ef5350";
@@ -79,7 +87,7 @@ export function EquityCurveChart({ data, loading, isBacktest = false }: EquityCu
 
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
-      {isBacktest && (
+      {showMoney && isBacktest && (
         <p className="text-[10px] uppercase tracking-widest text-text-muted mb-2">
           Notional P&amp;L — lot size is arbitrary in backtest
         </p>
@@ -88,7 +96,7 @@ export function EquityCurveChart({ data, loading, isBacktest = false }: EquityCu
         <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <defs>
             <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={gradientColor} stopOpacity={isBacktest ? 0.15 : 0.3} />
+              <stop offset="0%" stopColor={gradientColor} stopOpacity={(showMoney && isBacktest) ? 0.15 : 0.3} />
               <stop offset="100%" stopColor={gradientColor} stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -101,12 +109,12 @@ export function EquityCurveChart({ data, loading, isBacktest = false }: EquityCu
             interval="preserveStartEnd"
           />
           <YAxis
-            width={isBacktest ? 60 : 48}
-            tick={{ fontSize: 11, fontFamily: "monospace", fill: isBacktest ? "#555" : undefined }}
+            width={(showMoney && isBacktest) ? 60 : 48}
+            tick={{ fontSize: 11, fontFamily: "monospace", fill: (showMoney && isBacktest) ? "#555" : undefined }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => isBacktest ? `${v}` : `$${v}`}
-            label={isBacktest ? {
+            tickFormatter={(v: number) => showMoney ? (isBacktest ? `${v}` : `$${v}`) : `${v}R`}
+            label={(showMoney && isBacktest) ? {
               value: "notional",
               angle: -90,
               position: "insideLeft",
@@ -116,13 +124,13 @@ export function EquityCurveChart({ data, loading, isBacktest = false }: EquityCu
           />
           <ReferenceLine y={0} stroke="#2a2a2a" strokeDasharray="3 3" />
           <Tooltip
-            content={<CustomTooltip isBacktest={isBacktest} />}
+            content={<CustomTooltip isBacktest={isBacktest} showMoney={showMoney} />}
             contentStyle={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", fontSize: "12px" }}
           />
           <Area
             type="monotone"
             dataKey="cumulative"
-            stroke={isBacktest ? "#888" : gradientColor}
+            stroke={(showMoney && isBacktest) ? "#888" : gradientColor}
             strokeWidth={1.5}
             fill="url(#equityGradient)"
           />
