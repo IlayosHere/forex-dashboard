@@ -22,6 +22,7 @@ interface TradeInfoPanelProps {
   unitLabel: string;
   sizeLabel: string;
   saving: boolean;
+  isBacktest?: boolean;
   onSave: (fields: TradeEditFields) => void;
 }
 
@@ -29,7 +30,7 @@ const INPUT_CLASS =
   "h-7 bg-surface-input border-border text-text-primary text-right focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull price";
 
 export function TradeInfoPanel({
-  trade, unitLabel, sizeLabel, saving, onSave,
+  trade, unitLabel, sizeLabel, saving, isBacktest = false, onSave,
 }: TradeInfoPanelProps) {
   const [editing, setEditing] = useState(false);
   const [direction, setDirection] = useState<"BUY" | "SELL">(trade.direction);
@@ -71,9 +72,9 @@ export function TradeInfoPanel({
   const handleSave = () => {
     const e = parseFloat(entry);
     const s = parseFloat(sl);
-    const l = parseFloat(lotSize);
-    if (isNaN(e) || isNaN(s) || isNaN(l)) {
-      setError("Entry, SL, and lot size must be valid numbers");
+    const l = isBacktest ? trade.lot_size : parseFloat(lotSize);
+    if (isNaN(e) || isNaN(s) || (!isBacktest && isNaN(l))) {
+      setError(isBacktest ? "Entry and SL must be valid numbers" : "Entry, SL, and lot size must be valid numbers");
       return;
     }
     const t = tp ? parseFloat(tp) : null;
@@ -120,7 +121,9 @@ export function TradeInfoPanel({
         <PriceRow label="Entry" value={trade.entry_price} editValue={entry} editing={editing} onChange={setEntry} format={fp} />
         <PriceRow label="SL" value={trade.sl_price} editValue={sl} editing={editing} onChange={setSl} format={fp} />
         <PriceRow label="TP" value={trade.tp_price} editValue={tp} editing={editing} onChange={setTp} placeholder="\u2014" format={fp} />
-        <PriceRow label={sizeFieldLabel} value={trade.lot_size} editValue={lotSize} editing={editing} onChange={setLotSize} />
+        {!isBacktest && (
+          <PriceRow label={sizeFieldLabel} value={trade.lot_size} editValue={lotSize} editing={editing} onChange={setLotSize} />
+        )}
         {(isClosed || editing) && (
           <PriceRow label="Exit" value={trade.exit_price} editValue={exitPrice} editing={editing} onChange={setExitPrice} placeholder="\u2014" format={fp} />
         )}

@@ -326,6 +326,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           unitLabel={unitLabel}
           sizeLabel={sizeLabel}
           saving={saving}
+          isBacktest={tradeAccountType === "backtest"}
           onSave={saveEdit}
         />
 

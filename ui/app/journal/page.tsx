@@ -168,7 +168,7 @@ export default function JournalPage() {
       instrumentType === "futures" ? s.instrumentType?.startsWith("futures") : s.instrumentType === instrumentType,
     )?.slug;
     if (strategySlug) params.set("strategy", strategySlug);
-    if (backtestMode) params.set("account_type", "backtest");
+    params.set("account_type", backtestMode ? "backtest" : "live");
     const qs = params.toString();
     return "/journal/new" + (qs ? `?${qs}` : "");
   }, [filters.strategy, instrumentType, backtestMode]);

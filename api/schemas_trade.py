@@ -66,7 +66,7 @@ class TradeCreateRequest(BaseModel):
     entry_price: float = Field(gt=0)
     sl_price: float = Field(gt=0)
     tp_price: float | None = None
-    lot_size: float = Field(gt=0)
+    lot_size: float = Field(default=1.0, gt=0)
     risk_pips: float | None = Field(default=None, gt=0)
     open_time: datetime
     tags: list[str] = Field(default_factory=list)

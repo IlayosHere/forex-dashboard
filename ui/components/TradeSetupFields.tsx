@@ -16,6 +16,7 @@ interface TradeSetupFieldsProps {
   activeAccounts: Account[];
   filteredStrategies: StrategyMeta[];
   isFutures: boolean;
+  isBacktest?: boolean;
   signalLabel?: string | null;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
   onAccountChange: (accountId: string) => void;
@@ -42,6 +43,7 @@ export function TradeSetupFields({
   activeAccounts,
   filteredStrategies,
   isFutures,
+  isBacktest = false,
   signalLabel,
   onChange,
   onAccountChange,
@@ -160,6 +162,7 @@ export function TradeSetupFields({
           form={form}
           errors={errors}
           isFutures={isFutures}
+          isBacktest={isBacktest}
           onChange={onChange}
         />
       </fieldset>

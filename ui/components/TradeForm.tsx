@@ -53,9 +53,11 @@ interface TradeFormProps {
   onCancel: () => void;
   loading: boolean;
   signalLabel?: string | null;
+  /** "backtest" | "live" — restricts the account dropdown to the current journal mode */
+  accountTypeMode?: string | null;
 }
 
-export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }: TradeFormProps) {
+export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, accountTypeMode }: TradeFormProps) {
   const [form, setForm] = useState<TradeFormData>(initial);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const { accounts, refetch: refetchAccounts } = useAccounts();
@@ -70,19 +72,30 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
 
   const activeAccounts = useMemo(() => accounts.filter((a) => a.status === "active"), [accounts]);
 
-  // Filter accounts to match the selected strategy's instrument type
+  // Filter accounts to match journal mode (backtest vs live) and strategy instrument type
   const filteredAccounts = useMemo(() => {
-    if (!form.strategy) return activeAccounts;
-    if (isFutures) {
-      return activeAccounts.filter((a) => a.instrument_type?.startsWith("futures"));
+    let pool = activeAccounts;
+    if (accountTypeMode === "backtest") {
+      pool = pool.filter((a) => a.account_type === "backtest");
+    } else if (accountTypeMode === "live") {
+      pool = pool.filter((a) => a.account_type !== "backtest");
     }
-    return activeAccounts.filter((a) => a.instrument_type === strategyInstrumentType);
-  }, [activeAccounts, form.strategy, strategyInstrumentType, isFutures]);
+    if (!form.strategy) return pool;
+    if (isFutures) return pool.filter((a) => a.instrument_type?.startsWith("futures"));
+    return pool.filter((a) => a.instrument_type === strategyInstrumentType);
+  }, [activeAccounts, accountTypeMode, form.strategy, strategyInstrumentType, isFutures]);
+
+  // Auto-select when exactly one account qualifies and none is selected yet
+  useEffect(() => {
+    if (form.account_id || filteredAccounts.length !== 1) return;
+    setForm((prev) => ({ ...prev, account_id: filteredAccounts[0].id }));
+  }, [filteredAccounts, form.account_id]);
 
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.id === form.account_id) ?? null,
     [accounts, form.account_id],
   );
+  const isBacktest = selectedAccount?.account_type === "backtest";
   const filteredStrategies = useMemo(() => {
     if (selectedAccount) {
       const acctIsFutures = selectedAccount.instrument_type?.startsWith("futures");
@@ -175,8 +188,10 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     if (!form.entry_price || !isFinite(entryNum) || entryNum <= 0) errs.entry_price = true;
     const slNum = Number(form.sl_price);
     if (!form.sl_price || !isFinite(slNum) || slNum <= 0) errs.sl_price = true;
-    const lotNum = Number(form.lot_size);
-    if (!form.lot_size || !isFinite(lotNum) || lotNum <= 0) errs.lot_size = true;
+    if (!isBacktest) {
+      const lotNum = Number(form.lot_size);
+      if (!form.lot_size || !isFinite(lotNum) || lotNum <= 0) errs.lot_size = true;
+    }
     if (form.tp_price) {
       const tpNum = Number(form.tp_price);
       if (!isFinite(tpNum) || tpNum <= 0) errs.tp_price = true;
@@ -203,7 +218,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({ ...form, instrument_type: instrumentType });
+      onSubmit({ ...form, instrument_type: instrumentType, lot_size: isBacktest ? "1" : form.lot_size });
     } else {
       setTimeout(() => {
         const el = document.querySelector(".border-bear");
@@ -220,6 +235,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
         activeAccounts={filteredAccounts}
         filteredStrategies={filteredStrategies}
         isFutures={isFutures}
+        isBacktest={isBacktest}
         signalLabel={signalLabel}
         onChange={set}
         onAccountChange={handleAccountChange}
