@@ -244,6 +244,27 @@ On Postgres, any `ALTER TABLE` acquires an `ACCESS EXCLUSIVE` lock. If the live 
 
 **`ALTER TABLE` on an existing table** (especially `signals`, `trades`, `accounts`) must always be pre-applied manually.
 
+## Production Data Safety — MANDATORY
+
+**NEVER destroy or recreate a Cloud SQL instance without first dumping the data.**
+
+This rule exists because on 2026-05-27, the `forex-db` Cloud SQL instance was destroyed during a Terraform migration (switching from private to public IP) without a prior data dump. All production trade journal data was lost. GCP deletes automated backups when an instance is deleted.
+
+**The required workflow before ANY Terraform change that touches `google_sql_database_instance`:**
+
+1. Open a tunnel: `/prod-connect open`
+2. Dump the database: `pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql`
+3. Verify the dump is non-empty and copy it somewhere safe (local disk, GCS)
+4. Only then proceed with the Terraform change
+5. After recreation, restore: `psql $NEW_DATABASE_URL < backup_YYYYMMDD.sql`
+
+**Any Terraform plan showing `-/+ destroy and then create` on `google_sql_database_instance` is a DATA LOSS EVENT. Stop and dump first.**
+
+**Also applies to:**
+- `terraform destroy` on the whole project
+- Any manual `gcloud sql instances delete` command
+- Any change to `ip_configuration` that forces replacement
+
 ## Build Phases — Current Status
 
 All 8 foundation phases complete. See `git log` for history. Add new phases here when starting a major feature.
@@ -286,21 +307,8 @@ See `.claude/agents/` for the full roster. Key ones by phase:
 | DB schema & queries | `engineering-database-optimizer` | sonnet |
 | Docker & deployment | `engineering-devops-automator` | sonnet |
 | Security review | `engineering-security-engineer` | opus |
-| New strategy scaffold | `/add-strategy` slash command | sonnet |
-| New analytics parameter | `/add-analytics-param <name>` — scaffold param, tests, UI metadata | sonnet |
-| Debug an analytics parameter | `/debug-analytics-param <name>` — diagnose None / level="none" / 500 | sonnet |
 | Backend tests | `/test-backend` — run, write, find gaps, fix failures | sonnet |
 | Frontend tests | `/test-client` — run, write, find gaps, fix failures | sonnet |
-
-## Analytics workflow
-
-When working inside `analytics/`, read [analytics/AGENTS.md](analytics/AGENTS.md) first.
-It documents the parameter registry contract, the `STRATEGY_INTERVALS` single-source-of-truth
-for timeframe routing, the `df.attrs` memoization helpers (`cached_atr`, `cached_h1`),
-the 9-level CI classifier, and the common mistakes (numpy scalar leaks, missing UI metadata,
-bypassing memoization). That file is auto-loaded by agents that touch the analytics package.
-
----
 
 ## UI/UX Problem Protocol — MANDATORY
 

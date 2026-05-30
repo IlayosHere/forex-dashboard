@@ -92,15 +92,6 @@ jobs:
             -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:latest \
             ui
 
-      # Build runner image. Context = repo root (runner Dockerfile copies shared/, api/, strategies/, runner/).
-      - name: Build runner image
-        run: |
-          docker build \
-            -f runner/Dockerfile \
-            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }} \
-            -t europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:latest \
-            .
-
       - name: Push api image
         run: |
           docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/api:${{ env.SHA }}
@@ -110,11 +101,6 @@ jobs:
         run: |
           docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:${{ env.SHA }}
           docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:latest
-
-      - name: Push runner image
-        run: |
-          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }}
-          docker push europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:latest
 
       # Deploy sequentially — keeps the log output readable for a solo operator and
       # avoids subtle failures where a background `&` masks a non-zero exit code.
@@ -129,13 +115,6 @@ jobs:
         run: |
           gcloud run deploy forex-ui \
             --image=europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/ui:${{ env.SHA }} \
-            --region=${{ secrets.GCP_REGION }} \
-            --quiet
-
-      - name: Deploy forex-runner
-        run: |
-          gcloud run deploy forex-runner \
-            --image=europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/forex/runner:${{ env.SHA }} \
             --region=${{ secrets.GCP_REGION }} \
             --quiet
 
@@ -155,9 +134,6 @@ jobs:
           UI_URL=$(gcloud run services describe forex-ui \
             --region=${{ secrets.GCP_REGION }} \
             --format='value(status.url)')
-          RUNNER_URL=$(gcloud run services describe forex-runner \
-            --region=${{ secrets.GCP_REGION }} \
-            --format='value(status.url)')
           {
             echo "## Deployment complete"
             echo ""
@@ -165,5 +141,4 @@ jobs:
             echo "|---------|-----|-----------|"
             echo "| forex-api | $API_URL | \`${{ env.SHA }}\` |"
             echo "| forex-ui | $UI_URL | \`${{ env.SHA }}\` |"
-            echo "| forex-runner | $RUNNER_URL | \`${{ env.SHA }}\` |"
           } >> $GITHUB_STEP_SUMMARY

@@ -50,7 +50,7 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
                 accountType={data.account_type as AccountType}
               />
               <span className="text-xs text-muted-foreground">
-                {data.instrument_type?.startsWith("futures") ? "Futures" : "Forex"}
+                {data.instrument_type?.startsWith("futures") ? "Futures" : "FX"}
               </span>
             </div>
             <div className="flex items-center gap-4 shrink-0 text-xs">

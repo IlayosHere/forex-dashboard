@@ -8,11 +8,6 @@ output "ui_url" {
   value       = google_cloud_run_v2_service.forex_ui.uri
 }
 
-output "runner_url" {
-  description = "Internal URL of forex-runner Cloud Run service (not publicly reachable)."
-  value       = google_cloud_run_v2_service.forex_runner.uri
-}
-
 output "wif_provider" {
   description = "Full resource name of the Workload Identity provider for GitHub Actions."
   value       = google_iam_workload_identity_pool_provider.github.name

@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DEFAULT_DB = f"sqlite:///{os.path.join(_PROJECT_ROOT, 'signals.db')}"
+_DEFAULT_DB = f"sqlite:///{os.path.join(_PROJECT_ROOT, 'journal.db')}"
 
 DATABASE_URL: str = os.getenv("DATABASE_URL", _DEFAULT_DB)
 

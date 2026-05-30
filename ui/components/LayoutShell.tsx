@@ -24,7 +24,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
         {/* Brand */}
         <div className="px-4 py-4 border-b border-[#2a2a2a]">
           <span className="text-xs font-semibold text-[#777777] uppercase tracking-widest">
-            Forex Signals
+            MNQ Journal
           </span>
         </div>
 

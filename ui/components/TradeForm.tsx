@@ -84,12 +84,19 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel }:
     [accounts, form.account_id],
   );
   const filteredStrategies = useMemo(() => {
-    if (!selectedAccount) return strategies;
-    const acctIsFutures = selectedAccount.instrument_type?.startsWith("futures");
-    return strategies.filter((s) =>
-      acctIsFutures ? isFuturesHelper(s.instrumentType) : s.instrumentType === selectedAccount.instrument_type,
-    );
-  }, [selectedAccount]);
+    if (selectedAccount) {
+      const acctIsFutures = selectedAccount.instrument_type?.startsWith("futures");
+      return strategies.filter((s) =>
+        acctIsFutures ? isFuturesHelper(s.instrumentType) : s.instrumentType === selectedAccount.instrument_type,
+      );
+    }
+    if (form.strategy) {
+      return strategies.filter((s) =>
+        isFutures ? isFuturesHelper(s.instrumentType) : s.instrumentType === strategyInstrumentType,
+      );
+    }
+    return strategies;
+  }, [selectedAccount, form.strategy, isFutures, strategyInstrumentType]);
 
   useEffect(() => {
     setForm(initial);

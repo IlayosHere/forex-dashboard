@@ -11,25 +11,25 @@ afterEach(() => {
 
 interface DefaultProps {
   context: CalendarContext;
-  onContextChange: ReturnType<typeof vi.fn>;
+  onContextChange: (ctx: CalendarContext) => void;
   week: "current" | "next";
-  onWeekChange: ReturnType<typeof vi.fn>;
+  onWeekChange: (w: "current" | "next") => void;
   impactFilter: CalendarImpact[];
-  onImpactChange: ReturnType<typeof vi.fn>;
+  onImpactChange: (impacts: CalendarImpact[]) => void;
   currencyFilter: string;
-  onCurrencyChange: ReturnType<typeof vi.fn>;
+  onCurrencyChange: (currency: string) => void;
 }
 
 function defaultProps(): DefaultProps {
   return {
     context: "forex",
-    onContextChange: vi.fn(),
+    onContextChange: vi.fn() as (ctx: CalendarContext) => void,
     week: "current",
-    onWeekChange: vi.fn(),
+    onWeekChange: vi.fn() as (w: "current" | "next") => void,
     impactFilter: ["High"],
-    onImpactChange: vi.fn(),
+    onImpactChange: vi.fn() as (impacts: CalendarImpact[]) => void,
     currencyFilter: "All",
-    onCurrencyChange: vi.fn(),
+    onCurrencyChange: vi.fn() as (currency: string) => void,
   };
 }
 

@@ -75,7 +75,7 @@ export function CalendarFilters({
             onClick={() => onContextChange(ctx)}
             className={`${ctxBase} ${context === ctx ? ctxActive : ctxInactive} ${ctx === "forex" ? "border-r border-border" : ""}`}
           >
-            {ctx === "forex" ? "Forex" : "MNQ"}
+            {ctx === "forex" ? "FX" : "MNQ"}
           </button>
         ))}
       </div>

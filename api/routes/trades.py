@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from api.auth import get_current_user
 from api.db import get_db
-from api.models import AccountModel, SignalModel, TradeModel
+from api.models import AccountModel, TradeModel
 from api.schemas import (
     TradeCreateRequest,
     TradeResponse,
@@ -69,10 +69,6 @@ def create_trade(
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Create a new trade journal entry."""
-    if req.signal_id is not None:
-        if db.get(SignalModel, req.signal_id) is None:
-            logger.warning("Linked signal not found: %s", req.signal_id)
-            raise HTTPException(status_code=404, detail="Linked signal not found")
     if req.account_id is not None:
         acct = db.get(AccountModel, req.account_id)
         if acct is None or acct.owner != current_user:

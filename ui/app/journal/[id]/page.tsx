@@ -405,19 +405,6 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           {saving ? "Saving..." : "Save Changes"}
         </Button>
 
-        {/* Linked signal */}
-        {trade.signal_id && (
-          <div className="border border-border rounded p-3 bg-card">
-            <span className="label">Linked Signal</span>
-            <button
-              onClick={() => router.push(`/strategy/${encodeURIComponent(trade.strategy)}?signal=${encodeURIComponent(trade.signal_id!)}`)}
-              className="block text-xs text-bull hover:underline mt-1 cursor-pointer transition-colors"
-            >
-              View original signal &rarr;
-            </button>
-          </div>
-        )}
-
         {/* Delete */}
         <div className="pt-2">
           {editable.confirmDelete ? (

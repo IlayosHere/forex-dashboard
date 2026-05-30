@@ -1,7 +1,7 @@
 resource "google_service_account" "runtime" {
   account_id   = "forex-run-runtime"
   display_name = "Forex Dashboard — Cloud Run runtime"
-  description  = "Identity used by forex-api, forex-ui, and forex-runner Cloud Run services."
+  description  = "Identity used by forex-api and forex-ui Cloud Run services."
 
   depends_on = [google_project_service.enabled]
 }

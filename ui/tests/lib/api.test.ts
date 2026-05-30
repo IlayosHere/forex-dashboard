@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import {
-  fetchSignals,
-  fetchSignal,
-  postCalculate,
   fetchTrades,
   fetchTrade,
   createTrade,
@@ -44,80 +41,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-});
-
-describe("fetchSignals", () => {
-  it("builds correct URL with no filters", async () => {
-    await fetchSignals();
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toBe(`${BASE_URL}/api/signals?limit=50`);
-  });
-
-  it("builds correct URL with all filters", async () => {
-    await fetchSignals({
-      strategy: "fvg-impulse",
-      symbol: "EURUSD",
-      direction: "BUY",
-      from: "2024-01-01",
-      to: "2024-12-31",
-      limit: 100,
-      offset: 10,
-    });
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toContain("strategy=fvg-impulse");
-    expect(url).toContain("symbol=EURUSD");
-    expect(url).toContain("direction=BUY");
-    expect(url).toContain("from=2024-01-01");
-    expect(url).toContain("to=2024-12-31");
-    expect(url).toContain("limit=100");
-    expect(url).toContain("offset=10");
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.stubGlobal("fetch", mockFetchFail(500));
-    await expect(fetchSignals()).rejects.toThrow("Failed to fetch signals: 500");
-  });
-});
-
-describe("fetchSignal", () => {
-  it("fetches a single signal by id", async () => {
-    const data = { id: "abc" };
-    vi.stubGlobal("fetch", mockFetchOk(data));
-    const result = await fetchSignal("abc");
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toBe(`${BASE_URL}/api/signals/abc`);
-    expect(result).toEqual(data);
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.stubGlobal("fetch", mockFetchFail(404));
-    await expect(fetchSignal("missing")).rejects.toThrow("Failed to fetch signal missing: 404");
-  });
-});
-
-describe("postCalculate", () => {
-  it("sends correct body and method", async () => {
-    const body = {
-      symbol: "EURUSD",
-      entry: 1.1,
-      sl_pips: 15,
-      account_balance: 10000,
-      risk_percent: 1,
-    };
-    await postCalculate(body);
-    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[0]).toBe(`${BASE_URL}/api/calculate`);
-    expect(call[1].method).toBe("POST");
-    expect((call[1].headers as Headers).get("Content-Type")).toBe("application/json");
-    expect(JSON.parse(call[1].body)).toEqual(body);
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.stubGlobal("fetch", mockFetchFail(400));
-    await expect(
-      postCalculate({ symbol: "X", entry: 1, sl_pips: 1, account_balance: 1, risk_percent: 1 })
-    ).rejects.toThrow("Calculate failed: 400");
-  });
 });
 
 describe("fetchTrades", () => {

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 import { clearToken, tryRefreshToken } from "@/lib/auth";
 import { fetchMe } from "@/lib/api";
-import { strategies } from "@/lib/strategies";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
 import {
   Sheet,
@@ -59,31 +58,10 @@ export function SidebarNav() {
   return (
     <div className="flex flex-col h-full">
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-        <NavLink href="/">Dashboard</NavLink>
         <NavLink href="/journal">Journal</NavLink>
         <NavLink href="/calendar">Calendar</NavLink>
         <NavLink href="/accounts">Accounts</NavLink>
         <NavLink href="/statistics">Statistics</NavLink>
-        <div className="pl-4">
-          <NavLink href="/statistics/interactions">Interactions</NavLink>
-        </div>
-        <NavLink href="/analytics">Analytics</NavLink>
-
-        <div className="pt-3 pb-1 px-3">
-          <span className="label">Strategy Tuning</span>
-        </div>
-        <NavLink href="/gates">Gates</NavLink>
-        <NavLink href="/experiments">Experiments</NavLink>
-
-        <div className="pt-3 pb-1 px-3">
-          <span className="label">Strategies</span>
-        </div>
-
-        {strategies.map((s) => (
-          <NavLink key={s.slug} href={`/strategy/${s.slug}`}>
-            {s.label}
-          </NavLink>
-        ))}
       </nav>
 
       <div className="flex-shrink-0 border-t border-border px-2 py-2">
