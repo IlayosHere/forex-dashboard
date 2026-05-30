@@ -13,6 +13,7 @@ import type { InstrumentType, Account } from "@/lib/types";
 
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useAccounts } from "@/lib/useAccounts";
+import { useShowMoney } from "@/lib/useShowMoney";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex",   label: "Forex" },
@@ -58,6 +59,7 @@ export default function CalendarPage() {
   }
 
   const { accounts } = useAccounts();
+  const [showMoney, toggleShowMoney] = useShowMoney();
 
   const scopedAccounts = useMemo<Account[]>(
     () => accounts.filter((a) =>
@@ -136,24 +138,51 @@ export default function CalendarPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold text-[#e0e0e0]">Journal</h1>
-        <div className="flex h-7 rounded border border-border bg-surface-input p-0.5 gap-0.5">
-          {(["Live", "Backtest"] as const).map((label) => {
-            const active = label === "Backtest" ? backtestMode : !backtestMode;
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => handleModeChange(label === "Backtest" ? "backtest" : "live")}
-                className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
-                  active
-                    ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
-                    : "text-text-dim hover:text-text-muted"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          {/* Eye toggle — R by default, $ when active */}
+          <button
+            type="button"
+            onClick={toggleShowMoney}
+            aria-label={showMoney ? "Hide money amounts" : "Show money amounts"}
+            title={showMoney ? "Hide $" : "Show $"}
+            className={`h-7 w-7 rounded flex items-center justify-center border transition-colors cursor-pointer ${
+              showMoney
+                ? "border-[#777777] text-[#e0e0e0] bg-[#2a2d3e]"
+                : "border-[#2a2d3e] text-[#777777] bg-transparent hover:border-[#777777] hover:text-[#9e9e9e]"
+            }`}
+          >
+            {showMoney ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            )}
+          </button>
+          <div className="flex h-7 rounded border border-border bg-surface-input p-0.5 gap-0.5">
+            {(["Live", "Backtest"] as const).map((label) => {
+              const active = label === "Backtest" ? backtestMode : !backtestMode;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => handleModeChange(label === "Backtest" ? "backtest" : "live")}
+                  className={`px-3 rounded-sm text-xs font-medium transition-colors cursor-pointer ${
+                    active
+                      ? "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40"
+                      : "text-text-dim hover:text-text-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -228,7 +257,7 @@ export default function CalendarPage() {
       />
 
       {/* Month summary stats */}
-      <CalendarMonthSummary dailyData={dailyData} year={year} month={month} />
+      <CalendarMonthSummary dailyData={dailyData} year={year} month={month} showMoney={showMoney} />
 
       {/* Calendar grid */}
       <TradeCalendarGrid
@@ -236,6 +265,7 @@ export default function CalendarPage() {
         month={month}
         dailyData={dailyData}
         selectedDate={selectedDate}
+        showMoney={showMoney}
         onDaySelect={(date) => pushParams({ date })}
       />
 
@@ -246,6 +276,7 @@ export default function CalendarPage() {
         instrumentType={instrumentType}
         accountId={accountId || undefined}
         accountType={backtestMode ? "backtest" : "live"}
+        showMoney={showMoney}
       />
     </div>
   );

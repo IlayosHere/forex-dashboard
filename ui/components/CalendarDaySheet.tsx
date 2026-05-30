@@ -25,6 +25,7 @@ export interface CalendarDaySheetProps {
   instrumentType?: string;
   accountId?: string;
   accountType?: "live" | "backtest";
+  showMoney?: boolean;
 }
 
 // MNQ times are stored as ET (logged by the user in NY time, stored without conversion).
@@ -74,15 +75,23 @@ function netPnl(trades: Trade[]): number {
   return trades.reduce((sum, t) => sum + (t.pnl_usd ?? 0), 0);
 }
 
-function TradeRow({ trade }: { trade: Trade }) {
+function TradeRow({ trade, showMoney }: { trade: Trade; showMoney: boolean }) {
   const router = useRouter();
   const isBuy = trade.direction === "BUY";
-  const pnl = trade.pnl_usd;
-  const pnlColor = pnl === null ? "#777" : pnl >= 0 ? "#26a69a" : "#ef5350";
-  const pnlStr =
-    pnl === null
+  const pnlUsd = trade.pnl_usd;
+  const rr = trade.rr_achieved;
+  const displayValue = showMoney
+    ? pnlUsd === null
       ? "—"
-      : `${pnl >= 0 ? "+$" : "-$"}${Math.abs(pnl).toFixed(2)}`;
+      : `${pnlUsd >= 0 ? "+$" : "-$"}${Math.abs(pnlUsd).toFixed(2)}`
+    : rr === null || rr === undefined
+    ? "—"
+    : `${rr >= 0 ? "+" : ""}${rr.toFixed(2)}R`;
+
+  const displayColor =
+    showMoney
+      ? pnlUsd === null ? "#777" : pnlUsd >= 0 ? "#26a69a" : "#ef5350"
+      : rr === null || rr === undefined ? "#777" : rr >= 0 ? "#26a69a" : "#ef5350";
 
   return (
     <div
@@ -104,9 +113,9 @@ function TradeRow({ trade }: { trade: Trade }) {
       <StatusBadge status={trade.status} outcome={trade.outcome} />
       <span
         className="tabular-nums ml-auto"
-        style={{ color: pnlColor }}
+        style={{ color: displayColor }}
       >
-        {pnlStr}
+        {displayValue}
       </span>
       {trade.rating !== null && (
         <StarRating value={trade.rating} size="sm" readOnly />
@@ -128,7 +137,7 @@ function SkeletonRows() {
   );
 }
 
-export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType }: CalendarDaySheetProps) {
+export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType, showMoney = false }: CalendarDaySheetProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,8 +163,12 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
   }, [date, instrumentType, accountId, accountType]);
 
   const pnl = netPnl(trades);
-  const pnlColor = pnl >= 0 ? "#26a69a" : "#ef5350";
-  const pnlStr = `${pnl >= 0 ? "+$" : "-$"}${Math.abs(pnl).toFixed(2)}`;
+  const netR = trades.reduce((sum, t) => sum + (t.rr_achieved ?? 0), 0);
+  const primaryVal = showMoney ? pnl : netR;
+  const primaryColor = primaryVal >= 0 ? "#26a69a" : "#ef5350";
+  const primaryStr = showMoney
+    ? `${pnl >= 0 ? "+$" : "-$"}${Math.abs(pnl).toFixed(2)}`
+    : `${netR >= 0 ? "+" : ""}${netR.toFixed(2)}R`;
   const grouped = groupBySession(trades, instrumentType);
 
   return (
@@ -167,8 +180,8 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
           </SheetTitle>
           {!loading && trades.length > 0 && (
             <div className="flex items-center gap-2 text-xs">
-              <span style={{ color: pnlColor }} className="tabular-nums font-semibold">
-                {pnlStr}
+              <span style={{ color: primaryColor }} className="tabular-nums font-semibold">
+                {primaryStr}
               </span>
               <span className="text-[#777]">·</span>
               <span className="text-[#777]">{trades.length} trade{trades.length !== 1 ? "s" : ""}</span>
@@ -206,7 +219,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
                     {session}
                   </div>
                   {sessionTrades.map((trade) => (
-                    <TradeRow key={trade.id} trade={trade} />
+                    <TradeRow key={trade.id} trade={trade} showMoney={showMoney} />
                   ))}
                 </div>
               );
