@@ -68,21 +68,27 @@ function NewTradeContent() {
     return makeEmptyForm();
   });
 
-  // Auto-select the first matching account when account_type param is set
+  // Auto-select account when account_type param is set and only one qualifies
   useEffect(() => {
     if (!accountTypeParam || signalId) return;
     let cancelled = false;
     fetchAccounts().then((accounts) => {
       if (cancelled) return;
       const strategyMeta = strategyParam ? strategies.find((s) => s.slug === strategyParam) : null;
-      const match = accounts.find(
-        (a) =>
-          a.account_type === accountTypeParam &&
-          a.status === "active" &&
-          (!strategyMeta || a.instrument_type === strategyMeta.instrumentType),
-      );
-      if (match) {
-        setInitial((prev) => ({ ...prev, account_id: match.id }));
+      const isLiveMode = accountTypeParam === "live";
+      const candidates = accounts.filter((a) => {
+        if (a.status !== "active") return false;
+        const typeMatches = isLiveMode
+          ? a.account_type !== "backtest"
+          : a.account_type === accountTypeParam;
+        if (!typeMatches) return false;
+        if (!strategyMeta) return true;
+        const stratIsFutures = strategyMeta.instrumentType?.startsWith("futures");
+        const acctIsFutures = a.instrument_type?.startsWith("futures");
+        return stratIsFutures ? acctIsFutures : a.instrument_type === strategyMeta.instrumentType;
+      });
+      if (candidates.length === 1) {
+        setInitial((prev) => ({ ...prev, account_id: candidates[0].id }));
       }
     });
     return () => { cancelled = true; };
@@ -142,6 +148,7 @@ function NewTradeContent() {
       onSubmit={handleSubmit}
       onCancel={() => router.back()}
       loading={loading}
+      accountTypeMode={accountTypeParam}
     />
   );
 }
