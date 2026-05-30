@@ -60,7 +60,7 @@ function groupBySession(events: CalendarEvent[]): Record<SessionBucket, Calendar
 }
 
 export default function CalendarPage() {
-  const [context, setContext] = useState<CalendarContext>("forex");
+  const [context, setContext] = useState<CalendarContext>("mnq");
   const [week, setWeek] = useState<"current" | "next">("current");
   const [impactFilter, setImpactFilter] = useState<CalendarImpact[]>(["High"]);
   const [currencyFilter, setCurrencyFilter] = useState("All");

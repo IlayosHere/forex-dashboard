@@ -36,7 +36,7 @@ const SELECT_CLASS =
 const SEGMENT_ACTIVE_CLASS = "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40";
 
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
-  { value: "forex",    label: "Forex" },
+  { value: "forex",    label: "FX" },
   { value: "futures",  label: "Futures" },
 ];
 

@@ -7,7 +7,7 @@ import type { PresetKey, UseStatsContextResult } from "@/lib/useStatsContext";
 
 const INSTRUMENT_OPTIONS: { value: InstrumentType | ""; label: string }[] = [
   { value: "futures", label: "Futures" },
-  { value: "forex",   label: "Forex" },
+  { value: "forex",   label: "FX" },
   { value: "",        label: "All" },
 ];
 

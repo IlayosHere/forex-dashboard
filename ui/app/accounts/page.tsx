@@ -25,7 +25,7 @@ interface FormState {
 }
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",    label: "Forex" },
+  { value: "forex",    label: "FX" },
   { value: "futures",  label: "Futures" },
 ];
 
@@ -83,10 +83,10 @@ function AccountFormDialog({
 }
 
 export default function AccountsPage() {
-  const [activeTab, setActiveTab] = useState<InstrumentType>("forex");
+  const [activeTab, setActiveTab] = useState<InstrumentType>("futures");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(makeEmptyForm("forex"));
+  const [form, setForm] = useState<FormState>(makeEmptyForm("futures"));
   const [saving, setSaving] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 

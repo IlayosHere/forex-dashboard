@@ -83,7 +83,7 @@ export default function LoginPage() {
               </svg>
 
               <h1 className="text-base font-semibold tracking-tight text-text-primary">
-                Forex Signal Dashboard
+                Trade Journal
               </h1>
               <p className="mt-1 text-xs text-text-muted">
                 Sign in to continue

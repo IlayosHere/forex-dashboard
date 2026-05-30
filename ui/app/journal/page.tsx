@@ -20,7 +20,7 @@ import { useSession } from "@/lib/useSession";
 import { useShowMoney } from "@/lib/useShowMoney";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",   label: "Forex" },
+  { value: "forex",   label: "FX" },
   { value: "futures", label: "Futures" },
 ];
 
@@ -57,12 +57,12 @@ export default function JournalPage() {
   const restoredRef = useRef(false);
 
   const [instrumentType, setInstrumentType] = useState<InstrumentType>(() => {
-    if (typeof window === "undefined") return "forex";
+    if (typeof window === "undefined") return "futures";
     try {
       const saved = sessionStorage.getItem(SESSION_KEY);
       if (saved) return (JSON.parse(saved) as SavedListState).instrumentType;
     } catch {}
-    return "forex";
+    return "futures";
   });
 
   const [filters, setFilters] = useState<TradeFilterValues>(() => {

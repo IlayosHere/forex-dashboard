@@ -15,7 +15,7 @@ import { useDailySummary } from "@/lib/useDailySummary";
 import { useAccounts } from "@/lib/useAccounts";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",   label: "Forex" },
+  { value: "forex",   label: "FX" },
   { value: "futures", label: "Futures" },
 ];
 
