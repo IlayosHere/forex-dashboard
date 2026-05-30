@@ -2,19 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# git is required to install tvDatafeed from GitHub
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only what the API needs at runtime
 COPY shared/    shared/
 COPY api/       api/
-COPY strategies/ strategies/
-COPY analytics/ analytics/
 
 ENV PYTHONPATH=/app
 
