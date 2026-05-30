@@ -35,7 +35,10 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
   const hasActive = Object.values(values).some((v) => v !== "");
 
   const scopedStrategies = useMemo(
-    () => strategies.filter((s) => s.instrumentType === instrumentType),
+    () => strategies.filter((s) =>
+      s.instrumentType === instrumentType ||
+      (instrumentType === "futures" && s.instrumentType.startsWith("futures")),
+    ),
     [instrumentType],
   );
 
