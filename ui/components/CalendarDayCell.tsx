@@ -5,6 +5,7 @@ import type { DailySummaryPoint } from "@/lib/types";
 export interface CalendarDayCellProps {
   date: string;
   pnl: number;
+  pnlR: number;
   tradeCount: number;
   wins: number;
   losses: number;
@@ -12,12 +13,18 @@ export interface CalendarDayCellProps {
   isToday: boolean;
   isSelected: boolean;
   isCurrentMonth: boolean;
+  showMoney: boolean;
   onClick: () => void;
 }
 
 function formatPnl(pnl: number): string {
   if (pnl >= 0) return `+$${pnl.toFixed(2)}`;
   return `-$${Math.abs(pnl).toFixed(2)}`;
+}
+
+function formatR(r: number): string {
+  if (r >= 0) return `+${r.toFixed(2)}R`;
+  return `${r.toFixed(2)}R`;
 }
 
 function getDayNumber(date: string): number {
@@ -40,6 +47,7 @@ function pnlTextColor(pnl: number): string {
 export function CalendarDayCell({
   date,
   pnl,
+  pnlR,
   tradeCount,
   wins,
   losses,
@@ -47,6 +55,7 @@ export function CalendarDayCell({
   isToday,
   isSelected,
   isCurrentMonth,
+  showMoney,
   onClick,
 }: CalendarDayCellProps) {
   const hasTrades = tradeCount > 0;
@@ -78,7 +87,7 @@ export function CalendarDayCell({
       }
       aria-label={
         hasTrades
-          ? `${date}: ${tradeCount} trades, P&L ${formatPnl(pnl)}`
+          ? `${date}: ${tradeCount} trades, ${showMoney ? `P&L ${formatPnl(pnl)}` : formatR(pnlR)}`
           : date
       }
       aria-pressed={hasTrades ? isSelected : undefined}
@@ -119,13 +128,13 @@ export function CalendarDayCell({
         {dayNumber}
       </div>
 
-      {/* P&L */}
+      {/* P&L / R */}
       {hasTrades && (
         <div
           className="text-sm font-semibold tabular-nums pl-1 leading-tight"
-          style={{ color: pnlTextColor(pnl) }}
+          style={{ color: pnlTextColor(showMoney ? pnl : pnlR) }}
         >
-          {formatPnl(pnl)}
+          {showMoney ? formatPnl(pnl) : formatR(pnlR)}
         </div>
       )}
 

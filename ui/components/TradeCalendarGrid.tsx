@@ -12,6 +12,7 @@ export interface TradeCalendarGridProps {
   month: number;
   dailyData: DailySummaryPoint[];
   selectedDate: string | null;
+  showMoney: boolean;
   onDaySelect: (date: string | null) => void;
   renderDayPanel?: (date: string) => React.ReactNode;
 }
@@ -22,18 +23,19 @@ const GRID_COLS = "grid-cols-[3.5rem_repeat(7,1fr)]";
 function computeWeekSummary(
   week: Array<string | null>,
   dataMap: Map<string, DailySummaryPoint>,
-): { pnl: number; trades: number; wins: number; losses: number } {
-  let pnl = 0; let trades = 0; let wins = 0; let losses = 0;
+): { pnl: number; pnlR: number; trades: number; wins: number; losses: number } {
+  let pnl = 0; let pnlR = 0; let trades = 0; let wins = 0; let losses = 0;
   for (const date of week) {
     if (!date) continue;
     const d = dataMap.get(date);
     if (!d) continue;
     pnl += d.pnl_usd;
+    pnlR += d.pnl_r;
     trades += d.trades;
     wins += d.wins;
     losses += d.losses;
   }
-  return { pnl, trades, wins, losses };
+  return { pnl, pnlR, trades, wins, losses };
 }
 
 function toUTCDateKey(d: Date): string {
@@ -80,6 +82,7 @@ export function TradeCalendarGrid({
   month,
   dailyData,
   selectedDate,
+  showMoney,
   onDaySelect,
   renderDayPanel,
 }: TradeCalendarGridProps) {
@@ -128,9 +131,11 @@ export function TradeCalendarGrid({
           <div className={`grid ${GRID_COLS} gap-1 mb-1`}>
             <WeekSummaryCell
               pnl={summary.pnl}
+              pnlR={summary.pnlR}
               tradeCount={summary.trades}
               wins={summary.wins}
               losses={summary.losses}
+              showMoney={showMoney}
               weekDate={week.find((d) => d !== null) ?? undefined}
             />
             {week.map((date, colIdx) =>
@@ -145,6 +150,7 @@ export function TradeCalendarGrid({
                   key={date}
                   date={date}
                   pnl={dataMap.get(date)?.pnl_usd ?? 0}
+                  pnlR={dataMap.get(date)?.pnl_r ?? 0}
                   tradeCount={dataMap.get(date)?.trades ?? 0}
                   wins={dataMap.get(date)?.wins ?? 0}
                   losses={dataMap.get(date)?.losses ?? 0}
@@ -152,6 +158,7 @@ export function TradeCalendarGrid({
                   isToday={date === todayKey}
                   isSelected={date === selectedDate}
                   isCurrentMonth={date.startsWith(`${year}-${String(month).padStart(2, "0")}`)}
+                  showMoney={showMoney}
                   onClick={() => handleDayClick(date)}
                 />
               )

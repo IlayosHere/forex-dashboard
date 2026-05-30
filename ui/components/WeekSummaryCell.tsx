@@ -2,15 +2,22 @@
 
 interface WeekSummaryCellProps {
   pnl: number;
+  pnlR: number;
   tradeCount: number;
   wins: number;
   losses: number;
+  showMoney: boolean;
   weekDate?: string; // any real date in the week, used to compute ISO week number
 }
 
 function formatWeekPnl(pnl: number): string {
   if (pnl >= 0) return `+$${pnl.toFixed(0)}`;
   return `-$${Math.abs(pnl).toFixed(0)}`;
+}
+
+function formatWeekR(r: number): string {
+  if (r >= 0) return `+${r.toFixed(2)}R`;
+  return `${r.toFixed(2)}R`;
 }
 
 function pnlTextColor(pnl: number): string {
@@ -37,9 +44,11 @@ function getISOWeek(dateStr: string): number {
 
 export function WeekSummaryCell({
   pnl,
+  pnlR,
   tradeCount,
   wins,
   losses,
+  showMoney,
   weekDate,
 }: WeekSummaryCellProps) {
   const hasTrades = tradeCount > 0;
@@ -49,7 +58,7 @@ export function WeekSummaryCell({
     <div
       aria-label={
         hasTrades
-          ? `Week total: ${tradeCount} trades, P&L ${formatWeekPnl(pnl)}`
+          ? `Week total: ${tradeCount} trades, ${showMoney ? `P&L ${formatWeekPnl(pnl)}` : formatWeekR(pnlR)}`
           : "No trades this week"
       }
       className="relative rounded-md flex flex-col justify-between h-16 sm:h-24 bg-[#0f0f0f] border border-[#1a1a1a] px-2 pt-1.5 pb-1.5"
@@ -63,13 +72,13 @@ export function WeekSummaryCell({
         {weekLabel}
       </div>
 
-      {/* Net P&L — primary value */}
+      {/* Net P&L / R — primary value */}
       {hasTrades ? (
         <div
           className="text-[12px] font-semibold tabular-nums leading-none"
-          style={{ color: pnlTextColor(pnl) }}
+          style={{ color: pnlTextColor(showMoney ? pnl : pnlR) }}
         >
-          {formatWeekPnl(pnl)}
+          {showMoney ? formatWeekPnl(pnl) : formatWeekR(pnlR)}
         </div>
       ) : (
         <div className="text-[10px] text-[#2a2a2a] leading-none">—</div>
