@@ -51,7 +51,7 @@ def _bucket_stats(trades: list[TradeModel]) -> dict[str, Any]:
     pnl_vals = [t.pnl_usd for t in trades if t.pnl_usd is not None]
     total_pnl = round(sum(pnl_vals), 2)
     avg_pnl = round(total_pnl / len(pnl_vals), 2) if pnl_vals else None
-    rr_vals = [t.rr_achieved for t in trades if t.rr_achieved is not None and t.outcome != "breakeven"]
+    rr_vals = [t.rr_achieved for t in trades if t.rr_achieved is not None and t.outcome == "win"]
     avg_rr = round(sum(rr_vals) / len(rr_vals), 2) if rr_vals else None
     return {
         "total": len(trades), "wins": wins, "losses": losses,
