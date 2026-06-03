@@ -146,7 +146,7 @@ export function StatsBar({ stats, loading, mode = "default", showMoney = true }:
           primary={stats?.profit_factor != null ? fmt(stats.profit_factor, 2) : "—"}
         />
         {pnlCard}
-        <CriteriaMetCard stats={stats} />
+        <BeOutcomeCard stats={stats} />
       </div>
     );
   }
