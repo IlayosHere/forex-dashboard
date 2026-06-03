@@ -40,10 +40,8 @@ export default function CalendarPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const now = useMemo(() => new Date(), []);
-
-  const year = parseInt(searchParams.get("year") ?? String(now.getUTCFullYear()), 10);
-  const month = parseInt(searchParams.get("month") ?? String(now.getUTCMonth() + 1), 10);
+  const year = parseInt(searchParams.get("year") ?? String(new Date().getUTCFullYear()), 10);
+  const month = parseInt(searchParams.get("month") ?? String(new Date().getUTCMonth() + 1), 10);
   const selectedDate = searchParams.get("date") ?? null;
   const instrumentType = (searchParams.get("instrument") ?? "futures") as InstrumentType;
   const accountId = searchParams.get("account") ?? "";
@@ -102,7 +100,8 @@ export default function CalendarPage() {
   }
 
   function handleToday() {
-    pushParams({ year: String(now.getUTCFullYear()), month: String(now.getUTCMonth() + 1), date: null });
+    const today = new Date();
+    pushParams({ year: String(today.getUTCFullYear()), month: String(today.getUTCMonth() + 1), date: null });
   }
 
   function handleModeChange(mode: "live" | "backtest") {
