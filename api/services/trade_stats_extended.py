@@ -289,7 +289,7 @@ def _aggregate_dimension(
             b["total_pnl_pips"] += t.pnl_pips
         if t.pnl_usd is not None:
             b["total_pnl_usd"] += t.pnl_usd
-        if t.rr_achieved is not None:
+        if t.rr_achieved is not None and t.outcome != "breakeven":
             b["_rr"].append(t.rr_achieved)
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
