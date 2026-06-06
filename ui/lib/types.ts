@@ -12,7 +12,7 @@ export type IctLiquiditySweepDetail =
   | "1m_high" | "1m_low" | "5m_high" | "5m_low"
   | "15m_high" | "15m_low" | "1h_high" | "1h_low"
   | "4h_high" | "4h_low" | "other";
-export type IctUnmitigatedFvgDetail = "15m" | "30m" | "1h" | "4h" | "other";
+export type IctUnmitigatedFvgDetail = "15m" | "30m" | "1h" | "2h" | "4h" | "other";
 export type IctContinuationDetail = "3m" | "5m" | "15m" | "other";
 export type IctSetupDetail = IctLiquiditySweepDetail | IctUnmitigatedFvgDetail | IctContinuationDetail;
 export type IctTpTarget =
@@ -305,6 +305,40 @@ export interface TradeStats {
   by_rule_compliance?: Record<string, ComplianceBucket>;
   by_criteria_met?: Record<string, ComplianceBucket>;
   be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
+  r_distribution?: RDistributionBin[];
+  drawdown?: DrawdownStats | null;
+  robustness?: RobustnessStats | null;
+  expectancy_ci?: ExpectancyCi | null;
+}
+
+export interface RDistributionBin {
+  bucket_label: string;
+  count: number;
+  pct: number;
+}
+
+export interface DrawdownStats {
+  max_drawdown_r: number;
+  max_losing_streak: number;
+  expected_max_streak: number | null;
+  recovery_factor: number | null;
+}
+
+export interface RobustnessStats {
+  profit_factor_ex_outliers: number | null;
+  largest_trade_pct_of_pnl: number | null;
+}
+
+export interface ExpectancyCi {
+  expectancy_r: number | null;
+  expectancy_r_ci_low: number | null;
+  expectancy_r_ci_high: number | null;
+  edge_significant: boolean | null;
+}
+
+export interface RollingPfPoint {
+  index: number;
+  profit_factor: number | null;
 }
 
 export interface EquityCurvePoint {

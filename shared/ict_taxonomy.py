@@ -45,6 +45,7 @@ UNMITIGATED_FVG_DETAILS: Final[list[str]] = [
     "15m",
     "30m",
     "1h",
+    "2h",
     "4h",
     "other",
 ]
