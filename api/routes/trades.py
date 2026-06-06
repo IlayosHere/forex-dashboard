@@ -168,6 +168,24 @@ def trade_stats(
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
+    if filters.account_type == "backtest":
+        from api.services.trade_stats_extended import build_equity_curve
+        from api.services.trade_stats_robustness import (
+            compute_drawdown_stats,
+            compute_edge_robustness,
+            compute_expectancy_ci,
+            compute_r_distribution,
+        )
+        equity_curve = build_equity_curve(closed)
+        r_values = [
+            t.rr_achieved
+            for t in closed
+            if t.rr_achieved is not None and t.outcome in ("win", "loss")
+        ]
+        metrics["r_distribution"] = compute_r_distribution(closed)
+        metrics["drawdown"] = compute_drawdown_stats(equity_curve, closed)
+        metrics["robustness"] = compute_edge_robustness(closed)
+        metrics["expectancy_ci"] = compute_expectancy_ci(r_values)
     return metrics
 
 

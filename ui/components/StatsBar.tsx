@@ -99,6 +99,33 @@ function CriteriaMetCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
+function ConsistencyRatioCard({ stats }: { stats: TradeStats | null }) {
+  const ratio = stats?.consistency_ratio ?? null;
+  return (
+    <StatCard
+      title="Consistency"
+      primary={ratio !== null ? `${ratio}%` : "—"}
+      primaryColorClass={ratio !== null && ratio >= 50 ? "text-bull" : ratio !== null ? "text-bear" : "text-text-muted"}
+      secondary="% weeks net +R"
+    />
+  );
+}
+
+function ExpectancyRCard({ stats }: { stats: TradeStats | null }) {
+  const decisiveCount = (stats?.wins ?? 0) + (stats?.losses ?? 0);
+  const expectancy = decisiveCount > 0 && stats?.total_r != null
+    ? stats.total_r / decisiveCount
+    : null;
+  return (
+    <StatCard
+      title="Expectancy"
+      primary={expectancy !== null ? formatR(expectancy) : "—"}
+      primaryColorClass={pnlColorClass(expectancy)}
+      secondary="R per trade"
+    />
+  );
+}
+
 export function StatsBar({ stats, loading, mode = "default", showMoney = true }: StatsBarProps) {
   const dim = loading || !stats ? "opacity-50" : "";
   const isBacktest = mode === "backtest";
@@ -146,6 +173,9 @@ export function StatsBar({ stats, loading, mode = "default", showMoney = true }:
           primary={stats?.profit_factor != null ? fmt(stats.profit_factor, 2) : "—"}
         />
         {pnlCard}
+        <CriteriaMetCard stats={stats} />
+        <ConsistencyRatioCard stats={stats} />
+        <ExpectancyRCard stats={stats} />
         <BeOutcomeCard stats={stats} />
       </div>
     );
