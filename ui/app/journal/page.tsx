@@ -259,7 +259,7 @@ export default function JournalPage() {
       </div>
 
       {/* Journal tab nav */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         {journalTabs.map((tab) => {
           const isActive = pathname === tab.href;
           return (
@@ -276,6 +276,12 @@ export default function JournalPage() {
             </Link>
           );
         })}
+        <Link
+          href="/statistics"
+          className="ml-auto text-sm text-text-dim hover:text-text-muted transition-colors"
+        >
+          Full Stats →
+        </Link>
       </div>
 
       {/* Instrument Type Tabs */}

@@ -168,6 +168,11 @@ def trade_stats(
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
+    from api.services.trade_stats_extended import build_equity_curve
+    from api.services.trade_stats_live import compute_drawdown, compute_tp_capture
+    curve = build_equity_curve(closed)
+    metrics["live_drawdown"] = compute_drawdown(curve)
+    metrics.update(compute_tp_capture(closed))
     if filters.account_type == "backtest":
         from api.services.trade_stats_extended import build_equity_curve
         from api.services.trade_stats_robustness import (

@@ -213,8 +213,21 @@ export function EdgeMetrics({ stats, loading, isBacktest, showMoney = true }: Ed
         <MetricRow
           label="Consistency"
           value={stats?.consistency_ratio != null ? `${fmt(stats.consistency_ratio)}%` : "--"}
-          sub="% of weeks net positive"
+          color={signedColor(stats?.consistency_ratio ?? null)}
+          sub="% of weeks net +R"
         />
+        {stats?.avg_tp_capture_pct != null && (
+          <MetricRow
+            label="TP Capture"
+            value={`${fmt(stats.avg_tp_capture_pct, 1)}%`}
+            color={
+              stats.avg_tp_capture_pct >= 85 ? COLOR_BULL :
+              stats.avg_tp_capture_pct >= 60 ? "#f59e0b" :
+              COLOR_BEAR
+            }
+            sub={stats.tp_capture_sample_size ? `n=${stats.tp_capture_sample_size}` : undefined}
+          />
+        )}
       </MetricCard>
       <ComplianceCard
         title="Rule Compliance"

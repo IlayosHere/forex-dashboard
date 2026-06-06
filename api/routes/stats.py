@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,7 @@ from api.schemas_stats import (
     DailySummaryPoint,
     EquityCurvePoint,
     IctStatsResponse,
+    RollingExpectancyPoint,
     RollingPfPoint,
 )
 from api.services.trade_filters import StatsFilterParams
@@ -117,3 +118,19 @@ def rolling_pf(
     """Return rolling profit factor over a 20-trade sliding window."""
     closed = _fetch_closed_trades(current_user, db, filters)
     return compute_rolling_pf(closed)
+
+
+@router.get(
+    "/trades/stats/rolling-expectancy",
+    response_model=list[RollingExpectancyPoint],
+)
+def rolling_expectancy(
+    current_user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    filters: Annotated[StatsFilterParams, Depends()],
+    window: int = Query(default=30, ge=5, le=200),
+) -> list[dict]:
+    """Return rolling expectancy over a sliding window of trades."""
+    closed = _fetch_closed_trades(current_user, db, filters)
+    from api.services.trade_stats_live import compute_rolling_expectancy
+    return compute_rolling_expectancy(closed, window)

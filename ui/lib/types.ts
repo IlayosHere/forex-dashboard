@@ -310,6 +310,16 @@ export interface TradeStats {
   drawdown?: DrawdownStats | null;
   robustness?: RobustnessStats | null;
   expectancy_ci?: ExpectancyCi | null;
+  live_drawdown?: {
+    max_drawdown_usd: number
+    max_drawdown_r: number
+    current_drawdown_usd: number
+    current_drawdown_pct: number
+    drawdown_trade_count: number
+    recovery_factor: number | null
+  } | null
+  avg_tp_capture_pct?: number | null
+  tp_capture_sample_size?: number
 }
 
 export interface RDistributionBin {
@@ -340,6 +350,12 @@ export interface ExpectancyCi {
 export interface RollingPfPoint {
   index: number;
   profit_factor: number | null;
+}
+
+export interface RollingExpectancyPoint {
+  index: number;
+  close_time: string;
+  rolling_expectancy_r: number;
 }
 
 export interface EquityCurvePoint {

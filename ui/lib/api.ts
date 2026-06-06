@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingPfPoint } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -149,6 +149,21 @@ export async function fetchRollingPf(filters: StatsFiltersParam = {}): Promise<R
   const res = await authFetch(`${BASE_URL}/api/trades/stats/rolling-pf${rqs ? `?${rqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch rolling profit factor: ${res.status}`);
   return res.json() as Promise<RollingPfPoint[]>;
+}
+
+export async function fetchRollingExpectancy(
+  filters: StatsFiltersParam = {},
+  window = 30,
+): Promise<RollingExpectancyPoint[]> {
+  const params = buildStatsParams(filters);
+  params.set("window", String(window));
+  const eqs = params.toString();
+  const res = await authFetch(
+    `${BASE_URL}/api/trades/stats/rolling-expectancy${eqs ? `?${eqs}` : ""}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`Failed to fetch rolling expectancy: ${res.status}`);
+  return res.json() as Promise<RollingExpectancyPoint[]>;
 }
 
 export async function fetchIctStats(filters: StatsFiltersParam = {}): Promise<IctStatsResponse> {

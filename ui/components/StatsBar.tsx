@@ -111,6 +111,21 @@ function ConsistencyRatioCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
+function LiveExpectancyCard({ stats }: { stats: TradeStats | null }) {
+  const v = stats?.expectancy_usd ?? null;
+  const primary = v !== null
+    ? `${v >= 0 ? "+" : "-"}$${Math.abs(v).toFixed(2)}`
+    : "—";
+  return (
+    <StatCard
+      title="Expectancy"
+      primary={primary}
+      primaryColorClass={pnlColorClass(v)}
+      secondary="$ per trade"
+    />
+  );
+}
+
 function ExpectancyRCard({ stats }: { stats: TradeStats | null }) {
   const decisiveCount = (stats?.wins ?? 0) + (stats?.losses ?? 0);
   const expectancy = decisiveCount > 0 && stats?.total_r != null
@@ -190,6 +205,7 @@ export function StatsBar({ stats, loading, mode = "default", showMoney = true }:
         secondary={stats?.open_trades ? `${stats.open_trades} open` : undefined}
       />
       {pnlCard}
+      <LiveExpectancyCard stats={stats} />
       {avgRrCard}
       <StatCard
         title="Streak"

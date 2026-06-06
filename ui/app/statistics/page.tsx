@@ -11,7 +11,9 @@ import { EquityCurveChart } from "@/components/stats/EquityCurveChart";
 import { MonthlyBars } from "@/components/stats/MonthlyBars";
 import { RDistributionChart } from "@/components/stats/RDistributionChart";
 import { DrawdownPanel } from "@/components/stats/DrawdownPanel";
+import { LiveDrawdownPanel } from "@/components/stats/LiveDrawdownPanel";
 import { RobustnessPanel } from "@/components/stats/RobustnessPanel";
+import { RollingExpectancyChart } from "@/components/stats/RollingExpectancyChart";
 import { RollingProfitFactor } from "@/components/stats/RollingProfitFactor";
 
 import { useStatsContext } from "@/lib/useStatsContext";
@@ -20,6 +22,7 @@ import { useAccounts } from "@/lib/useAccounts";
 import { useEquityCurve } from "@/lib/useEquityCurve";
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useIctStats } from "@/lib/useIctStats";
+import { useRollingExpectancy } from "@/lib/useRollingExpectancy";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { SMALL_SAMPLE_THRESHOLD } from "@/lib/statsHelpers";
 
@@ -32,6 +35,7 @@ export default function StatisticsPage() {
   const { data: equityData, loading: equityLoading } = useEquityCurve(ctx.apiFilters);
   const { data: dailyData, loading: dailyLoading } = useDailySummary(ctx.apiFilters);
   const { data: ictData, loading: ictLoading } = useIctStats(ctx.apiFilters);
+  const { data: rollingExpectancyData, loading: rollingExpectancyLoading } = useRollingExpectancy(ctx.apiFilters);
 
   const isMnq = ctx.context.instrumentType?.startsWith("futures") === true;
   const isBacktest = ctx.context.backtestMode;
@@ -87,6 +91,12 @@ export default function StatisticsPage() {
       <section id="edge" className="mb-4">
         <SectionHeader title={isBacktest ? "Edge Metrics — R-based" : "Edge Metrics"} />
         <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} showMoney={showMoney} />
+        {!isBacktest && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
+            <RollingExpectancyChart data={rollingExpectancyData} loading={rollingExpectancyLoading} />
+            <LiveDrawdownPanel drawdown={stats?.live_drawdown} showMoney={showMoney} />
+          </div>
+        )}
         {isBacktest && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
             <RDistributionChart distribution={stats?.r_distribution ?? []} />
