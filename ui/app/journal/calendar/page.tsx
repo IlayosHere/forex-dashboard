@@ -14,6 +14,7 @@ import type { InstrumentType, Account } from "@/lib/types";
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useAccounts } from "@/lib/useAccounts";
 import { useShowMoney } from "@/lib/useShowMoney";
+import { strategies } from "@/lib/strategies";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex",   label: "FX" },
@@ -46,6 +47,7 @@ export default function CalendarPage() {
   const instrumentType = (searchParams.get("instrument") ?? "futures") as InstrumentType;
   const accountId = searchParams.get("account") ?? "";
   const backtestMode = searchParams.get("mode") === "backtest";
+  const strategyFilter = searchParams.get("strategy") ?? "";
 
   function pushParams(updates: Record<string, string | null>) {
     const p = new URLSearchParams(searchParams.toString());
@@ -69,6 +71,15 @@ export default function CalendarPage() {
     [accounts, instrumentType, backtestMode],
   );
 
+  const scopedStrategies = useMemo(
+    () => strategies.filter((s) =>
+      instrumentType === "futures"
+        ? s.instrumentType.startsWith("futures")
+        : s.instrumentType === instrumentType,
+    ),
+    [instrumentType],
+  );
+
   const fromDate = useMemo(() => toDateString(year, month, 1), [year, month]);
   const toDate = useMemo(
     () => toDateString(year, month, daysInMonth(year, month)),
@@ -82,10 +93,11 @@ export default function CalendarPage() {
       to: toDate,
     };
     if (accountId) f.account_id = accountId;
+    if (strategyFilter) f.strategy = strategyFilter;
     if (backtestMode) f.account_type = "backtest";
     else f.exclude_account_type = "backtest";
     return f;
-  }, [instrumentType, fromDate, toDate, accountId, backtestMode]);
+  }, [instrumentType, fromDate, toDate, accountId, strategyFilter, backtestMode]);
 
   const { data: dailyData } = useDailySummary(dailySummaryFilters);
 
@@ -117,11 +129,15 @@ export default function CalendarPage() {
   }
 
   function handleInstrumentChange(tab: InstrumentType) {
-    pushParams({ instrument: tab, date: null, account: null });
+    pushParams({ instrument: tab, date: null, account: null, strategy: null });
   }
 
   function handleAccountSelect(id: string) {
     pushParams({ account: accountId === id ? null : id, date: null });
+  }
+
+  function handleStrategySelect(slug: string) {
+    pushParams({ strategy: strategyFilter === slug ? null : slug, date: null });
   }
 
   return (
@@ -246,6 +262,29 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* Strategy filter pills */}
+      {scopedStrategies.length > 1 && (
+        <div className="flex gap-2 flex-wrap mb-4">
+          {scopedStrategies.map((s) => {
+            const isActive = strategyFilter === s.slug;
+            return (
+              <button
+                key={s.slug}
+                type="button"
+                onClick={() => handleStrategySelect(s.slug)}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  isActive
+                    ? "border-[#26a69a] text-[#26a69a] bg-[#26a69a]/10"
+                    : "border-[#2a2a2a] text-[#777] hover:text-[#e0e0e0]"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Month navigation */}
       <TradeCalendarHeader
         year={year}
@@ -275,6 +314,7 @@ export default function CalendarPage() {
         instrumentType={instrumentType}
         accountId={accountId || undefined}
         accountType={backtestMode ? "backtest" : "live"}
+        strategy={strategyFilter || undefined}
         showMoney={showMoney}
       />
     </div>

@@ -25,6 +25,7 @@ export interface CalendarDaySheetProps {
   instrumentType?: string;
   accountId?: string;
   accountType?: "live" | "backtest";
+  strategy?: string;
   showMoney?: boolean;
 }
 
@@ -137,7 +138,7 @@ function SkeletonRows() {
   );
 }
 
-export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType, showMoney = false }: CalendarDaySheetProps) {
+export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType, strategy, showMoney = false }: CalendarDaySheetProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +153,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
     const filters: Record<string, string> = { from: date, to: date, limit: "50" };
     if (instrumentType) filters.instrument_type = instrumentType;
     if (accountId) filters.account_id = accountId;
+    if (strategy) filters.strategy = strategy;
     if (accountType === "backtest") filters.account_type = "backtest";
     else if (!accountId) filters.exclude_account_type = "backtest";
     fetchTrades(filters)
@@ -160,7 +162,7 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
         setError(err instanceof Error ? err.message : "Failed to load trades")
       )
       .finally(() => setLoading(false));
-  }, [date, instrumentType, accountId, accountType]);
+  }, [date, instrumentType, accountId, accountType, strategy]);
 
   const pnl = netPnl(trades);
   const netR = trades.reduce((sum, t) => sum + (t.rr_achieved ?? 0), 0);
