@@ -83,6 +83,7 @@ TP_TARGETS: Final[list[str]] = [
     "unmitigated_30m_fvg",
     "unmitigated_1h_fvg",
     "unmitigated_4h_fvg",
+    "ath",
     "other",
 ]
 
