@@ -104,6 +104,7 @@ const TP_TARGET_OPTIONS = [
   { value: "unmitigated_30m_fvg", label: "Unmitigated 30M FVG" },
   { value: "unmitigated_1h_fvg", label: "Unmitigated 1H FVG" },
   { value: "unmitigated_4h_fvg", label: "Unmitigated 4H FVG" },
+  { value: "ath", label: "ATH" },
   { value: "other", label: "Other" },
 ];
 

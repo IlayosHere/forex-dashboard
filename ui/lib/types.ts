@@ -21,6 +21,7 @@ export type IctTpTarget =
   | "1m_high" | "1m_low" | "5m_high" | "5m_low" | "15m_high" | "15m_low"
   | "1h_high" | "1h_low" | "4h_high" | "4h_low" | "1d_high" | "1d_low"
   | "unmitigated_5m_fvg" | "unmitigated_15m_fvg" | "unmitigated_30m_fvg" | "unmitigated_1h_fvg" | "unmitigated_4h_fvg"
+  | "ath"
   | "other";
 export type IctIfvgTimeframe = "1m" | "2m" | "3m" | "4m" | "5m" | "6m" | "7m" | "8m" | "9m" | "10m" | "15m" | "other";
 
