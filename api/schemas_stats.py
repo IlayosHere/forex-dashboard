@@ -7,6 +7,7 @@ Split from schemas_trade.py to keep each module under the 200-line limit.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -161,6 +162,29 @@ class EquityCurvePoint(BaseModel):
     outcome: str | None
 
 
+class DrawdownMetrics(BaseModel):
+    """Live-account drawdown metrics."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    max_drawdown_usd: float = 0.0
+    max_drawdown_r: float = 0.0
+    current_drawdown_usd: float = 0.0
+    current_drawdown_pct: float = 0.0
+    drawdown_trade_count: int = 0
+    recovery_factor: float | None = None
+
+
+class RollingExpectancyPoint(BaseModel):
+    """Single point in the rolling expectancy series."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    index: int
+    close_time: datetime
+    rolling_expectancy_r: float
+
+
 class TradeStatsResponse(BaseModel):
     """Aggregated trade journal statistics for the /trades/stats endpoint."""
 
@@ -205,6 +229,10 @@ class TradeStatsResponse(BaseModel):
     drawdown: DrawdownStats | None = None
     robustness: RobustnessStats | None = None
     expectancy_ci: ExpectancyCi | None = None
+    # Live-mode metrics (populated for all account types)
+    live_drawdown: DrawdownMetrics | None = None
+    avg_tp_capture_pct: float | None = None
+    tp_capture_sample_size: int = 0
 
 
 class DailySummaryPoint(BaseModel):
