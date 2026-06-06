@@ -51,6 +51,7 @@ const SETUP_DETAIL_OPTIONS: Record<string, { value: string; label: string }[]> =
     { value: "15m", label: "15M FVG" },
     { value: "30m", label: "30M FVG" },
     { value: "1h", label: "1H FVG" },
+    { value: "2h", label: "2H FVG" },
     { value: "4h", label: "4H FVG" },
     { value: "other", label: "Other" },
   ],
