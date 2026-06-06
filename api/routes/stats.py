@@ -6,6 +6,7 @@ Extended statistics endpoints for the trade journal.
 GET /api/trades/stats/equity-curve   - cumulative P&L over time
 GET /api/trades/stats/daily-summary  - daily aggregated stats for heatmap
 GET /api/trades/stats/ict            - ICT breakdown for MNQ futures trades
+GET /api/trades/stats/rolling-pf     - rolling profit factor (backtest mode)
 """
 from __future__ import annotations
 
@@ -19,7 +20,12 @@ from sqlalchemy.orm import Session
 from api.auth import get_current_user
 from api.db import get_db
 from api.models import TradeModel
-from api.schemas_stats import DailySummaryPoint, EquityCurvePoint, IctStatsResponse
+from api.schemas_stats import (
+    DailySummaryPoint,
+    EquityCurvePoint,
+    IctStatsResponse,
+    RollingPfPoint,
+)
 from api.services.trade_filters import StatsFilterParams
 from api.services.trade_helpers import apply_trade_filters
 from api.services.trade_stats_extended import (
@@ -27,6 +33,7 @@ from api.services.trade_stats_extended import (
     build_equity_curve,
 )
 from api.services.trade_stats_ict import compute_ict_stats
+from api.services.trade_stats_robustness import compute_rolling_pf
 
 logger = logging.getLogger(__name__)
 
@@ -96,3 +103,17 @@ def ict_stats(
     trades = list(db.scalars(stmt).all())
     logger.debug("ict_stats: fetched %d MNQ/MES trades for user %s", len(trades), current_user)
     return compute_ict_stats(trades)
+
+
+@router.get(
+    "/trades/stats/rolling-pf",
+    response_model=list[RollingPfPoint],
+)
+def rolling_pf(
+    current_user: Annotated[str, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    filters: Annotated[StatsFilterParams, Depends()],
+) -> list[dict]:
+    """Return rolling profit factor over a 20-trade sliding window."""
+    closed = _fetch_closed_trades(current_user, db, filters)
+    return compute_rolling_pf(closed)

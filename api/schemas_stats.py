@@ -94,6 +94,56 @@ class IctStatsResponse(BaseModel):
     ifvg_bars_matrix: list[IctIfvgBarsRow] = Field(default_factory=list)
 
 
+class RDistributionBin(BaseModel):
+    """Single bin in the R-multiple distribution histogram."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    bucket_label: str
+    count: int
+    pct: float
+
+
+class DrawdownStats(BaseModel):
+    """Drawdown and streak statistics for backtest mode."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    max_drawdown_r: float
+    max_losing_streak: int
+    expected_max_streak: float | None = None
+    recovery_factor: float | None = None
+
+
+class RobustnessStats(BaseModel):
+    """Edge robustness: outlier-trimmed PF and trade concentration."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    profit_factor_ex_outliers: float | None = None
+    largest_trade_pct_of_pnl: float | None = None
+
+
+class ExpectancyCi(BaseModel):
+    """95% confidence interval around mean R (expectancy)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    expectancy_r: float | None = None
+    expectancy_r_ci_low: float | None = None
+    expectancy_r_ci_high: float | None = None
+    edge_significant: bool | None = None
+
+
+class RollingPfPoint(BaseModel):
+    """Single point in the rolling profit factor series."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    index: int
+    profit_factor: float | None = None
+
+
 class EquityCurvePoint(BaseModel):
     """Single point on the equity curve."""
 
@@ -150,6 +200,11 @@ class TradeStatsResponse(BaseModel):
     by_criteria_met: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # BE outcome breakdown — counts only trades with outcome='breakeven'
     be_outcome_breakdown: dict[str, int] = Field(default_factory=dict)
+    # Backtest-mode robustness fields (populated only when account_type="backtest")
+    r_distribution: list[RDistributionBin] = Field(default_factory=list)
+    drawdown: DrawdownStats | None = None
+    robustness: RobustnessStats | None = None
+    expectancy_ci: ExpectancyCi | None = None
 
 
 class DailySummaryPoint(BaseModel):

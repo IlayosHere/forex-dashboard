@@ -9,6 +9,10 @@ import { EdgeMetrics } from "@/components/stats/EdgeMetrics";
 import { UnifiedBreakdowns } from "@/components/stats/UnifiedBreakdowns";
 import { EquityCurveChart } from "@/components/stats/EquityCurveChart";
 import { MonthlyBars } from "@/components/stats/MonthlyBars";
+import { RDistributionChart } from "@/components/stats/RDistributionChart";
+import { DrawdownPanel } from "@/components/stats/DrawdownPanel";
+import { RobustnessPanel } from "@/components/stats/RobustnessPanel";
+import { RollingProfitFactor } from "@/components/stats/RollingProfitFactor";
 
 import { useStatsContext } from "@/lib/useStatsContext";
 import { useTradeStats } from "@/lib/useTradeStats";
@@ -83,6 +87,18 @@ export default function StatisticsPage() {
       <section id="edge" className="mb-4">
         <SectionHeader title={isBacktest ? "Edge Metrics — R-based" : "Edge Metrics"} />
         <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} showMoney={showMoney} />
+        {isBacktest && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
+            <RDistributionChart distribution={stats?.r_distribution ?? []} />
+            <DrawdownPanel drawdown={stats?.drawdown} />
+            <RobustnessPanel
+              robustness={stats?.robustness}
+              expectancy_ci={stats?.expectancy_ci}
+              sampleSize={(stats?.wins ?? 0) + (stats?.losses ?? 0)}
+            />
+            <RollingProfitFactor filters={ctx.apiFilters} />
+          </div>
+        )}
       </section>
 
       <hr className="border-border/40" />
