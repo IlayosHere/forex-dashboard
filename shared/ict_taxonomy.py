@@ -134,16 +134,10 @@ KILLZONE_BUCKETS: Final[list[str]] = [
 
 # IFVG confirmation timeframe
 IFVG_TIMEFRAMES: Final[list[str]] = [
+    "30s",
     "1m",
     "2m",
     "3m",
     "4m",
     "5m",
-    "6m",
-    "7m",
-    "8m",
-    "9m",
-    "10m",
-    "15m",
-    "other",
 ]

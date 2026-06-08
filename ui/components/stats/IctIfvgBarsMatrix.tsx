@@ -13,11 +13,12 @@ const BARS_ORDER = ["1","2","3","4","5","6","7","8","9","10","10+"];
 
 function sortedTimeframes(rows: IctIfvgBarsRow[]): string[] {
   const tfs = Array.from(new Set(rows.map((r) => r.timeframe)));
-  const tfNum = (tf: string) => {
-    if (tf === "other") return 999;
-    return parseInt(tf.replace("m", ""), 10);
+  const tfSeconds = (tf: string) => {
+    if (tf === "other") return 999999;
+    if (tf.endsWith("s")) return parseInt(tf, 10);
+    return parseInt(tf, 10) * 60;
   };
-  return tfs.sort((a, b) => tfNum(a) - tfNum(b));
+  return tfs.sort((a, b) => tfSeconds(a) - tfSeconds(b));
 }
 
 function WinRateCell({ value }: { value: number | null }) {
