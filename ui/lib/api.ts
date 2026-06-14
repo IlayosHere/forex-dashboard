@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -417,4 +417,78 @@ export async function updateRuleCategory(id: string, name: string): Promise<Rule
 export async function deleteRuleCategory(id: string): Promise<void> {
   const res = await authFetch(`${BASE_URL}/api/rule-categories/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete rule category: ${res.status}`);
+}
+
+// ---------------------------------------------------------------------------
+// Life Journal
+// ---------------------------------------------------------------------------
+
+export interface LifeEntryFilters {
+  from?: string;
+  to?: string;
+  mood?: string[];
+  tag?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function fetchLifeEntries(filters: LifeEntryFilters = {}): Promise<LifeEntry[]> {
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  if (filters.mood?.length) filters.mood.forEach((m) => params.append("mood", m));
+  if (filters.tag) params.set("tag", filters.tag);
+  params.set("limit", String(filters.limit ?? 50));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
+  const qs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/life/entries${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch life entries: ${res.status}`);
+  return res.json() as Promise<LifeEntry[]>;
+}
+
+export async function fetchLifeEntry(id: string): Promise<LifeEntry> {
+  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch life entry ${id}: ${res.status}`);
+  return res.json() as Promise<LifeEntry>;
+}
+
+export async function createLifeEntry(body: LifeEntryCreateRequest): Promise<LifeEntry> {
+  const res = await authFetch(`${BASE_URL}/api/life/entries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to create life entry: ${res.status}`);
+  return res.json() as Promise<LifeEntry>;
+}
+
+export async function updateLifeEntry(id: string, body: LifeEntryUpdateRequest): Promise<LifeEntry> {
+  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to update life entry: ${res.status}`);
+  return res.json() as Promise<LifeEntry>;
+}
+
+export async function deleteLifeEntry(id: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete life entry: ${res.status}`);
+}
+
+export async function fetchLifeSummary(from?: string, to?: string): Promise<LifeSummaryPoint[]> {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const qs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/life/summary${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch life summary: ${res.status}`);
+  return res.json() as Promise<LifeSummaryPoint[]>;
+}
+
+export async function fetchLifeTags(): Promise<string[]> {
+  const res = await authFetch(`${BASE_URL}/api/life/tags`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch life tags: ${res.status}`);
+  return res.json() as Promise<string[]>;
 }

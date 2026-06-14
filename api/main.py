@@ -23,6 +23,7 @@ from api.db import Base, SessionLocal, engine
 from api.routes.accounts import router as accounts_router
 from api.routes.calendar import router as calendar_router
 from api.routes.categories import router as categories_router
+from api.routes.life import router as life_router
 from api.routes.mistakes import router as mistakes_router
 from api.routes.rules import router as rules_router
 from api.routes.trade_mistakes import router as trade_mistakes_router
@@ -85,3 +86,4 @@ app.include_router(calendar_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api", tags=["sessions"])
 app.include_router(rules_router, prefix="/api", tags=["rules"])
 app.include_router(categories_router, prefix="/api", tags=["rule-categories"])
+app.include_router(life_router, prefix="/api", tags=["life"])

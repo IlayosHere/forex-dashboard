@@ -217,6 +217,34 @@ def migrate_drop_signals_fk() -> None:
         db.close()
 
 
+def migrate_add_life_entries_table() -> None:
+    """Create life_entries table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "life_entries" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS life_entries ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  owner VARCHAR NOT NULL,"
+            "  body TEXT NOT NULL,"
+            "  mood VARCHAR,"
+            "  tags JSON NOT NULL DEFAULT '[]',"
+            "  entry_at DATETIME NOT NULL,"
+            "  created_at DATETIME NOT NULL,"
+            "  updated_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_life_entries_owner ON life_entries (owner)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_life_entries_owner_entry_at"
+            " ON life_entries (owner, entry_at)"
+        ))
+    logger.info("Created table life_entries")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -230,3 +258,4 @@ def run_all() -> None:
     migrate_add_rule_categories_table()
     migrate_add_rules_table()
     migrate_add_rule_mistake_links_table()
+    migrate_add_life_entries_table()

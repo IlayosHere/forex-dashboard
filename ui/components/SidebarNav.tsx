@@ -62,6 +62,8 @@ export function SidebarNav() {
         <NavLink href="/calendar">Calendar</NavLink>
         <NavLink href="/accounts">Accounts</NavLink>
         <NavLink href="/statistics">Statistics</NavLink>
+        <div className="border-t border-border my-1.5" />
+        <NavLink href="/life">Life</NavLink>
       </nav>
 
       <div className="flex-shrink-0 border-t border-border px-2 py-2">
