@@ -84,6 +84,7 @@ class TradeCreateRequest(BaseModel):
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
@@ -240,6 +241,7 @@ class TradeUpdateRequest(BaseModel):
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
@@ -424,6 +426,7 @@ class TradeResponse(BaseModel):
     ict_ifvg_bars: int | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = None
     criteria_met_at_entry: bool | None = None

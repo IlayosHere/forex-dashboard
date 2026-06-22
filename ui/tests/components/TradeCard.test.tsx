@@ -58,6 +58,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     ict_ifvg_bars: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_cisd_present: null,
     ict_htf_bias: null,
     fees: null,
     rule_followed: null,

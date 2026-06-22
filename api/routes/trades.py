@@ -100,6 +100,7 @@ def create_trade(
         ict_ifvg_bars=req.ict_ifvg_bars,
         ict_smt_present=req.ict_smt_present,
         ict_tdo_aligned=req.ict_tdo_aligned,
+        ict_cisd_present=req.ict_cisd_present,
         ict_htf_bias=req.ict_htf_bias,
         fees=req.fees,
         criteria_met_at_entry=req.criteria_met_at_entry,

@@ -10,6 +10,7 @@ export interface IctParamsState {
   ict_ifvg_bars: string;
   ict_smt_present: string;
   ict_tdo_aligned: string;
+  ict_cisd_present: string;
   ict_htf_bias: string;
 }
 
@@ -22,6 +23,7 @@ export function ictParamsFromTrade(trade: Trade): IctParamsState {
     ict_ifvg_bars: trade.ict_ifvg_bars != null ? String(trade.ict_ifvg_bars) : "",
     ict_smt_present: trade.ict_smt_present === null ? "" : String(trade.ict_smt_present),
     ict_tdo_aligned: trade.ict_tdo_aligned === null ? "" : String(trade.ict_tdo_aligned),
+    ict_cisd_present: trade.ict_cisd_present === null ? "" : String(trade.ict_cisd_present),
     ict_htf_bias: trade.ict_htf_bias ?? "",
   };
 }
@@ -212,6 +214,14 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
         <div>
           <label className={LABEL_CLASS}>TDO Aligned</label>
           <select className={SELECT_CLASS} value={params.ict_tdo_aligned} onChange={(e) => onChange("ict_tdo_aligned", e.target.value)}>
+            <option value="">Select</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>CISD Present</label>
+          <select className={SELECT_CLASS} value={params.ict_cisd_present} onChange={(e) => onChange("ict_cisd_present", e.target.value)}>
             <option value="">Select</option>
             <option value="true">Yes</option>
             <option value="false">No</option>

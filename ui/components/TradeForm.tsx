@@ -37,6 +37,7 @@ export interface TradeFormData {
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
+  ict_cisd_present: boolean | null;
   ict_htf_bias: string | null;
   fees: string;
   criteria_met_at_entry: boolean | null;
@@ -134,6 +135,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
         ict_ifvg_bars: null,
         ict_smt_present: null,
         ict_tdo_aligned: null,
+        ict_cisd_present: null,
         ict_htf_bias: null,
       }));
     }
@@ -204,6 +206,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
       if (!form.ict_ifvg_timeframe) errs.ict_ifvg_timeframe = true;
       if (form.ict_smt_present === null || form.ict_smt_present === undefined) errs.ict_smt_present = true;
       if (form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined) errs.ict_tdo_aligned = true;
+      if (form.ict_cisd_present === null || form.ict_cisd_present === undefined) errs.ict_cisd_present = true;
     }
     if (isQtMnq) {
       if (!form.qt_fvg_quarter) errs.qt_fvg_quarter = true;

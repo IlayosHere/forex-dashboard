@@ -108,6 +108,7 @@ class TradeModel(Base):
     ict_ifvg_timeframe: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_smt_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_tdo_aligned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    ict_cisd_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_htf_bias: Mapped[str | None] = mapped_column(String, nullable=True)    # aligned / counter / neutral
     ict_ifvg_bars: Mapped[int | None] = mapped_column(Integer, nullable=True)   # bars from FVG to IFVG trigger
     fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)

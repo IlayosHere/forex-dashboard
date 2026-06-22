@@ -6,10 +6,20 @@ You are redeploying Cloud Run services for the forex dashboard. Redeploying
 with the same image forces a new revision, which picks up updated Secret Manager
 values and clears all in-memory state (rate limiters, caches, etc.).
 
-## Environment constants
+## OS detection — run this first, every time
+
+```bash
+UNAME=$(uname -s 2>/dev/null || echo "Unknown")
+if [ "$UNAME" = "Darwin" ]; then
+  GCLOUD="/opt/homebrew/bin/gcloud"
+else
+  GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
+fi
+```
+
+## Environment constants (same on both platforms)
 
 ```
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 REGION="europe-west1"
 API_URL="https://forex-api-hsogimk2jq-ew.a.run.app"
@@ -112,5 +122,6 @@ DEPLOY COMPLETE
 
 - Never change the image. Always redeploy with the image currently in use.
 - Always use `--quiet` to suppress interactive prompts.
-- gcloud binary is `gcloud.cmd` at full path — never bare `gcloud`.
+- Run the OS detection block first and use `$GCLOUD` — never bare `gcloud`,
+  on either platform.
 - If a deploy fails, stop immediately. Do not continue to the next service.

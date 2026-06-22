@@ -207,6 +207,7 @@ def trade_to_response(
         "ict_ifvg_bars": trade.ict_ifvg_bars,
         "ict_smt_present": trade.ict_smt_present,
         "ict_tdo_aligned": trade.ict_tdo_aligned,
+        "ict_cisd_present": trade.ict_cisd_present,
         "ict_htf_bias": trade.ict_htf_bias,
         "fees": trade.fees,
         "criteria_met_at_entry": trade.criteria_met_at_entry,

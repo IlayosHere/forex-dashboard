@@ -199,8 +199,8 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
 
       <IctExtendedFields form={form} onChange={onChange} />
 
-      {/* SMT + TDO — side by side */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* SMT + TDO + CISD — side by side */}
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={LABEL_CLASS}>SMT Present *</label>
           <select
@@ -226,6 +226,19 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
             <option value="false">No</option>
           </select>
           <ErrMsg errors={errors} field="ict_tdo_aligned" />
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>CISD Present *</label>
+          <select
+            className={`${SELECT_CLASS} ${errBorder(errors, "ict_cisd_present")}`}
+            value={form.ict_cisd_present === null || form.ict_cisd_present === undefined ? "" : String(form.ict_cisd_present)}
+            onChange={(e) => onChange("ict_cisd_present", e.target.value === "" ? null : e.target.value === "true")}
+          >
+            <option value="">Select</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+          <ErrMsg errors={errors} field="ict_cisd_present" />
         </div>
       </div>
     </div>

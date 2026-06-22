@@ -107,7 +107,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [ictParams, setIctParams] = useState<IctParamsState>({
     ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
     ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
-    ict_tdo_aligned: "", ict_htf_bias: "",
+    ict_tdo_aligned: "", ict_cisd_present: "", ict_htf_bias: "",
   });
   const [qtParams, setQtParams] = useState({
     qt_fvg_quarter: "",
@@ -231,6 +231,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         ict_ifvg_bars: ictParams.ict_ifvg_bars ? parseInt(ictParams.ict_ifvg_bars, 10) : null,
         ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
         ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
+        ict_cisd_present: ictParams.ict_cisd_present === "" ? null : ictParams.ict_cisd_present === "true",
         ict_htf_bias: ictParams.ict_htf_bias || null,
         feeling_before: editable.feelingBefore,
         feeling_during: editable.feelingDuring,

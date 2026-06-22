@@ -10,6 +10,7 @@ __pycache__/
 venv/
 *.log
 signals.db
+journal.db
 
 # Node
 ui/node_modules/
@@ -33,3 +34,8 @@ infra/terraform/crash.*.log
 # Claude local settings
 .claude/settings.json
 .claude/settings.local.json
+
+# Cloud SQL proxy binaries — deterministically downloadable, don't vendor
+scripts/cloud-sql-proxy.exe
+scripts/cloud-sql-proxy.darwin.arm64
+scripts/cloud-sql-proxy.darwin.amd64

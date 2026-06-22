@@ -56,6 +56,7 @@ def test_create_trade_with_ict_fields_returns_201(client: TestClient) -> None:
         ict_ifvg_timeframe=IFVG_TIMEFRAMES[0],
         ict_smt_present=True,
         ict_tdo_aligned=False,
+        ict_cisd_present=True,
     )
     resp = client.post("/api/trades", json=payload)
     assert resp.status_code == 201
@@ -66,6 +67,7 @@ def test_create_trade_with_ict_fields_returns_201(client: TestClient) -> None:
     assert data["ict_ifvg_timeframe"] == IFVG_TIMEFRAMES[0]
     assert data["ict_smt_present"] is True
     assert data["ict_tdo_aligned"] is False
+    assert data["ict_cisd_present"] is True
 
 
 def test_create_trade_ict_fields_default_to_none(client: TestClient) -> None:
@@ -79,6 +81,7 @@ def test_create_trade_ict_fields_default_to_none(client: TestClient) -> None:
     assert data["ict_ifvg_timeframe"] is None
     assert data["ict_smt_present"] is None
     assert data["ict_tdo_aligned"] is None
+    assert data["ict_cisd_present"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +198,7 @@ def test_update_trade_ict_fields_via_put(
             "ict_ifvg_timeframe": IFVG_TIMEFRAMES[2],
             "ict_smt_present": False,
             "ict_tdo_aligned": True,
+            "ict_cisd_present": True,
         },
     )
     assert resp.status_code == 200
@@ -205,6 +209,7 @@ def test_update_trade_ict_fields_via_put(
     assert data["ict_ifvg_timeframe"] == IFVG_TIMEFRAMES[2]
     assert data["ict_smt_present"] is False
     assert data["ict_tdo_aligned"] is True
+    assert data["ict_cisd_present"] is True
 
 
 def test_update_trade_ict_detail_wrong_for_type_returns_422(

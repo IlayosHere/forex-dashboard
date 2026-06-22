@@ -4,10 +4,24 @@ description: Run a read-only SQL query against the production Postgres database
 
 You are running a read-only SQL query against the production database.
 
-## Environment constants
+## OS detection — run this first, every time
+
+```bash
+UNAME=$(uname -s 2>/dev/null || echo "Unknown")
+if [ "$UNAME" = "Darwin" ]; then
+  PLATFORM="mac"
+  GCLOUD="/opt/homebrew/bin/gcloud"
+  PROXY="scripts/cloud-sql-proxy.darwin.arm64"
+else
+  PLATFORM="windows"
+  GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
+  PROXY="scripts/cloud-sql-proxy.exe"
+fi
+```
+
+## Environment constants (same on both platforms)
 
 ```
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 INSTANCE="forex-db"
 CONNECTION="project-2f1c7228-98f9-4373-a13:europe-west1:forex-db"
@@ -45,7 +59,8 @@ If `$ARGUMENTS` is empty, print usage and exit.
   print a warning. This skill is strictly for SELECT queries.
 - Always close the tunnel when done (unless it was already open before).
 - Port is **5433**, never 5432.
-- gcloud binary is the full `.cmd` path — never bare `gcloud`.
+- Run the OS detection block first and use `$GCLOUD`/`$PROXY` — never bare
+  `gcloud`, on either platform.
 
 ## Step 1: Check if tunnel is already open
 
@@ -64,24 +79,22 @@ EOF
 If `TUNNEL_OPEN`, set a flag to NOT close the tunnel at the end — the user
 opened it manually and may want it to stay open.
 
-If `TUNNEL_CLOSED`, open the tunnel using the same steps as `/prod-connect open`:
+If `TUNNEL_CLOSED`, open the tunnel using the same steps as `/prod-connect open`.
+Public IP is permanently enabled on this instance (see `/prod-connect` for why)
+— no need to enable it or touch authorized networks, just start the proxy:
 
-### 1a. Enable public IP
+### 1a. Kill stale proxy, start fresh
 
+**Mac:**
 ```bash
-"$GCLOUD" sql instances patch "$INSTANCE" --assign-ip --project="$PROJECT" --quiet
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+nohup "$PROXY" "$CONNECTION" --port 5433 \
+  > /tmp/cloud-sql-proxy-stdout.log 2> /tmp/cloud-sql-proxy-stderr.log < /dev/null &
+disown
+sleep 5
 ```
 
-### 1b. Authorize current IP
-
-```bash
-MY_IP=$(curl -s https://ifconfig.me)
-"$GCLOUD" sql instances patch "$INSTANCE" \
-  --authorized-networks="$MY_IP/32" --project="$PROJECT" --quiet
-```
-
-### 1c. Kill stale proxy, start fresh
-
+**Windows:**
 ```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
 ```
@@ -99,8 +112,14 @@ Start-Process -FilePath 'scripts/cloud-sql-proxy.exe' \
 sleep 5
 ```
 
-### 1d. Verify proxy
+### 1b. Verify proxy
 
+**Mac:**
+```bash
+cat /tmp/cloud-sql-proxy-stdout.log
+```
+
+**Windows:**
 ```bash
 powershell.exe -Command "Get-Content \"\$env:TEMP\proxy-stdout.log\""
 ```
@@ -157,11 +176,18 @@ PYEOF
 
 ## Step 3: Close tunnel (if we opened it)
 
-Only if the tunnel was CLOSED before we started:
+Only if the tunnel was CLOSED before we started. Only the proxy needs killing
+— public IP and authorized networks stay as-is permanently.
 
+**Mac:**
+```bash
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+echo "Tunnel closed."
+```
+
+**Windows:**
 ```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
-"$GCLOUD" sql instances patch "$INSTANCE" --no-assign-ip --project="$PROJECT" --quiet
 echo "Tunnel closed."
 ```
 

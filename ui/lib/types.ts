@@ -76,6 +76,7 @@ export interface TradeCreateRequest {
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_cisd_present?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
   criteria_met_at_entry?: boolean | null;
@@ -116,6 +117,7 @@ export interface TradeUpdateRequest {
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_cisd_present?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
   rule_followed?: boolean | null;
@@ -166,6 +168,7 @@ export interface Trade {
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
+  ict_cisd_present: boolean | null;
   ict_htf_bias: string | null;
   fees: number | null;
   rule_followed: boolean | null;

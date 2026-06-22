@@ -41,6 +41,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     ict_ifvg_bars: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_cisd_present: null,
     ict_htf_bias: null,
     fees: "",
     criteria_met_at_entry: null,
