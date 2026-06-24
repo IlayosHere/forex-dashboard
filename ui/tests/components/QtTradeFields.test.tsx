@@ -48,6 +48,14 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
   };
 }
 
+// Comboboxes are button triggers (role="combobox" per base-ui), not native
+// <select>s — click to open, then click the option text to choose it.
+function chooseFromCombobox(index: number, optionText: string) {
+  const triggers = screen.getAllByRole("combobox");
+  fireEvent.click(triggers[index]);
+  fireEvent.click(screen.getByText(optionText));
+}
+
 describe("QtTradeFields — rendering", () => {
   it("renders the FVG Quarter label", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
@@ -76,8 +84,6 @@ describe("QtTradeFields — rendering", () => {
 
   it("renders a date input for FVG Date", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const dateInput = screen.getByDisplayValue("");
-    // find date input by type attribute
     const allInputs = document.querySelectorAll('input[type="date"]');
     expect(allInputs).toHaveLength(1);
   });
@@ -87,44 +93,28 @@ describe("QtTradeFields — onChange callbacks", () => {
   it("calls onChange with qt_fvg_quarter when a quarter is selected", () => {
     const handleChange = vi.fn();
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={handleChange} />);
-
-    const selects = screen.getAllByRole("combobox");
-    // First combobox is FVG Quarter
-    fireEvent.change(selects[0], { target: { value: "ny_am_q3" } });
-
+    chooseFromCombobox(0, "NY AM Q3 (09:00–10:30)");
     expect(handleChange).toHaveBeenCalledWith("qt_fvg_quarter", "ny_am_q3");
   });
 
   it("calls onChange with qt_entry_quarter when an entry quarter is selected", () => {
     const handleChange = vi.fn();
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={handleChange} />);
-
-    const selects = screen.getAllByRole("combobox");
-    // Second combobox is Entry Quarter
-    fireEvent.change(selects[1], { target: { value: "london_q1" } });
-
+    chooseFromCombobox(1, "London Q1 (00:00–01:30)");
     expect(handleChange).toHaveBeenCalledWith("qt_entry_quarter", "london_q1");
   });
 
   it("calls onChange with qt_fvg_type when FVG Type is selected", () => {
     const handleChange = vi.fn();
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={handleChange} />);
-
-    const selects = screen.getAllByRole("combobox");
-    // Third combobox is FVG Type
-    fireEvent.change(selects[2], { target: { value: "standard" } });
-
+    chooseFromCombobox(2, "Standard");
     expect(handleChange).toHaveBeenCalledWith("qt_fvg_type", "standard");
   });
 
   it("calls onChange with qt_entry_type when Entry Type is selected", () => {
     const handleChange = vi.fn();
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={handleChange} />);
-
-    const selects = screen.getAllByRole("combobox");
-    // Fourth combobox is Entry Type
-    fireEvent.change(selects[3], { target: { value: "market_mss" } });
-
+    chooseFromCombobox(3, "Market MSS");
     expect(handleChange).toHaveBeenCalledWith("qt_entry_type", "market_mss");
   });
 
@@ -211,38 +201,33 @@ describe("QtTradeFields — error display", () => {
 describe("QtTradeFields — quarter options", () => {
   it("renders Asia Q1 option in the FVG Quarter dropdown", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const selects = screen.getAllByRole("combobox");
-    const options = Array.from(selects[0].querySelectorAll("option")).map((o) => o.value);
-    expect(options).toContain("asia_q1");
+    fireEvent.click(screen.getAllByRole("combobox")[0]);
+    expect(screen.getByText("Asia Q1 (18:00–19:30)")).toBeInTheDocument();
   });
 
   it("renders NY AM Q3 option in the Entry Quarter dropdown", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const selects = screen.getAllByRole("combobox");
-    const options = Array.from(selects[1].querySelectorAll("option")).map((o) => o.value);
-    expect(options).toContain("ny_am_q3");
+    fireEvent.click(screen.getAllByRole("combobox")[1]);
+    expect(screen.getByText("NY AM Q3 (09:00–10:30)")).toBeInTheDocument();
   });
 
-  it("renders 16 non-empty quarter options in FVG Quarter select", () => {
+  it("renders 16 quarter options in FVG Quarter dropdown", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const selects = screen.getAllByRole("combobox");
-    const options = Array.from(selects[0].querySelectorAll("option")).filter((o) => o.value !== "");
-    expect(options).toHaveLength(16);
+    fireEvent.click(screen.getAllByRole("combobox")[0]);
+    expect(screen.getAllByRole("option")).toHaveLength(16);
   });
 
-  it("FVG Type select contains standard and inverse options", () => {
+  it("FVG Type dropdown contains Standard and Inverse options", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const selects = screen.getAllByRole("combobox");
-    const options = Array.from(selects[2].querySelectorAll("option")).map((o) => o.value);
-    expect(options).toContain("standard");
-    expect(options).toContain("inverse");
+    fireEvent.click(screen.getAllByRole("combobox")[2]);
+    expect(screen.getByText("Standard")).toBeInTheDocument();
+    expect(screen.getByText("Inverse")).toBeInTheDocument();
   });
 
-  it("Entry Type select contains limit_fvg_edge and market_mss options", () => {
+  it("Entry Type dropdown contains Limit FVG Edge and Market MSS options", () => {
     render(<QtTradeFields form={makeForm()} errors={{}} onChange={() => {}} />);
-    const selects = screen.getAllByRole("combobox");
-    const options = Array.from(selects[3].querySelectorAll("option")).map((o) => o.value);
-    expect(options).toContain("limit_fvg_edge");
-    expect(options).toContain("market_mss");
+    fireEvent.click(screen.getAllByRole("combobox")[3]);
+    expect(screen.getByText("Limit FVG Edge")).toBeInTheDocument();
+    expect(screen.getByText("Market MSS")).toBeInTheDocument();
   });
 });

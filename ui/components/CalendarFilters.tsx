@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import type { CalendarContext, CalendarImpact } from "@/lib/types";
 
 interface CalendarFiltersProps {
@@ -118,15 +120,13 @@ export function CalendarFilters({
       </div>
 
       {/* Currency filter */}
-      <select
-        className="bg-elevated border border-border text-sm text-foreground rounded px-2 py-1 outline-none focus:border-primary cursor-pointer"
+      <Combobox
+        options={CURRENCIES.map((c) => ({ value: c, label: c }))}
         value={currencyFilter}
-        onChange={(e) => onCurrencyChange(e.target.value)}
-      >
-        {CURRENCIES.map((c) => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
+        onChange={(v) => onCurrencyChange(v ?? "All")}
+        filterable={false}
+        className="w-auto h-7 text-xs px-2 py-1"
+      />
 
       {/* Reset link */}
       {showReset && (

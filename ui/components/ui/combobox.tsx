@@ -19,6 +19,7 @@ interface ComboboxProps {
   className?: string
   /** Shows a substring-filter input inside the popup. Defaults to on above 8 options. */
   filterable?: boolean
+  "aria-label"?: string
 }
 
 /**
@@ -26,7 +27,7 @@ interface ComboboxProps {
  * for long option lists. Built on @base-ui/react's Combobox primitive so
  * keyboard nav (arrows/Home/End/Escape) and type-ahead come for free.
  */
-export function Combobox({ options, value, onChange, placeholder = "Select…", className, filterable }: ComboboxProps) {
+export function Combobox({ options, value, onChange, placeholder = "Select…", className, filterable, "aria-label": ariaLabel }: ComboboxProps) {
   const showFilter = filterable ?? options.length > 8
   const selected = options.find((o) => o.value === value) ?? null
 
@@ -40,6 +41,7 @@ export function Combobox({ options, value, onChange, placeholder = "Select…", 
     >
       <ComboboxPrimitive.Trigger
         data-slot="combobox-trigger"
+        aria-label={ariaLabel}
         className={cn(
           "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors flex items-center justify-between gap-2",
           className

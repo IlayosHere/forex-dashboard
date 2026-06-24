@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import { IctExtendedFields } from "./IctExtendedFields";
 
 import type { TradeFormData } from "./TradeForm";
@@ -9,9 +11,6 @@ interface IctTradeFieldsProps {
   errors: Record<string, boolean>;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
 }
-
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 
 const LABEL_CLASS = "block text-xs text-text-muted mb-1";
 
@@ -99,6 +98,18 @@ const TP_TARGET_OPTIONS = [
 
 const IFVG_TF_OPTIONS = ["30s","1m","2m","3m","4m","5m"];
 
+const SETUP_TYPE_OPTIONS = [
+  { value: "liquidity_sweep", label: "Liquidity Sweep" },
+  { value: "unmitigated_fvg", label: "Unmitigated FVG" },
+  { value: "continuation", label: "Continuation" },
+  { value: "other", label: "Other" },
+];
+
+const YES_NO_OPTIONS = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
+
 export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) {
   const setupDetailOptions = form.ict_setup_type
     ? SETUP_DETAIL_OPTIONS[form.ict_setup_type] ?? []
@@ -119,17 +130,14 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
       {/* Setup Type */}
       <div>
         <label className={LABEL_CLASS}>Setup Type *</label>
-        <select
-          className={`${SELECT_CLASS} ${errBorder(errors, "ict_setup_type")}`}
-          value={form.ict_setup_type ?? ""}
-          onChange={(e) => handleSetupTypeChange(e.target.value)}
-        >
-          <option value="">Select setup type</option>
-          <option value="liquidity_sweep">Liquidity Sweep</option>
-          <option value="unmitigated_fvg">Unmitigated FVG</option>
-          <option value="continuation">Continuation</option>
-          <option value="other">Other</option>
-        </select>
+        <Combobox
+          className={errBorder(errors, "ict_setup_type")}
+          options={SETUP_TYPE_OPTIONS}
+          value={form.ict_setup_type || null}
+          onChange={(v) => handleSetupTypeChange(v ?? "")}
+          placeholder="Select setup type"
+          filterable={false}
+        />
         <ErrMsg errors={errors} field="ict_setup_type" />
       </div>
 
@@ -137,16 +145,12 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
       {form.ict_setup_type && (
         <div>
           <label className={LABEL_CLASS}>{setupDetailLabel} *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "ict_setup_detail")}`}
-            value={form.ict_setup_detail ?? ""}
-            onChange={(e) => onChange("ict_setup_detail", e.target.value)}
-          >
-            <option value="">Select...</option>
-            {setupDetailOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <Combobox
+            className={errBorder(errors, "ict_setup_detail")}
+            options={setupDetailOptions}
+            value={form.ict_setup_detail || null}
+            onChange={(v) => onChange("ict_setup_detail", v ?? "")}
+          />
           <ErrMsg errors={errors} field="ict_setup_detail" />
         </div>
       )}
@@ -154,16 +158,13 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
       {/* TP Target */}
       <div>
         <label className={LABEL_CLASS}>TP Target *</label>
-        <select
-          className={`${SELECT_CLASS} ${errBorder(errors, "ict_tp_target")}`}
-          value={form.ict_tp_target ?? ""}
-          onChange={(e) => onChange("ict_tp_target", e.target.value)}
-        >
-          <option value="">Select target</option>
-          {TP_TARGET_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          className={errBorder(errors, "ict_tp_target")}
+          options={TP_TARGET_OPTIONS}
+          value={form.ict_tp_target || null}
+          onChange={(v) => onChange("ict_tp_target", v ?? "")}
+          placeholder="Select target"
+        />
         <ErrMsg errors={errors} field="ict_tp_target" />
       </div>
 
@@ -171,16 +172,14 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={LABEL_CLASS}>IFVG Entry Timeframe *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "ict_ifvg_timeframe")}`}
-            value={form.ict_ifvg_timeframe ?? ""}
-            onChange={(e) => onChange("ict_ifvg_timeframe", e.target.value)}
-          >
-            <option value="">Select TF</option>
-            {IFVG_TF_OPTIONS.map((tf) => (
-              <option key={tf} value={tf}>{tf.toUpperCase()}</option>
-            ))}
-          </select>
+          <Combobox
+            className={errBorder(errors, "ict_ifvg_timeframe")}
+            options={IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
+            value={form.ict_ifvg_timeframe || null}
+            onChange={(v) => onChange("ict_ifvg_timeframe", v ?? "")}
+            placeholder="Select TF"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="ict_ifvg_timeframe" />
         </div>
         <div>
@@ -203,41 +202,38 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className={LABEL_CLASS}>SMT Present *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "ict_smt_present")}`}
-            value={form.ict_smt_present === null || form.ict_smt_present === undefined ? "" : String(form.ict_smt_present)}
-            onChange={(e) => onChange("ict_smt_present", e.target.value === "" ? null : e.target.value === "true")}
-          >
-            <option value="">Select</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <Combobox
+            className={errBorder(errors, "ict_smt_present")}
+            options={YES_NO_OPTIONS}
+            value={form.ict_smt_present === null || form.ict_smt_present === undefined ? null : String(form.ict_smt_present)}
+            onChange={(v) => onChange("ict_smt_present", v === null ? null : v === "true")}
+            placeholder="Select"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="ict_smt_present" />
         </div>
         <div>
           <label className={LABEL_CLASS}>TDO Aligned *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "ict_tdo_aligned")}`}
-            value={form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined ? "" : String(form.ict_tdo_aligned)}
-            onChange={(e) => onChange("ict_tdo_aligned", e.target.value === "" ? null : e.target.value === "true")}
-          >
-            <option value="">Select</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <Combobox
+            className={errBorder(errors, "ict_tdo_aligned")}
+            options={YES_NO_OPTIONS}
+            value={form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined ? null : String(form.ict_tdo_aligned)}
+            onChange={(v) => onChange("ict_tdo_aligned", v === null ? null : v === "true")}
+            placeholder="Select"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="ict_tdo_aligned" />
         </div>
         <div>
           <label className={LABEL_CLASS}>CISD Present *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "ict_cisd_present")}`}
-            value={form.ict_cisd_present === null || form.ict_cisd_present === undefined ? "" : String(form.ict_cisd_present)}
-            onChange={(e) => onChange("ict_cisd_present", e.target.value === "" ? null : e.target.value === "true")}
-          >
-            <option value="">Select</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <Combobox
+            className={errBorder(errors, "ict_cisd_present")}
+            options={YES_NO_OPTIONS}
+            value={form.ict_cisd_present === null || form.ict_cisd_present === undefined ? null : String(form.ict_cisd_present)}
+            onChange={(v) => onChange("ict_cisd_present", v === null ? null : v === "true")}
+            placeholder="Select"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="ict_cisd_present" />
         </div>
       </div>

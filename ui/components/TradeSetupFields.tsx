@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { AccountSheet } from "@/components/AccountSheet";
 import { TradePriceFields } from "@/components/TradePriceFields";
 
@@ -25,8 +26,6 @@ interface TradeSetupFieldsProps {
 
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull price";
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 
 function errBorder(errors: Record<string, boolean>, field: string): string {
   return errors[field] ? "border-bear" : "";
@@ -64,60 +63,51 @@ export function TradeSetupFields({
 
         <div className="space-y-1">
           <label className="label">Account</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "account_id")}`}
+          <Combobox
+            className={errBorder(errors, "account_id")}
+            options={[
+              { value: "", label: "Select account..." },
+              ...activeAccounts.map((a) => ({ value: a.id, label: `${a.name} (${a.account_type})` })),
+              { value: "__manage__", label: "Manage accounts..." },
+            ]}
             value={form.account_id}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === "__manage__") {
+            onChange={(v) => {
+              if (v === "__manage__") {
                 setSheetOpen(true);
                 return;
               }
-              onAccountChange(val);
+              onAccountChange(v ?? "");
             }}
-          >
-            <option value="">Select account...</option>
-            {activeAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.account_type})
-              </option>
-            ))}
-            <option value="__manage__">Manage accounts...</option>
-          </select>
+          />
           <ErrMsg errors={errors} field="account_id" msg="Please select an account" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="label">Strategy</label>
-            <select
-              className={`${SELECT_CLASS} ${errBorder(errors, "strategy")}`}
+            <Combobox
+              className={errBorder(errors, "strategy")}
+              options={[{ value: "", label: "Select..." }, ...filteredStrategies.map((s) => ({ value: s.slug, label: s.label }))]}
               value={form.strategy}
-              onChange={(e) => {
-                const slug = e.target.value;
+              onChange={(v) => {
+                const slug = v ?? "";
                 onChange("strategy", slug);
                 const meta = filteredStrategies.find((s) => s.slug === slug);
                 if (meta?.defaultSymbol) onChange("symbol", meta.defaultSymbol);
               }}
-            >
-              <option value="">Select...</option>
-              {filteredStrategies.map((s) => (
-                <option key={s.slug} value={s.slug}>{s.label}</option>
-              ))}
-            </select>
+            />
             <ErrMsg errors={errors} field="strategy" msg="Required" />
           </div>
           <div className="space-y-1">
             <label className="label">Symbol</label>
             {isFutures ? (
-              <select
-                className={`${SELECT_CLASS} ${errBorder(errors, "symbol")}`}
+              <Combobox
+                className={errBorder(errors, "symbol")}
+                options={[{ value: "MNQ", label: "MNQ" }, { value: "MES", label: "MES" }]}
                 value={form.symbol}
-                onChange={(e) => onChange("symbol", e.target.value)}
-              >
-                <option value="MNQ">MNQ</option>
-                <option value="MES">MES</option>
-              </select>
+                onChange={(v) => onChange("symbol", v ?? "MNQ")}
+                filterable={false}
+              />
             ) : (
               <Input
                 value={form.symbol}

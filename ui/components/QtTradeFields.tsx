@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import type { TradeFormData } from "./TradeForm";
 
 interface QtTradeFieldsProps {
@@ -7,9 +9,6 @@ interface QtTradeFieldsProps {
   errors: Record<string, boolean>;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
 }
-
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 
 const LABEL_CLASS = "block text-xs text-text-muted mb-1";
 
@@ -49,32 +48,26 @@ export function QtTradeFields({ form, errors, onChange }: QtTradeFieldsProps) {
       {/* FVG Quarter */}
       <div>
         <label className={LABEL_CLASS}>FVG Quarter *</label>
-        <select
-          className={`${SELECT_CLASS} ${errBorder(errors, "qt_fvg_quarter")}`}
-          value={form.qt_fvg_quarter}
-          onChange={(e) => onChange("qt_fvg_quarter", e.target.value)}
-        >
-          <option value="">Select quarter</option>
-          {QUARTER_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          className={errBorder(errors, "qt_fvg_quarter")}
+          options={QUARTER_OPTIONS}
+          value={form.qt_fvg_quarter || null}
+          onChange={(v) => onChange("qt_fvg_quarter", v ?? "")}
+          placeholder="Select quarter"
+        />
         <ErrMsg errors={errors} field="qt_fvg_quarter" />
       </div>
 
       {/* Entry Quarter */}
       <div>
         <label className={LABEL_CLASS}>Entry Quarter *</label>
-        <select
-          className={`${SELECT_CLASS} ${errBorder(errors, "qt_entry_quarter")}`}
-          value={form.qt_entry_quarter}
-          onChange={(e) => onChange("qt_entry_quarter", e.target.value)}
-        >
-          <option value="">Select quarter</option>
-          {QUARTER_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          className={errBorder(errors, "qt_entry_quarter")}
+          options={QUARTER_OPTIONS}
+          value={form.qt_entry_quarter || null}
+          onChange={(v) => onChange("qt_entry_quarter", v ?? "")}
+          placeholder="Select quarter"
+        />
         <ErrMsg errors={errors} field="qt_entry_quarter" />
       </div>
 
@@ -82,28 +75,26 @@ export function QtTradeFields({ form, errors, onChange }: QtTradeFieldsProps) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={LABEL_CLASS}>FVG Type *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "qt_fvg_type")}`}
-            value={form.qt_fvg_type}
-            onChange={(e) => onChange("qt_fvg_type", e.target.value)}
-          >
-            <option value="">Select type</option>
-            <option value="standard">Standard</option>
-            <option value="inverse">Inverse</option>
-          </select>
+          <Combobox
+            className={errBorder(errors, "qt_fvg_type")}
+            options={[{ value: "standard", label: "Standard" }, { value: "inverse", label: "Inverse" }]}
+            value={form.qt_fvg_type || null}
+            onChange={(v) => onChange("qt_fvg_type", v ?? "")}
+            placeholder="Select type"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="qt_fvg_type" />
         </div>
         <div>
           <label className={LABEL_CLASS}>Entry Type *</label>
-          <select
-            className={`${SELECT_CLASS} ${errBorder(errors, "qt_entry_type")}`}
-            value={form.qt_entry_type}
-            onChange={(e) => onChange("qt_entry_type", e.target.value)}
-          >
-            <option value="">Select type</option>
-            <option value="limit_fvg_edge">Limit FVG Edge</option>
-            <option value="market_mss">Market MSS</option>
-          </select>
+          <Combobox
+            className={errBorder(errors, "qt_entry_type")}
+            options={[{ value: "limit_fvg_edge", label: "Limit FVG Edge" }, { value: "market_mss", label: "Market MSS" }]}
+            value={form.qt_entry_type || null}
+            onChange={(v) => onChange("qt_entry_type", v ?? "")}
+            placeholder="Select type"
+            filterable={false}
+          />
           <ErrMsg errors={errors} field="qt_entry_type" />
         </div>
       </div>
