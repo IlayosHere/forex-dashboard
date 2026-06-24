@@ -340,3 +340,31 @@ component looks bad, unclear feedback, etc.), you MUST consult the specialist ag
 - The specific complaint the user raised
 - Available shadcn components (check `ui/components/ui/`)
 - Space constraints (e.g., inside a side sheet, inside a grid cell)
+
+## Parallel & Isolated Feature Development
+
+Multiple features may be in progress at once, across different conversations.
+
+**New conversation, one feature:** before making any edits, call EnterWorktree to
+check out a fresh branch/worktree for that feature — do this automatically, without
+asking first. Skip this for quick fixes, typos, config tweaks, questions, or when
+continuing work already in progress on the conversation's current branch — only a
+distinct, new, named feature triggers it. If the user says not to (e.g. "just edit
+here", "no worktree"), respect that instead.
+
+**One conversation, several features at once:** use `/parallel-features` — one
+feature description per line — to fan them out to N parallel background agents.
+See `.claude/commands/parallel-features.md` for the full mechanism.
+
+**Branch base guarantee:** every feature branch — from `EnterWorktree` or from the
+`Agent` tool's `isolation: "worktree"` — starts fresh from `origin/main`, never from
+whatever branch the current conversation happens to be on. Locked in via
+`.claude/settings.json` (`worktree.baseRef: "fresh"`).
+
+Non-negotiables for both paths:
+- Every feature gets its own branch/worktree — never edit two features in the same
+  working tree.
+- Commit to the feature's own branch only — never push, never open a PR.
+- Integration into `main` is manual and sequential (merge one, test, merge next);
+  conflicts between parallel features are expected and resolved by hand, not
+  automated.

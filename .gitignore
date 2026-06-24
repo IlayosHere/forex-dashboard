@@ -31,8 +31,7 @@ infra/terraform/tfplan*
 infra/terraform/crash.log
 infra/terraform/crash.*.log
 
-# Claude local settings
-.claude/settings.json
+# Claude local settings (settings.json is shared/committed project config, see CLAUDE.md)
 .claude/settings.local.json
 
 # Cloud SQL proxy binaries — deterministically downloadable, don't vendor
