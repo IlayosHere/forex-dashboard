@@ -8,10 +8,16 @@ import type { PlanScenario } from "@/lib/types";
 
 afterEach(() => { vi.restoreAllMocks(); });
 
-// Labels in ScenarioForm are plain siblings of their <select>, not htmlFor-linked,
-// so getByLabelText doesn't work — grab the select via the label text's next sibling.
-function selectAfterLabel(labelText: string): HTMLSelectElement {
-  return screen.getByText(labelText).nextElementSibling as HTMLSelectElement;
+// Labels in ScenarioForm are plain siblings of their Combobox trigger, not
+// htmlFor-linked, so getByLabelText doesn't work — grab the trigger via the
+// label text's next sibling (Combobox's Root renders no wrapper element).
+function triggerAfterLabel(labelText: string): HTMLElement {
+  return screen.getByText(labelText).nextElementSibling as HTMLElement;
+}
+
+function chooseOption(labelText: string, optionText: string) {
+  fireEvent.click(triggerAfterLabel(labelText));
+  fireEvent.click(screen.getByText(optionText));
 }
 
 function makeScenario(overrides: Partial<PlanScenario> = {}): PlanScenario {
@@ -58,20 +64,18 @@ describe("ScenarioForm — add mode", () => {
   it("shows the reaction detail select only after a reaction type is chosen", () => {
     render(<ScenarioForm onAdd={vi.fn()} saving={false} />);
     expect(screen.queryByText("Detail")).not.toBeInTheDocument();
-    fireEvent.change(selectAfterLabel("Reaction Area"), { target: { value: "liquidity_sweep" } });
+    chooseOption("Reaction Area", "Liquidity Sweep");
     expect(screen.getByText("Detail")).toBeInTheDocument();
   });
 
   it("clears the reaction detail when the reaction type changes", () => {
     render(<ScenarioForm onAdd={vi.fn()} saving={false} />);
-    const typeSelect = selectAfterLabel("Reaction Area");
-    fireEvent.change(typeSelect, { target: { value: "liquidity_sweep" } });
-    const detailSelect = selectAfterLabel("Detail");
-    fireEvent.change(detailSelect, { target: { value: "london_high" } });
-    expect(detailSelect.value).toBe("london_high");
-    fireEvent.change(typeSelect, { target: { value: "unmitigated_fvg" } });
-    const newDetailSelect = selectAfterLabel("Detail");
-    expect(newDetailSelect.value).toBe("");
+    chooseOption("Reaction Area", "Liquidity Sweep");
+    chooseOption("Detail", "London High");
+    expect(triggerAfterLabel("Detail")).toHaveTextContent("London High");
+
+    chooseOption("Reaction Area", "Unmitigated FVG");
+    expect(triggerAfterLabel("Detail")).toHaveTextContent("Select…");
   });
 
   it("does not call onAdd when isEmpty and disabled button is clicked", () => {

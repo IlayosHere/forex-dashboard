@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import type { PlanScenario, ScenarioCreateRequest } from "@/lib/types";
 
 interface ScenarioFormProps {
@@ -14,8 +16,6 @@ interface ScenarioFormProps {
   onCancelEdit?: () => void;
 }
 
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 const LABEL_CLASS = "block text-xs text-text-muted mb-1";
 
 // Liquidity level taxonomy for the target/DOL — external liquidity (a high/low) or
@@ -131,33 +131,20 @@ function LevelSelect({ label, typeValue, detailValue, onTypeChange, onDetailChan
     <>
       <div>
         <label className={LABEL_CLASS}>{label}</label>
-        <select
-          className={SELECT_CLASS}
-          value={typeValue ?? ""}
-          onChange={(e) => {
-            onTypeChange(e.target.value === "" ? null : e.target.value);
+        <Combobox
+          options={LEVEL_TYPE_OPTIONS}
+          value={typeValue ?? null}
+          onChange={(v) => {
+            onTypeChange(v);
             onDetailChange(null);
           }}
-        >
-          <option value="">Select…</option>
-          {LEVEL_TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          filterable={false}
+        />
       </div>
       {typeValue && detailOptions.length > 0 && (
         <div className="ml-3 pl-3 border-l-2 border-border">
           <label className={LABEL_CLASS}>Detail</label>
-          <select
-            className={SELECT_CLASS}
-            value={detailValue ?? ""}
-            onChange={(e) => onDetailChange(e.target.value === "" ? null : e.target.value)}
-          >
-            <option value="">Select…</option>
-            {detailOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <Combobox options={detailOptions} value={detailValue ?? null} onChange={onDetailChange} />
         </div>
       )}
     </>
@@ -220,30 +207,21 @@ export function ScenarioForm({ onAdd, saving, editing, onSaveEdit, onCancelEdit 
     <div className="space-y-3">
       <div>
         <label className={LABEL_CLASS}>Reaction Area</label>
-        <select
-          className={SELECT_CLASS}
-          value={form.reaction_setup_type ?? ""}
-          onChange={(e) => handleReactionTypeChange(e.target.value)}
-        >
-          <option value="">Select…</option>
-          {REACTION_TYPE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          options={REACTION_TYPE_OPTIONS}
+          value={form.reaction_setup_type ?? null}
+          onChange={(v) => handleReactionTypeChange(v ?? "")}
+          filterable={false}
+        />
       </div>
       {form.reaction_setup_type && reactionDetailOptions.length > 0 && (
         <div className="ml-3 pl-3 border-l-2 border-border">
           <label className={LABEL_CLASS}>Detail</label>
-          <select
-            className={SELECT_CLASS}
-            value={form.reaction_setup_detail ?? ""}
-            onChange={(e) => setField("reaction_setup_detail", e.target.value === "" ? null : e.target.value)}
-          >
-            <option value="">Select…</option>
-            {reactionDetailOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <Combobox
+            options={reactionDetailOptions}
+            value={form.reaction_setup_detail ?? null}
+            onChange={(v) => setField("reaction_setup_detail", v)}
+          />
         </div>
       )}
 
