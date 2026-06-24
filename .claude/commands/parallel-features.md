@@ -1,24 +1,40 @@
 You are orchestrating parallel feature development. You take several feature
-descriptions and fan them out to isolated background sub-agents, each on its own git
-branch in its own worktree, so multiple features progress concurrently without
-touching each other's files or the current conversation's working tree.
+descriptions, fan the drafting work out to isolated background sub-agents (each in
+its own git worktree), then personally finish each one — rename its branch, run its
+tests, and commit — once it reports back.
 
-## Context
+## Context — why this is split into two phases
 
-- Each feature runs in its own sub-agent via the `Agent` tool with
-  `isolation: "worktree"` (new branch + new checkout under `.claude/worktrees/`,
-  fresh from `origin/main` — see `.claude/settings.json` `worktree.baseRef`) and
-  `run_in_background: true`.
-- All agents are spawned **in a single message** (N parallel `Agent` tool calls in
-  one assistant turn) — this is what makes them concurrent. Never spawn one, wait,
-  then spawn the next.
-- The current working tree (whatever branch it's on, including uncommitted changes)
-  is never touched — worktree isolation guarantees a separate checkout. Hard safety
-  property, not optional.
-- Execution agents run on `model: "sonnet"` per the CLAUDE.md model-routing rule
-  (these are implementation agents, not planning/architecture agents).
-- Sub-agents commit their work but **never push and never open a PR**. Integration
-  into `main` is manual and sequential — see below.
+Background, unattended sub-agents (`run_in_background: true`) cannot run mutating or
+process-spawning `Bash` commands — confirmed empirically: `git commit`, `git branch
+-m`, `python -m pytest`, `npm install`, `npx vitest` were all denied in background
+worktree agents even with blanket `Bash` permission grants and
+`dangerouslyDisableSandbox: true`. Only read-only commands (`git status`, `git log`,
+`ls`) got through. This is a hard, harness-level safety boundary for agents with no
+human present to approve a mutating shell command — **not** something fixable via
+`.claude/settings.json` permissions. `Read`/`Edit`/`Write` are NOT affected by this —
+background agents can write files freely, just not execute or commit anything.
+
+So the work splits into two phases:
+
+- **Phase 1 (background, parallel)**: each sub-agent only reads and writes files —
+  implements the feature and its tests, but never touches git or runs a test runner.
+- **Phase 2 (foreground, sequential, you)**: once a sub-agent reports its files are
+  written, you — the orchestrator, in this live conversation, where Bash works
+  normally — rename its branch, run its tests, and commit if they pass.
+
+Other facts that still hold:
+- Each feature still gets `isolation: "worktree"` (new checkout under
+  `.claude/worktrees/`, fresh from `origin/main` — see `.claude/settings.json`
+  `worktree.baseRef`). The current working tree is never touched.
+- `.claude/settings.json` `worktree.symlinkDirectories` symlinks `.venv`,
+  `node_modules`, and `ui/node_modules` into every new worktree, so Phase 2 can run
+  tests immediately without a fresh `pip`/`npm install`.
+- Backend tests need the venv's interpreter explicitly: `.venv/bin/python -m pytest`,
+  not bare `python` (the system Python doesn't have fastapi/sqlalchemy/pytest).
+- Execution agents run on `model: "sonnet"` per the CLAUDE.md model-routing rule.
+- Branches commit but **never push and never open a PR**. Integration into `main` is
+  manual and sequential — see below.
 
 ## Input format
 
@@ -42,11 +58,12 @@ optional overrides after a `|` delimiter:
    the user once rather than guessing — otherwise proceed without confirmation.
 
 2. Persona inference table. Use the exact frontmatter `name:` string from the
-   matching `.claude/agents/*.md` file as `subagent_type` — **not the filename**:
+   matching `.claude/agents/*.md` file as `subagent_type` — **not the filename**.
+   Plain Python/calculation work with no other signal still counts as backend:
 
    | Keywords in description | `subagent_type` |
    |---|---|
-   | api, endpoint, route, backend, pydantic, sqlalchemy, fastapi, scanner, strategy | `Python FastAPI Engineer` |
+   | api, endpoint, route, backend, pydantic, sqlalchemy, fastapi, scanner, strategy, utility, calculator, calculation | `Python FastAPI Engineer` |
    | ui, component, page, frontend, button, layout, card, form, chart, dashboard | `Rapid Prototyper` |
    | accessibility, responsive, performance, pixel, styling polish | `Frontend Developer` |
    | schema, migration, index, query performance, db, table, column | `Database Optimizer` |
@@ -55,13 +72,15 @@ optional overrides after a `|` delimiter:
 
 3. Spawn ALL agents in ONE message: one `Agent` tool call per feature, each with
    `subagent_type`, `model` (default `"sonnet"`), `isolation: "worktree"`,
-   `run_in_background: true`, and the prompt template from step 4.
+   `run_in_background: true`, and the Phase 1 prompt template from step 4.
 
-4. Per-agent prompt template — self-contained, the sub-agent has no memory of this
-   conversation:
+4. Phase 1 prompt template — self-contained, the sub-agent has no memory of this
+   conversation, and must NOT touch git or run anything:
 
    ```
-   You are implementing ONE feature in an isolated git worktree on branch <branch>.
+   You are drafting ONE feature's code in an isolated git worktree. Another process
+   will handle git and test execution after you're done — your job is ONLY to read
+   and write files.
 
    Required reading FIRST, in this order:
    1. CLAUDE.md
@@ -74,40 +93,49 @@ optional overrides after a `|` delimiter:
    - Implement ONLY this feature. Do not refactor unrelated code.
    - Follow docs/coding-standards.md exactly (file/function size limits, naming,
      import order, type safety). Non-compliant code must be fixed before you finish.
-   - Run and pass relevant tests before committing:
-       * Backend changes: python -m pytest tests/ -v --tb=short
-       * Frontend changes (anything under ui/): cd ui && npx vitest run
-     If you added backend behavior, add tests following tests/conftest.py patterns.
-   - When tests pass, stage and commit on THIS branch only:
-       git add -A && git commit -m "<conventional, descriptive message>"
-   - Git safety (MANDATORY, from CLAUDE.md):
-       * Do NOT push. Do NOT open a PR. Do NOT amend existing commits (new commits only).
-       * Do NOT checkout, create, or touch any other branch.
-       * Do NOT run destructive git ops (no reset --hard, no force, no rebase onto
-         other branches).
-   - Production safety: do NOT add ALTER TABLE to api/startup/migrations.py, do NOT
-     run any /prod-* or deploy commands, do NOT touch Terraform or Cloud SQL.
+   - Write tests for any new behavior, following existing patterns in tests/ or
+     ui/tests/components/ as appropriate. You will NOT be able to run them — write
+     them as carefully and correctly as you can, by inspection.
+   - Do NOT run git (no commit, no branch rename, no add). Do NOT run a test runner,
+     a package manager, or any other Bash command that executes/installs/mutates —
+     these are blocked in this environment and will just fail. Read-only inspection
+     (ls, cat, git status) is fine if genuinely useful, but isn't required.
+   - Do NOT push, open a PR, or touch any branch other than the one you're already on.
 
-   Final message: report what you implemented, files changed, test pass counts, and
-   the exact commit SHA + branch name. State clearly if you committed nothing.
+   Final message must report: (1) every file you created or modified (full paths),
+   (2) a short description of what each change does, (3) whether you wrote tests and
+   where, (4) anything in these instructions or the codebase that was unclear or
+   caused you to guess.
    ```
 
 5. Immediately after spawning, print a tracking table:
 
-   | # | Feature | Branch | Persona | Model | Status |
-   |---|---|---|---|---|---|
-   | 1 | … | feat/… | Python FastAPI Engineer | sonnet | running (background) |
+   | # | Feature | Branch (target) | Persona | Model | Phase 1 | Phase 2 |
+   |---|---|---|---|---|---|---|
+   | 1 | … | feat/… | Python FastAPI Engineer | sonnet | running (background) | pending |
 
    Tell the user results arrive asynchronously as each background agent finishes —
    do not block waiting for all of them.
 
-6. As each background agent completes, report that one row: update status to
-   `done` / `done (no changes)` / `failed`, with the worktree path, branch, and
-   commit SHA from its result.
+6. **Phase 2 — when a background agent's notification arrives**, do this yourself,
+   in this foreground conversation, for that one worktree (path comes from the
+   notification's `worktree` field):
 
-7. Never auto-remove worktrees and never auto-merge branches. Agents that made no
-   changes are auto-cleaned by the harness; agents that committed leave their
-   worktree in place for manual review (next section).
+   a. Rename the branch to the intended name:
+      `git -C <worktree-path> branch -m <branch>`
+   b. Run the relevant tests, from this conversation's own Bash (not the sub-agent's):
+      - Backend: `(cd <worktree-path> && .venv/bin/python -m pytest tests/ -v --tb=short)`
+      - Frontend: `(cd <worktree-path>/ui && npx vitest run)`
+   c. If tests fail: report the failure with output, leave the worktree uncommitted,
+      mark Phase 2 as `failed (tests)` in the tracking table. Do not attempt to fix
+      it yourself unless the user asks — that's a judgment call, not a mechanical step.
+   d. If tests pass: `git -C <worktree-path> add -A && git -C <worktree-path> commit -m "<descriptive message>"`
+   e. Update the tracking table row: Phase 2 → `done` (with commit SHA) or
+      `failed (tests)` / `failed (no changes)`.
+
+7. Never auto-remove worktrees and never auto-merge branches. Leave finished
+   worktrees in place for manual review (next section), whether Phase 2 succeeded
+   or not.
 
 ## How the user reviews and integrates
 
@@ -117,7 +145,7 @@ optional overrides after a `|` delimiter:
 - Integrate **sequentially, one branch at a time**, running tests after each:
   ```
   git checkout main && git merge <branch-1>
-  python -m pytest tests/ -v && (cd ui && npx vitest run)
+  .venv/bin/python -m pytest tests/ -v && (cd ui && npx vitest run)
   git checkout main && git merge <branch-2>
   ```
 - After a branch is merged and confirmed: clean up manually with
@@ -134,14 +162,19 @@ files where possible to minimize this.
 ## Do NOT
 
 - Spawn agents one at a time — emit all `Agent` calls in a single message.
-- Use `model: "opus"` for these execution agents unless a feature is explicitly a
+- Tell a background (Phase 1) sub-agent to run git, install dependencies, or run a
+  test runner — it will be denied and waste the run. Phase 2 (you, foreground) does
+  all of that instead.
+- Use `model: "opus"` for Phase 1 execution agents unless a feature is explicitly a
   design/architecture task.
-- Instruct any agent to push, open a PR, amend, or touch another branch.
+- Push, open a PR, amend, or touch another branch — in either phase.
 - Auto-remove worktrees or auto-merge branches — review is always manual.
 - Override `isolation` away from `"worktree"`.
 - Set up cron/loop/CI/daemon infrastructure — this is a single-turn fan-out, nothing
   persistent.
 - Use agent filenames as `subagent_type` — use the frontmatter `name:` strings.
+- Run backend tests with bare `python` — use `.venv/bin/python` or they'll fail on
+  missing imports.
 
 ## Example invocations
 
