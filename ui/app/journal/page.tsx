@@ -16,6 +16,7 @@ import type { AccountType, InstrumentType } from "@/lib/types";
 import { strategies } from "@/lib/strategies";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { nowNYDatetime } from "@/lib/dates";
+import { JOURNAL_LIST_STATE_KEY } from "@/lib/journalListState";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex",   label: "FX" },
@@ -40,7 +41,7 @@ const emptyFilters: TradeFilterValues = {
   to: "",
 };
 
-const SESSION_KEY = "journal_list_state";
+const SESSION_KEY = JOURNAL_LIST_STATE_KEY;
 
 interface SavedListState {
   instrumentType: InstrumentType;
@@ -127,6 +128,18 @@ export default function JournalPage() {
   const [showMoney, toggleShowMoney] = useShowMoney();
 
   const todayDate = useMemo(() => nowNYDatetime().slice(0, 10), []);
+
+  // Keep mode/filters fresh in sessionStorage on every change (not just on trade-row
+  // click) so other pages — e.g. the day journal's "Log Trade" links — can read the
+  // current Live/Backtest mode without it going stale between clicks.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      const prevScrollY = saved ? (JSON.parse(saved) as SavedListState).scrollY ?? 0 : 0;
+      const state: SavedListState = { instrumentType, filters, backtestMode, scrollY: prevScrollY };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    } catch {}
+  }, [instrumentType, filters, backtestMode]);
 
   // Restore scroll position once trades have loaded (list must be in DOM first)
   useEffect(() => {

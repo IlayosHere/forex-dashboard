@@ -74,9 +74,12 @@ describe("ScenarioCard — read-only view", () => {
     expect(onDelete).toHaveBeenCalledWith("sc-1");
   });
 
-  it("links 'Log Trade' to /journal/new with the scenario id", () => {
+  it("links 'Log Trade' to /journal/new with the scenario id, MNQ strategy, and live account_type by default", () => {
     render(<ScenarioCard scenario={makeScenario()} index={0} saving={false} isEditing={false} {...noop} />);
-    expect(screen.getByText(/Log Trade/).closest("a")).toHaveAttribute("href", "/journal/new?scenario=sc-1");
+    expect(screen.getByText(/Log Trade/).closest("a")).toHaveAttribute(
+      "href",
+      "/journal/new?scenario=sc-1&strategy=mnq-daily&account_type=live",
+    );
   });
 
   it("shows no active outcome pill by default", () => {

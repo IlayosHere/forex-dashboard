@@ -6,6 +6,13 @@ import { ScenarioForm } from "@/components/ScenarioForm";
 
 import type { ScenarioCreateRequest, ScenarioOutcome, PlanScenario } from "@/lib/types";
 
+import { readJournalBacktestMode } from "@/lib/journalListState";
+
+// This day-journal feature is MNQ-specific (see "MNQ Journal" branding), so a
+// trade logged from a scenario always defaults to that strategy; account_type
+// mirrors whichever Live/Backtest mode is currently active on the main journal.
+const MNQ_STRATEGY_SLUG = "mnq-daily";
+
 interface ScenarioCardProps {
   scenario: PlanScenario;
   index: number;
@@ -106,7 +113,7 @@ export function ScenarioCard({
           })}
         </div>
         <Link
-          href={`/journal/new?scenario=${scenario.id}`}
+          href={`/journal/new?scenario=${scenario.id}&strategy=${MNQ_STRATEGY_SLUG}&account_type=${readJournalBacktestMode() ? "backtest" : "live"}`}
           className="text-[11px] text-text-muted hover:text-bull transition-colors shrink-0"
         >
           Log Trade →
