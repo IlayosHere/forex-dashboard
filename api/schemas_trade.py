@@ -29,6 +29,7 @@ from shared.ict_taxonomy import (
     SETUP_DETAIL_MAP,
     SETUP_TYPES,
     TP_TARGETS,
+    validate_setup_detail,
 )
 from shared.qt_taxonomy import QT_ENTRY_TYPES, QT_FVG_TYPES, QT_QUARTERS, QT_TP_TARGETS
 
@@ -40,24 +41,11 @@ def _validate_feeling(v: str | None) -> str | None:
     return v
 
 
-def _validate_ict_detail_for_type(
-    setup_type: str | None, setup_detail: str | None,
-) -> None:
-    """Cross-validate that ict_setup_detail belongs to ict_setup_type's allowed list."""
-    if setup_type is None or setup_detail is None:
-        return
-    allowed = SETUP_DETAIL_MAP.get(setup_type, [])
-    if allowed and setup_detail not in allowed:
-        raise ValueError(
-            f"ict_setup_detail '{setup_detail}' is not valid for "
-            f"ict_setup_type '{setup_type}'. Must be one of {allowed}",
-        )
-
-
 class TradeCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     signal_id: str | None = None
+    scenario_id: str | None = None
     account_id: str | None = None
     strategy: str
     symbol: str
@@ -206,7 +194,7 @@ class TradeCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
-        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
         return self
 
 
@@ -379,7 +367,7 @@ class TradeUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
-        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
         return self
 
 
@@ -388,6 +376,7 @@ class TradeResponse(BaseModel):
 
     id: str
     signal_id: str | None
+    scenario_id: str | None
     account_id: str | None = None
     # NOT an ORM column — TradeModel has no account_name field.
     # This field must be populated explicitly via trade_to_response().

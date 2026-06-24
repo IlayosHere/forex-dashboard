@@ -17,6 +17,7 @@ function makeEmptyForm(): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "",
     symbol: "",
     direction: "BUY",
@@ -53,6 +54,7 @@ function NewTradeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signalId = searchParams.get("signal");
+  const scenarioId = searchParams.get("scenario");
   const strategyParam = searchParams.get("strategy");
   const accountTypeParam = searchParams.get("account_type");
 
@@ -64,9 +66,10 @@ function NewTradeContent() {
         account_id: "",
         strategy: strategyParam,
         symbol: meta?.defaultSymbol ?? "",
+        scenario_id: scenarioId,
       };
     }
-    return makeEmptyForm();
+    return { ...makeEmptyForm(), scenario_id: scenarioId };
   });
 
   // Auto-select account when account_type param is set and only one qualifies
@@ -103,6 +106,7 @@ function NewTradeContent() {
       const body: TradeCreateRequest = {
         account_id: data.account_id || null,
         signal_id: data.signal_id || null,
+        scenario_id: data.scenario_id || null,
         strategy: data.strategy,
         symbol: data.symbol,
         direction: data.direction as "BUY" | "SELL",

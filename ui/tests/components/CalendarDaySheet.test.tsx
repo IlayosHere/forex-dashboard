@@ -28,6 +28,8 @@ vi.mock("@/components/StarRating", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/journal/calendar",
+  useSearchParams: () => new URLSearchParams("year=2026&month=4"),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -35,8 +37,8 @@ vi.mock("@/lib/api", () => ({
   fetchSession: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("@/components/SessionJournalPanel", () => ({
-  SessionJournalPanel: () => <div data-testid="session-journal-panel" />,
+vi.mock("@/components/DaySummaryCard", () => ({
+  DaySummaryCard: () => <div data-testid="day-summary-card" />,
 }));
 
 // Import after mocks are registered
@@ -48,6 +50,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
   return {
     id: "t-1",
     signal_id: null,
+    scenario_id: null,
     strategy: "fvg-impulse",
     symbol: "EURUSD",
     direction: "BUY",

@@ -21,6 +21,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "fvg-impulse",
     symbol: "EURUSD",
     direction: "BUY",

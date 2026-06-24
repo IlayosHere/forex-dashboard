@@ -23,6 +23,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite://")
 from api.auth import get_current_user, reset_login_rate_limits
 from api.db import Base, get_db
 from api.models import AccountModel, TradeModel
+from api import models_premarket  # noqa: F401 — registers premarket tables on Base.metadata
 
 TEST_USER = "testuser"
 TEST_USER_2 = "otheruser"

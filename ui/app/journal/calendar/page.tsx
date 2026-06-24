@@ -12,6 +12,7 @@ import { CalendarDaySheet } from "@/components/CalendarDaySheet";
 import type { InstrumentType, Account } from "@/lib/types";
 
 import { useDailySummary } from "@/lib/useDailySummary";
+import { usePremarketMonth } from "@/lib/usePremarketMonth";
 import { useAccounts } from "@/lib/useAccounts";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { strategies } from "@/lib/strategies";
@@ -100,6 +101,7 @@ export default function CalendarPage() {
   }, [instrumentType, fromDate, toDate, accountId, strategyFilter, backtestMode]);
 
   const { data: dailyData } = useDailySummary(dailySummaryFilters);
+  const { data: premarketData } = usePremarketMonth(fromDate, toDate);
 
   function handlePrev() {
     if (month === 1) pushParams({ year: String(year - 1), month: "12", date: null });
@@ -302,6 +304,7 @@ export default function CalendarPage() {
         year={year}
         month={month}
         dailyData={dailyData}
+        premarketData={premarketData}
         selectedDate={selectedDate}
         showMoney={showMoney}
         onDaySelect={(date) => pushParams({ date })}

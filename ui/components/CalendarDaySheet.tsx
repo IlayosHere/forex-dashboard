@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -10,14 +10,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { SessionJournalPanel } from "@/components/SessionJournalPanel";
+import { DaySummaryCard } from "@/components/DaySummaryCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 
 import type { Trade } from "@/lib/types";
 
 import { fetchTrades } from "@/lib/api";
-import { useSession } from "@/lib/useSession";
 
 export interface CalendarDaySheetProps {
   date: string | null;
@@ -143,8 +142,9 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isMnq = instrumentType?.startsWith("futures") === true;
-  const { session, saving: sessionSaving, save: saveSession } = useSession(isMnq ? date : null);
+  const pathname = usePathname();
+  const calendarSearchParams = useSearchParams();
+  const calendarUrl = `${pathname}?${calendarSearchParams.toString()}`;
 
   useEffect(() => {
     if (!date) return;
@@ -192,14 +192,9 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
         </SheetHeader>
 
         <div className="px-4 py-3">
-          {/* Session journal (MNQ only) */}
-          {isMnq && date && (
-            <SessionJournalPanel
-              session={session}
-              saving={sessionSaving}
-              onSave={saveSession}
-              onSaved={onClose}
-            />
+          {/* Day summary launcher — instrument-agnostic, the plan isn't scoped to futures */}
+          {date && (
+            <DaySummaryCard date={date} backHref={calendarUrl} backLabel="Back to Calendar" />
           )}
 
           {loading && <SkeletonRows />}

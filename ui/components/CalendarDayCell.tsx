@@ -1,6 +1,6 @@
 "use client";
 
-import type { DailySummaryPoint } from "@/lib/types";
+import type { DailyBias, DailySummaryPoint } from "@/lib/types";
 
 export interface CalendarDayCellProps {
   date: string;
@@ -10,12 +10,19 @@ export interface CalendarDayCellProps {
   wins: number;
   losses: number;
   mistakes?: number;
+  dailyBias?: DailyBias | null;
   isToday: boolean;
   isSelected: boolean;
   isCurrentMonth: boolean;
   showMoney: boolean;
   onClick: () => void;
 }
+
+const BIAS_DOT_COLORS: Record<DailyBias, string> = {
+  bullish: "#26a69a",
+  bearish: "#ef5350",
+  neutral: "#777777",
+};
 
 function formatPnl(pnl: number): string {
   if (pnl >= 0) return `+$${pnl.toFixed(2)}`;
@@ -52,6 +59,7 @@ export function CalendarDayCell({
   wins,
   losses,
   mistakes = 0,
+  dailyBias = null,
   isToday,
   isSelected,
   isCurrentMonth,
@@ -116,6 +124,15 @@ export function CalendarDayCell({
         <div
           aria-label={`${mistakes} mistake trade${mistakes > 1 ? "s" : ""}`}
           className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500"
+        />
+      )}
+
+      {/* Pre-market plan dot — shown when a plan exists for this date */}
+      {dailyBias && (
+        <div
+          aria-label={`Pre-market plan logged — bias ${dailyBias}`}
+          className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: BIAS_DOT_COLORS[dailyBias] }}
         />
       )}
 
