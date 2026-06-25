@@ -81,7 +81,7 @@ def create_trade(
 
     now = datetime.now(timezone.utc)
     trade = TradeModel(
-        id=str(uuid.uuid4()), signal_id=req.signal_id,
+        id=str(uuid.uuid4()), signal_id=req.signal_id, scenario_id=req.scenario_id,
         account_id=req.account_id, strategy=req.strategy,
         owner=current_user,
         symbol=req.symbol, instrument_type=req.instrument_type,

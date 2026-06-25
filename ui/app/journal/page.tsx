@@ -8,16 +8,15 @@ import { useTradeStats } from "@/lib/useTradeStats";
 import { useAccounts } from "@/lib/useAccounts";
 import { StatsBar } from "@/components/StatsBar";
 import { AccountStatsStrip } from "@/components/AccountStatsStrip";
-import { SessionJournalPanel } from "@/components/SessionJournalPanel";
-import { TodaySessionCard } from "@/components/TodaySessionCard";
+import { DaySummaryCard } from "@/components/DaySummaryCard";
 import { TradeFilters, type TradeFilterValues } from "@/components/TradeFilters";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TradeCard } from "@/components/TradeCard";
 import { Button } from "@/components/ui/button";
 import type { AccountType, InstrumentType } from "@/lib/types";
 import { strategies } from "@/lib/strategies";
-import { useSession } from "@/lib/useSession";
 import { useShowMoney } from "@/lib/useShowMoney";
+import { nowNYDatetime } from "@/lib/dates";
+import { JOURNAL_LIST_STATE_KEY } from "@/lib/journalListState";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
   { value: "forex",   label: "FX" },
@@ -42,7 +41,7 @@ const emptyFilters: TradeFilterValues = {
   to: "",
 };
 
-const SESSION_KEY = "journal_list_state";
+const SESSION_KEY = JOURNAL_LIST_STATE_KEY;
 
 interface SavedListState {
   instrumentType: InstrumentType;
@@ -128,15 +127,19 @@ export default function JournalPage() {
 
   const [showMoney, toggleShowMoney] = useShowMoney();
 
-  const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
+  const todayDate = useMemo(() => nowNYDatetime().slice(0, 10), []);
 
-  const todayDate = useMemo(() => {
-    const d = new Date();
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  }, []);
-  const { session: todaySession, loading: sessionLoading, saving: sessionSaving, save: saveSession } = useSession(
-    instrumentType === "futures" || instrumentType === "futures_mnq" || instrumentType === "futures_mes" ? todayDate : null,
-  );
+  // Keep mode/filters fresh in sessionStorage on every change (not just on trade-row
+  // click) so other pages — e.g. the day journal's "Log Trade" links — can read the
+  // current Live/Backtest mode without it going stale between clicks.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      const prevScrollY = saved ? (JSON.parse(saved) as SavedListState).scrollY ?? 0 : 0;
+      const state: SavedListState = { instrumentType, filters, backtestMode, scrollY: prevScrollY };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    } catch {}
+  }, [instrumentType, filters, backtestMode]);
 
   // Restore scroll position once trades have loaded (list must be in DOM first)
   useEffect(() => {
@@ -302,31 +305,15 @@ export default function JournalPage() {
         ))}
       </div>
 
-      {/* Today's session shortcut (futures only) */}
+      {/* Today's day-page launcher (futures only) */}
       {(instrumentType === "futures" || instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
-        <TodaySessionCard
-          session={todaySession}
-          loading={sessionLoading}
-          onLog={() => setSessionSheetOpen(true)}
+        <DaySummaryCard
+          date={todayDate}
+          linkLabel="Open today's journal"
+          backHref="/journal"
+          backLabel="Back to Journal"
         />
       )}
-
-      {/* Today's session inline sheet */}
-      <Sheet open={sessionSheetOpen} onOpenChange={setSessionSheetOpen}>
-        <SheetContent side="right" className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Today&apos;s Session</SheetTitle>
-          </SheetHeader>
-          <div className="px-4 py-3">
-            <SessionJournalPanel
-              session={todaySession}
-              saving={sessionSaving}
-              onSave={saveSession}
-              onSaved={() => setSessionSheetOpen(false)}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Account Stats */}
       {stats?.by_account && Object.keys(stats.by_account).length > 0 && (

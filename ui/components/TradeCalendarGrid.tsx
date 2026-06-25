@@ -5,12 +5,13 @@ import { useMemo } from "react";
 import { CalendarDayCell } from "@/components/CalendarDayCell";
 import { WeekSummaryCell } from "@/components/WeekSummaryCell";
 
-import type { DailySummaryPoint } from "@/lib/types";
+import type { DailySummaryPoint, PremarketDaySummary } from "@/lib/types";
 
 export interface TradeCalendarGridProps {
   year: number;
   month: number;
   dailyData: DailySummaryPoint[];
+  premarketData?: PremarketDaySummary[];
   selectedDate: string | null;
   showMoney: boolean;
   onDaySelect: (date: string | null) => void;
@@ -81,6 +82,7 @@ export function TradeCalendarGrid({
   year,
   month,
   dailyData,
+  premarketData = [],
   selectedDate,
   showMoney,
   onDaySelect,
@@ -91,6 +93,12 @@ export function TradeCalendarGrid({
     for (const d of dailyData) m.set(d.date, d);
     return m;
   }, [dailyData]);
+
+  const premarketMap = useMemo(() => {
+    const m = new Map<string, PremarketDaySummary>();
+    for (const d of premarketData) m.set(d.date, d);
+    return m;
+  }, [premarketData]);
 
   const weeks = useMemo(() => buildWeeks(year, month), [year, month]);
 
@@ -155,6 +163,7 @@ export function TradeCalendarGrid({
                   wins={dataMap.get(date)?.wins ?? 0}
                   losses={dataMap.get(date)?.losses ?? 0}
                   mistakes={dataMap.get(date)?.mistakes ?? 0}
+                  dailyBias={premarketMap.has(date) ? (premarketMap.get(date)?.daily_bias ?? "neutral") : null}
                   isToday={date === todayKey}
                   isSelected={date === selectedDate}
                   isCurrentMonth={date.startsWith(`${year}-${String(month).padStart(2, "0")}`)}

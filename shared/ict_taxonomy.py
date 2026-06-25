@@ -95,6 +95,28 @@ SETUP_DETAIL_MAP: Final[dict[str, list[str]]] = {
     "other": [],  # no detail required for "other"
 }
 
+
+def validate_detail_in_map(
+    type_value: str | None, detail_value: str | None, detail_map: dict[str, list[str]],
+) -> None:
+    """Raise ValueError if detail_value does not belong to type_value's allowed list."""
+    if type_value is None or detail_value is None:
+        return
+    allowed = detail_map.get(type_value, [])
+    if allowed and detail_value not in allowed:
+        raise ValueError(
+            f"detail '{detail_value}' is not valid for type '{type_value}'. Must be one of {allowed}",
+        )
+
+
+def validate_setup_detail(setup_type: str | None, setup_detail: str | None) -> None:
+    """Raise ValueError if setup_detail does not belong to setup_type's allowed list.
+
+    Shared by trade schemas (ict_setup_type/ict_setup_detail) and premarket scenario
+    schemas (reaction_setup_type/reaction_setup_detail) — same taxonomy, same rule.
+    """
+    validate_detail_in_map(setup_type, setup_detail, SETUP_DETAIL_MAP)
+
 # HTF bias alignment
 HTF_BIAS_VALUES: Final[list[str]] = [
     "aligned",
@@ -141,3 +163,81 @@ IFVG_TIMEFRAMES: Final[list[str]] = [
     "4m",
     "5m",
 ]
+
+# --- Pre-market routine taxonomy ---
+
+# Daily bias itself (distinct from HTF_BIAS_VALUES, which is alignment-to-bias)
+DAILY_BIAS_VALUES: Final[list[str]] = ["bullish", "bearish", "neutral"]
+
+# PD array type (distinct from PD_ARRAY_VALUES, which is premium/discount/equilibrium position)
+PD_ARRAY_TYPES: Final[list[str]] = ["order_block", "fvg", "breaker", "rejection_block", "other"]
+
+# Scenario outcome — set manually at review time, never auto-derived from trade P&L
+SCENARIO_OUTCOME: Final[list[str]] = ["played_out", "partial", "invalidated", "never_triggered"]
+
+# Was the daily bias correct, graded at review time
+BIAS_CORRECT: Final[list[str]] = ["yes", "no", "partial"]
+
+# Did the trader follow their own plan, graded at review time
+EXECUTION_GRADES: Final[list[str]] = ["yes", "mostly", "no"]
+
+# Emotional/behavioral tags for the review — distinct from FEELING_VALUES
+EMOTION_TAGS: Final[list[str]] = [
+    "fomo",
+    "revenge",
+    "overtrading",
+    "early_exit",
+    "hesitation",
+    "other",
+]
+
+# Liquidity level taxonomy — shared by a scenario's condition (the level swept first)
+# and target (the DOL aimed at). Same type+detail shape as SETUP_TYPES/SETUP_DETAIL_MAP.
+LEVEL_TYPES: Final[list[str]] = ["session_high_low", "htf_high_low", "fvg", "other"]
+
+# A specific session/killzone's high or low
+SESSION_HIGH_LOW_DETAILS: Final[list[str]] = [
+    "asia_high",
+    "asia_low",
+    "london_high",
+    "london_low",
+    "data_high",
+    "data_low",
+    "other",
+]
+
+# A candle high/low at a given timeframe, from intraday up through all-time
+HTF_HIGH_LOW_DETAILS: Final[list[str]] = [
+    "1m_high",
+    "1m_low",
+    "5m_high",
+    "5m_low",
+    "15m_high",
+    "15m_low",
+    "1h_high",
+    "1h_low",
+    "4h_high",
+    "4h_low",
+    "1d_high",
+    "1d_low",
+    "1w_high",
+    "1w_low",
+    "ath",
+    "other",
+]
+
+# FVG at a given timeframe
+LEVEL_FVG_DETAILS: Final[list[str]] = ["3m", "5m", "15m", "30m", "1h", "2h", "4h", "other"]
+
+# Mapping from level_type -> valid detail values (used for cross-validation)
+LEVEL_DETAIL_MAP: Final[dict[str, list[str]]] = {
+    "session_high_low": SESSION_HIGH_LOW_DETAILS,
+    "htf_high_low": HTF_HIGH_LOW_DETAILS,
+    "fvg": LEVEL_FVG_DETAILS,
+    "other": [],
+}
+
+
+def validate_level_detail(level_type: str | None, level_detail: str | None) -> None:
+    """Raise ValueError if level_detail does not belong to level_type's allowed list."""
+    validate_detail_in_map(level_type, level_detail, LEVEL_DETAIL_MAP)

@@ -16,6 +16,7 @@ import { strategies, getInstrumentType, isFutures as isFuturesHelper } from "@/l
 export interface TradeFormData {
   account_id: string;
   signal_id: string | null;
+  scenario_id: string | null;
   strategy: string;
   symbol: string;
   direction: string;

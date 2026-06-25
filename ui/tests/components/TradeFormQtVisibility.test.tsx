@@ -35,6 +35,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "qt-mnq",
     symbol: "MNQ",
     direction: "BUY",

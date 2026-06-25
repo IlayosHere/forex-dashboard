@@ -52,6 +52,7 @@ export interface Account {
 
 export interface TradeCreateRequest {
   signal_id?: string | null;
+  scenario_id?: string | null;
   account_id?: string | null;
   strategy: string;
   symbol: string;
@@ -136,6 +137,7 @@ export interface TradeUpdateRequest {
 export interface Trade {
   id: string;
   signal_id: string | null;
+  scenario_id: string | null;
   strategy: string;
   symbol: string;
   direction: "BUY" | "SELL";
@@ -185,6 +187,108 @@ export interface Trade {
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Pre-Market Routine
+// ---------------------------------------------------------------------------
+
+export type DailyBias = "bullish" | "bearish" | "neutral";
+export type ScenarioOutcome = "played_out" | "partial" | "invalidated" | "never_triggered";
+
+export interface PlanScenario {
+  id: string;
+  plan_id: string;
+  date: string;
+  reaction_setup_type: string | null;
+  reaction_setup_detail: string | null;
+  target_level_type: string | null;
+  target_level_detail: string | null;
+  notes: string;
+  outcome_status: ScenarioOutcome | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PremarketPlan {
+  id: string;
+  owner: string;
+  date: string;
+  weekly_dealing_range: string | null;
+  weekly_dol: string | null;
+  weekly_opening_gap: string | null;
+  daily_bias: DailyBias | null;
+  daily_bias_signals: Record<string, unknown>;
+  h4_pd_array: string | null;
+  h4_pd_location: string | null;
+  h1_zone: string | null;
+  h1_structure: string | null;
+  ltf_notes: string | null;
+  narrative: string;
+  checkpoints: Checkpoint[];
+  scenarios: PlanScenario[];
+  review: PlanReview | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Checkpoint {
+  note: string;
+  timestamp: string;
+}
+
+export interface PlanUpsertRequest {
+  weekly_dealing_range?: string | null;
+  weekly_dol?: string | null;
+  weekly_opening_gap?: string | null;
+  daily_bias?: DailyBias | null;
+  daily_bias_signals?: Record<string, unknown>;
+  h4_pd_array?: string | null;
+  h4_pd_location?: string | null;
+  h1_zone?: string | null;
+  h1_structure?: string | null;
+  ltf_notes?: string | null;
+  narrative?: string;
+}
+
+export interface ScenarioCreateRequest {
+  reaction_setup_type?: string | null;
+  reaction_setup_detail?: string | null;
+  target_level_type?: string | null;
+  target_level_detail?: string | null;
+  notes?: string;
+}
+
+export interface ScenarioUpdateRequest extends ScenarioCreateRequest {
+  outcome_status?: ScenarioOutcome | null;
+}
+
+export interface CheckpointCreateRequest {
+  note: string;
+}
+
+// "Did you follow your plan?" — the minimal seed of the deferred full review screen.
+export type ExecutionGrade = "yes" | "mostly" | "no";
+
+export interface PlanReview {
+  id: string;
+  plan_id: string;
+  bias_correct: string | null;
+  execution_grade: ExecutionGrade | null;
+  emotion_tags: string[];
+  review_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewUpsertRequest {
+  execution_grade?: ExecutionGrade | null;
+}
+
+export interface PremarketDaySummary {
+  date: string;
+  daily_bias: DailyBias | null;
+  scenario_count: number;
 }
 
 export interface TradingSession {

@@ -173,6 +173,7 @@ def trade_to_response(
     return {
         "id": trade.id,
         "signal_id": trade.signal_id,
+        "scenario_id": trade.scenario_id,
         "account_id": trade.account_id,
         "account_name": account.name if account else None,
         "strategy": trade.strategy,

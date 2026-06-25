@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 
 import type { AccountType, AccountStatus, InstrumentType } from "@/lib/types";
 
@@ -31,9 +32,14 @@ interface SegmentOption<T extends string> {
 
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull";
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 const SEGMENT_ACTIVE_CLASS = "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40";
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "passed", label: "Passed" },
+  { value: "failed", label: "Failed" },
+  { value: "closed", label: "Closed" },
+];
 
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
   { value: "forex",    label: "FX" },
@@ -147,16 +153,12 @@ export function AccountFormFields({
 
         <div className="space-y-1">
           <label className="label">Status</label>
-          <select
-            className={SELECT_CLASS}
+          <Combobox
+            options={STATUS_OPTIONS}
             value={form.status}
-            onChange={(e) => onChange("status", e.target.value as AccountStatus)}
-          >
-            <option value="active">Active</option>
-            <option value="passed">Passed</option>
-            <option value="failed">Failed</option>
-            <option value="closed">Closed</option>
-          </select>
+            onChange={(v) => onChange("status", (v ?? "active") as AccountStatus)}
+            filterable={false}
+          />
         </div>
 
         <div className="space-y-1">

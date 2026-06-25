@@ -18,6 +18,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
   return {
     id: "t-1",
     signal_id: null,
+    scenario_id: null,
     strategy: "fvg-impulse",
     symbol: "EURUSD",
     direction: "BUY",

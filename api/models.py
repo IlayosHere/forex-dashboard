@@ -62,6 +62,9 @@ class TradeModel(Base):
     # Identity
     id: Mapped[str] = mapped_column(String, primary_key=True)
     signal_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # No FK constraint — same reasoning as signal_id (see migrate_drop_signals_fk):
+    # a trade should keep its scenario reference even if the scenario itself is later pruned.
+    scenario_id: Mapped[str | None] = mapped_column(String, nullable=True)
     account_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True
     )

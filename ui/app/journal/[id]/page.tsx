@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AccountBadge } from "@/components/AccountBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TradeInfoPanel } from "@/components/TradeInfoPanel";
+import { LinkedScenarioCard } from "@/components/LinkedScenarioCard";
 import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
@@ -318,6 +319,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           )}
         </div>
       </div>
+
+      {trade.scenario_id && <LinkedScenarioCard scenarioId={trade.scenario_id} />}
 
       {/* Single-column stacked cards */}
       <div className="space-y-4">
