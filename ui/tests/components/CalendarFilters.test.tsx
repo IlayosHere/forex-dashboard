@@ -34,9 +34,9 @@ function defaultProps(): DefaultProps {
 }
 
 describe("CalendarFilters", () => {
-  it("renders the Forex context button", () => {
+  it("renders the FX context button", () => {
     render(<CalendarFilters {...defaultProps()} />);
-    expect(screen.getByRole("button", { name: "Forex" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "FX" })).toBeInTheDocument();
   });
 
   it("renders the MNQ context button", () => {
@@ -51,10 +51,10 @@ describe("CalendarFilters", () => {
     expect(props.onContextChange).toHaveBeenCalledWith("mnq");
   });
 
-  it("clicking Forex calls onContextChange with 'forex'", () => {
+  it("clicking FX calls onContextChange with 'forex'", () => {
     const props = defaultProps();
     render(<CalendarFilters {...props} context="mnq" />);
-    fireEvent.click(screen.getByRole("button", { name: "Forex" }));
+    fireEvent.click(screen.getByRole("button", { name: "FX" }));
     expect(props.onContextChange).toHaveBeenCalledWith("forex");
   });
 

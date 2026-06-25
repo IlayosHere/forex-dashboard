@@ -82,7 +82,7 @@ describe("EdgeMetrics — live mode", () => {
   it("shows consistency % with definition sub-text", () => {
     render(<EdgeMetrics stats={BASE_STATS} loading={false} isBacktest={false} />);
     expect(screen.getByText("72.0%")).toBeInTheDocument();
-    expect(screen.getByText("% of weeks net positive")).toBeInTheDocument();
+    expect(screen.getByText("% of weeks net +R")).toBeInTheDocument();
   });
 
   it("applies opacity-50 when loading", () => {
@@ -98,9 +98,9 @@ describe("EdgeMetrics — backtest mode", () => {
     expect(screen.queryByText("Expectancy")).not.toBeInTheDocument();
   });
 
-  it("shows Criteria Compliance card, not Rule Compliance", () => {
+  it("shows BE Quality card, not Rule Compliance", () => {
     render(<EdgeMetrics stats={BASE_STATS} loading={false} isBacktest={true} />);
-    expect(screen.getByText("Criteria Compliance")).toBeInTheDocument();
+    expect(screen.getByText("BE Quality")).toBeInTheDocument();
     expect(screen.queryByText("Rule Compliance")).not.toBeInTheDocument();
   });
 
@@ -128,34 +128,21 @@ describe("EdgeMetrics — backtest mode", () => {
     expect(screen.getByText("negative edge")).toBeInTheDocument();
   });
 
-  it("shows criteria compliance rate from by_criteria_met", () => {
+  it("shows BE Quality saved rate and breakdown from be_outcome_breakdown", () => {
     const stats = {
       ...BASE_STATS,
-      by_criteria_met: {
-        met: { total: 7, wins: 5, losses: 2, win_rate: 71.4, total_pnl_usd: 350, avg_rr: 1.9 },
-        not_met: { total: 3, wins: 1, losses: 2, win_rate: 33.3, total_pnl_usd: -50, avg_rr: 0.7 },
-      },
+      be_outcome_breakdown: { prevented_loss: 6, missed_tp: 3, unreviewed: 1 },
     };
     render(<EdgeMetrics stats={stats} loading={false} isBacktest={true} />);
-    expect(screen.getByText("70%")).toBeInTheDocument();
-    expect(screen.getByText("7 met / 3 not met")).toBeInTheDocument();
+    expect(screen.getByText("60%")).toBeInTheDocument();
+    expect(screen.getByText("10 BE trades total")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("shows Avg R delta between met and not-met buckets", () => {
-    const stats = {
-      ...BASE_STATS,
-      by_criteria_met: {
-        met: { total: 7, wins: 5, losses: 2, win_rate: 71.4, total_pnl_usd: 350, avg_rr: 2.0 },
-        not_met: { total: 3, wins: 1, losses: 2, win_rate: 33.3, total_pnl_usd: -50, avg_rr: 0.8 },
-      },
-    };
-    render(<EdgeMetrics stats={stats} loading={false} isBacktest={true} />);
-    expect(screen.getByText(/\+1\.20R when criteria honored/)).toBeInTheDocument();
-  });
-
-  it("shows 'not recorded' when no criteria_met data", () => {
+  it("shows 'no BE trades' when there is no be_outcome_breakdown data", () => {
     render(<EdgeMetrics stats={BASE_STATS} loading={false} isBacktest={true} />);
-    expect(screen.getByText("not recorded")).toBeInTheDocument();
+    expect(screen.getByText("no BE trades")).toBeInTheDocument();
   });
 
   it("renders without crash when stats is null", () => {
