@@ -160,3 +160,16 @@ class CalendarEventResponse(BaseModel):
     actual: str | None
     beat_miss: str
     session_bucket: str
+
+
+class MarketHolidayResponse(BaseModel):
+    """Pydantic v2 response model for an NQ/CME Globex closure or thin-volume day."""
+
+    model_config = ConfigDict()
+
+    id: str
+    date: str
+    label: str
+    closure_type: str
+    early_close_et: str | None
+    note: str | None

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { CalendarNextStrip } from "@/components/CalendarNextStrip";
 
-import type { CalendarEvent } from "@/lib/types";
+import type { CalendarEvent, MarketClosure } from "@/lib/types";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -94,5 +94,52 @@ describe("CalendarNextStrip", () => {
       <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" />
     );
     expect(screen.getByText(/ET/)).toBeInTheDocument();
+  });
+});
+
+const FULL_CLOSE: MarketClosure = {
+  id: "cl-1",
+  date: "2026-12-25",
+  label: "CME Globex — Christmas Day",
+  closure_type: "full_close",
+  early_close_et: null,
+  note: "No signals will be generated today.",
+};
+
+const EARLY_CLOSE: MarketClosure = {
+  ...FULL_CLOSE,
+  id: "cl-2",
+  closure_type: "early_close",
+  early_close_et: "13:15",
+  label: "CME Globex — July 3rd",
+};
+
+describe("CalendarNextStrip — closure override", () => {
+  it("renders the closed banner instead of the countdown when closure is full_close", () => {
+    render(
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" closure={FULL_CLOSE} />
+    );
+    expect(screen.getByText("Closed")).toBeInTheDocument();
+    expect(screen.getByText("CME Globex — Christmas Day")).toBeInTheDocument();
+    expect(screen.queryByText("Non-Farm Payrolls")).not.toBeInTheDocument();
+  });
+
+  it("renders nothing when closure is full_close and there is no event either", () => {
+    render(<CalendarNextStrip event={null} secondsUntil={0} context="mnq" closure={FULL_CLOSE} />);
+    expect(screen.getByText("Closed")).toBeInTheDocument();
+  });
+
+  it("shows an early-close badge alongside the normal countdown", () => {
+    render(
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" closure={EARLY_CLOSE} />
+    );
+    expect(screen.getByText(/Early close/)).toBeInTheDocument();
+    expect(screen.getByText("Non-Farm Payrolls")).toBeInTheDocument();
+  });
+
+  it("does not render a closure badge when closure prop is null", () => {
+    render(<CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="forex" closure={null} />);
+    expect(screen.queryByText(/Early close/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
   });
 });

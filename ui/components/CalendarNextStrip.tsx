@@ -1,9 +1,10 @@
-import type { CalendarContext, CalendarEvent } from "@/lib/types";
+import type { CalendarContext, CalendarEvent, MarketClosure } from "@/lib/types";
 
 interface CalendarNextStripProps {
   event: CalendarEvent | null;
   secondsUntil: number;
   context: CalendarContext;
+  closure?: MarketClosure | null;
 }
 
 const LIVE_THRESHOLD_SECONDS = 300;
@@ -27,7 +28,21 @@ const IMPACT_BADGE_CLASS: Record<string, string> = {
   Low: "bg-border-light/15 text-text-dim border border-border-light/30",
 };
 
-export function CalendarNextStrip({ event, secondsUntil, context }: CalendarNextStripProps) {
+export function CalendarNextStrip({ event, secondsUntil, context, closure }: CalendarNextStripProps) {
+  if (closure?.closure_type === "full_close") {
+    return (
+      <div className="w-full h-[52px] flex items-center gap-3 px-6 bg-card border-b border-bear/30">
+        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide bg-bear/15 text-bear border border-bear/30">
+          Closed
+        </span>
+        <span className="text-sm text-foreground font-medium flex-1 truncate">
+          {closure.label}
+        </span>
+        <span className="text-xs text-text-dim">{closure.note}</span>
+      </div>
+    );
+  }
+
   if (!event) return null;
 
   const isLive = secondsUntil <= LIVE_THRESHOLD_SECONDS;
@@ -39,6 +54,11 @@ export function CalendarNextStrip({ event, secondsUntil, context }: CalendarNext
 
   return (
     <div className="w-full h-[52px] flex items-center gap-4 px-6 bg-card border-b border-border">
+      {closure?.closure_type === "early_close" && (
+        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide text-text-dim border border-border-light">
+          Early close {closure.early_close_et} ET
+        </span>
+      )}
       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide ${badgeClass}`}>
         {event.impact}
       </span>
