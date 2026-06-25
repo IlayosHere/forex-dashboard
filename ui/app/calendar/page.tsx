@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 
+import { CalendarClosedPanel } from "@/components/CalendarClosedPanel";
+import { CalendarClosureRow } from "@/components/CalendarClosureRow";
 import { CalendarDaySection } from "@/components/CalendarDaySection";
 import { CalendarFilters } from "@/components/CalendarFilters";
 import { CalendarNextStrip } from "@/components/CalendarNextStrip";
 import { CalendarTimeGroup } from "@/components/CalendarTimeGroup";
 import { useCalendar } from "@/lib/useCalendar";
+import { useMarketHolidays } from "@/lib/useMarketHolidays";
 import { useNextEvent } from "@/lib/useNextEvent";
 
-import type { CalendarContext, CalendarEvent, CalendarImpact, SessionBucket } from "@/lib/types";
+import type { CalendarContext, CalendarEvent, CalendarImpact, MarketClosure, SessionBucket } from "@/lib/types";
 
 const SESSION_LABELS: Record<SessionBucket, string> = {
   pre_market: "Pre-Market",
@@ -59,6 +62,15 @@ function groupBySession(events: CalendarEvent[]): Record<SessionBucket, Calendar
   return buckets;
 }
 
+function groupClosuresByDay(closures: MarketClosure[]): Record<string, MarketClosure[]> {
+  const result: Record<string, MarketClosure[]> = {};
+  for (const c of closures) {
+    if (!result[c.date]) result[c.date] = [];
+    result[c.date].push(c);
+  }
+  return result;
+}
+
 export default function CalendarPage() {
   const [context, setContext] = useState<CalendarContext>("mnq");
   const [week, setWeek] = useState<"current" | "next">("current");
@@ -67,6 +79,9 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<"today" | "week">("today");
 
   const { events, loading } = useCalendar({ week, context });
+  // NQ-only data — only ever relevant in the MNQ context.
+  const { closures: allClosures } = useMarketHolidays({ week });
+  const closures = context === "mnq" ? allClosures : [];
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -93,7 +108,15 @@ export default function CalendarPage() {
     return result;
   }, [filteredEvents]);
 
+  const closuresByDay = useMemo(() => groupClosuresByDay(closures), [closures]);
+
   const todayEvents = filteredByDay[todayKey] ?? [];
+  const todayClosures = closuresByDay[todayKey] ?? [];
+  const todayFullClose = todayClosures.find((c) => c.closure_type === "full_close");
+  const todayEarlyClose = todayClosures.find((c) => c.closure_type === "early_close");
+  const todayAdvisories = todayClosures.filter((c) => c.closure_type !== "full_close");
+  const stripClosure = todayFullClose ?? todayEarlyClose ?? null;
+
   const todayGroups = useMemo(() => {
     if (context === "mnq") {
       return (["pre_market", "cash_session", "none"] as SessionBucket[])
@@ -104,7 +127,10 @@ export default function CalendarPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([timeLabel, slotEvents]) => ({ label: `${timeLabel} UTC`, events: slotEvents }));
   }, [todayEvents, context]);
-  const sortedDays = useMemo(() => Object.keys(filteredByDay).sort(), [filteredByDay]);
+  const sortedDays = useMemo(
+    () => Array.from(new Set([...Object.keys(filteredByDay), ...Object.keys(closuresByDay)])).sort(),
+    [filteredByDay, closuresByDay],
+  );
 
   function handleContextChange(ctx: CalendarContext) {
     setContext(ctx);
@@ -123,7 +149,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <CalendarNextStrip event={nextEvent} secondsUntil={secondsUntil} context={context} />
+      <CalendarNextStrip event={nextEvent} secondsUntil={secondsUntil} context={context} closure={stripClosure} />
 
       <CalendarFilters
         context={context}
@@ -148,20 +174,36 @@ export default function CalendarPage() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === "today" && (
           <>
-            {todayEvents.length === 0 && (
-              <div className="flex items-center justify-center py-16 text-sm text-text-dim">
-                No events match the current filters.
-              </div>
+            {todayFullClose ? (
+              <CalendarClosedPanel closure={todayFullClose} />
+            ) : (
+              <>
+                {todayAdvisories.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-text-dim px-3 py-1 border-b border-border">
+                      ALL DAY
+                    </div>
+                    {todayAdvisories.map((c) => (
+                      <CalendarClosureRow key={c.id} closure={c} />
+                    ))}
+                  </div>
+                )}
+                {todayEvents.length === 0 && todayAdvisories.length === 0 && (
+                  <div className="flex items-center justify-center py-16 text-sm text-text-dim">
+                    No events match the current filters.
+                  </div>
+                )}
+                {todayGroups.map(({ label, events: groupEvents }) => (
+                  <CalendarTimeGroup
+                    key={label}
+                    timeLabel={label}
+                    events={groupEvents}
+                    context={context}
+                    currentTime={now}
+                  />
+                ))}
+              </>
             )}
-            {todayGroups.map(({ label, events: groupEvents }) => (
-              <CalendarTimeGroup
-                key={label}
-                timeLabel={label}
-                events={groupEvents}
-                context={context}
-                currentTime={now}
-              />
-            ))}
           </>
         )}
 
@@ -176,7 +218,8 @@ export default function CalendarPage() {
               <CalendarDaySection
                 key={day}
                 date={day}
-                events={filteredByDay[day]}
+                events={filteredByDay[day] ?? []}
+                closures={closuresByDay[day] ?? []}
                 context={context}
                 defaultOpen={day === todayKey}
                 currentTime={now}

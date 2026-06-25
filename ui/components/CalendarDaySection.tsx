@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 
+import { CalendarClosureRow } from "@/components/CalendarClosureRow";
 import { CalendarEventRow } from "@/components/CalendarEventRow";
 import { getTodayKeyUTC } from "@/lib/utils";
 
-import type { CalendarContext, CalendarEvent, CalendarImpact } from "@/lib/types";
+import type { CalendarContext, CalendarEvent, CalendarImpact, MarketClosure } from "@/lib/types";
 
 interface CalendarDaySectionProps {
   date: string;
   events: CalendarEvent[];
+  closures: MarketClosure[];
   context: CalendarContext;
   defaultOpen: boolean;
   currentTime: Date;
@@ -36,8 +38,9 @@ function buildSummary(events: CalendarEvent[]): string {
   return `${events.length} event${events.length !== 1 ? "s" : ""}`;
 }
 
-export function CalendarDaySection({ date, events, context, defaultOpen, currentTime }: CalendarDaySectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
+export function CalendarDaySection({ date, events, closures, context, defaultOpen, currentTime }: CalendarDaySectionProps) {
+  const hasFullClose = closures.some((c) => c.closure_type === "full_close");
+  const [open, setOpen] = useState(defaultOpen || hasFullClose);
   const { dayName, formatted, isToday } = parseDateLabel(date);
 
   const headerColorClass = isToday
@@ -62,6 +65,17 @@ export function CalendarDaySection({ date, events, context, defaultOpen, current
               Today
             </span>
           )}
+          {closures.length > 0 && (
+            <span
+              className={
+                hasFullClose
+                  ? "text-[9px] uppercase tracking-widest text-bear bg-bear/10 px-1.5 py-0.5 rounded-full"
+                  : "text-[9px] uppercase tracking-widest text-text-dim border border-border-light px-1.5 py-0.5 rounded"
+              }
+            >
+              {hasFullClose ? "Closed" : "Holiday"}
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-3">
           {!open && (
@@ -73,6 +87,9 @@ export function CalendarDaySection({ date, events, context, defaultOpen, current
 
       {open && (
         <div role="table" aria-label={`Events for ${dayName} ${formatted}`}>
+          {closures.map((closure) => (
+            <CalendarClosureRow key={closure.id} closure={closure} />
+          ))}
           {events.map((event) => (
             <CalendarEventRow
               key={event.id}

@@ -359,6 +359,17 @@ export interface CalendarEvent {
   session_bucket: SessionBucket; // pre_market / cash_session / none
 }
 
+export type ClosureType = "full_close" | "early_close" | "thin_volume";
+
+export interface MarketClosure {
+  id: string;
+  date: string;            // ISO date, whole-day concept
+  label: string;
+  closure_type: ClosureType;
+  early_close_et: string | null;
+  note: string | null;
+}
+
 export interface ComplianceBucket {
   total: number;
   wins: number;

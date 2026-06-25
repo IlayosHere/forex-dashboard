@@ -22,3 +22,6 @@ bcrypt<4.1
 
 # Config / env
 python-dotenv>=1.0.0
+
+# Market holiday calendars (forex bank holidays — offline, no network dependency)
+holidays>=0.5

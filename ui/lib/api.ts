@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -263,6 +263,12 @@ export async function fetchCalendar(week: "current" | "next" = "current"): Promi
   const res = await authFetch(`${BASE_URL}/api/calendar?week=${week}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch calendar: ${res.status}`);
   return res.json() as Promise<CalendarEvent[]>;
+}
+
+export async function fetchMarketHolidays(week: "current" | "next" = "current"): Promise<MarketClosure[]> {
+  const res = await authFetch(`${BASE_URL}/api/market-holidays?week=${week}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch market holidays: ${res.status}`);
+  return res.json() as Promise<MarketClosure[]>;
 }
 
 // ---------------------------------------------------------------------------
