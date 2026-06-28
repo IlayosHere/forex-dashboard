@@ -18,7 +18,16 @@ export interface CalendarDayCellProps {
   onClick: () => void;
 }
 
-const BIAS_DOT_COLORS: Record<DailyBias, string> = {
+// Bias is shown inline (next to trade count) rather than as a corner dot —
+// a directional glyph is self-describing, unlike a colored dot, which needs
+// a legend to decode. See the dot-key popover in CalendarMonthSummary.tsx.
+const BIAS_GLYPH: Record<DailyBias, string> = {
+  bullish: "▲",
+  bearish: "▼",
+  neutral: "–",
+};
+
+const BIAS_GLYPH_COLORS: Record<DailyBias, string> = {
   bullish: "#26a69a",
   bearish: "#ef5350",
   neutral: "#777777",
@@ -119,30 +128,34 @@ export function CalendarDayCell({
         style={{ backgroundColor: accentColor(pnl, tradeCount) }}
       />
 
-      {/* Mistake dot — shown when any trades had rule violations */}
+      {/* Mistake dot — the only corner dot on this cell. News/holiday detail
+          lives in CalendarDaySheet (click-in only); see the dot-key popover
+          in CalendarMonthSummary.tsx for what this one means. */}
       {mistakes > 0 && (
         <div
           aria-label={`${mistakes} mistake trade${mistakes > 1 ? "s" : ""}`}
-          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-500"
+          title={`${mistakes} mistake trade${mistakes > 1 ? "s" : ""} — rule violation logged`}
+          className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-warning"
         />
       )}
 
-      {/* Pre-market plan dot — shown when a plan exists for this date */}
-      {dailyBias && (
-        <div
-          aria-label={`Pre-market plan logged — bias ${dailyBias}`}
-          className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: BIAS_DOT_COLORS[dailyBias] }}
-        />
-      )}
-
-      {/* Date number */}
+      {/* Date number + pre-market bias glyph (self-describing, no dot/legend needed) */}
       <div
-        className={`text-xs font-medium pl-1 ${
+        className={`text-xs font-medium pl-1 flex items-center gap-1 ${
           isCurrentMonth ? "text-[#e0e0e0]" : "text-[#777]"
         }`}
       >
-        {dayNumber}
+        <span>{dayNumber}</span>
+        {dailyBias && (
+          <span
+            aria-label={`Pre-market plan logged — bias ${dailyBias}`}
+            title={`Pre-market plan logged — bias ${dailyBias}`}
+            className="text-[10px] leading-none"
+            style={{ color: BIAS_GLYPH_COLORS[dailyBias] }}
+          >
+            {BIAS_GLYPH[dailyBias]}
+          </span>
+        )}
       </div>
 
       {/* P&L / R */}

@@ -115,7 +115,7 @@ export default function StatisticsPage() {
 
       <section id="breakdowns" className="mb-4">
         <SectionHeader title="Performance Breakdowns" />
-        <UnifiedBreakdowns stats={stats} ictStats={isMnq ? ictData : null} loading={statsLoading || ictLoading} showMoney={showMoney} />
+        <UnifiedBreakdowns stats={stats} ictStats={isMnq ? ictData : null} loading={statsLoading || ictLoading} showMoney={showMoney} isBacktest={isBacktest} />
       </section>
 
       <hr className="border-border/40" />

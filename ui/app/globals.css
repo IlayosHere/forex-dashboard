@@ -34,6 +34,10 @@
   --color-bear: #ef5350;
   --color-accent-gold: #e6a800;
   --color-breakeven: #42a5f5;
+  /* Distinct from --color-accent-gold on purpose — the mistake dot and the
+     high-impact-news dot share a corner-dot visual language and must not
+     read as the same color at a glance. */
+  --color-warning: #e3621a;
 
   /* Surface tokens: bg-surface, bg-surface-raised, bg-surface-input */
   --color-surface: #141414;

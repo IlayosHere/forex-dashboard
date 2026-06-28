@@ -184,7 +184,7 @@ def aggregate_by_day_of_week(closed: list[TradeModel]) -> dict[str, dict]:
     """Group closed trades by day-of-week (from open_time)."""
     def key_fn(t: TradeModel) -> int | None:
         return t.open_time.weekday() if t.open_time else None
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {str(k): {**v, "name": _DAY_NAMES[k]} for k, v in sorted(raw.items())}
 
 
@@ -192,7 +192,7 @@ def aggregate_by_session(closed: list[TradeModel]) -> dict[str, dict]:
     """Group closed trades by trading session (from open_time UTC hour)."""
     def key_fn(t: TradeModel) -> str | None:
         return _classify_session(t.open_time.hour) if t.open_time else None
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
@@ -202,7 +202,7 @@ def aggregate_by_assessment(
     """Group by an integer assessment field (confidence or rating)."""
     def key_fn(t: TradeModel) -> int | None:
         return getattr(t, field, None)
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {str(k): {**v, "name": str(k)} for k, v in sorted(raw.items())}
 
 
@@ -224,7 +224,7 @@ def aggregate_by_rule_compliance(closed: list[TradeModel]) -> dict[str, dict]:
     def key_fn(t: TradeModel) -> str:
         return _RULE_BUCKET[t.rule_followed]
 
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
@@ -240,7 +240,7 @@ def aggregate_by_criteria_met(closed: list[TradeModel]) -> dict[str, dict]:
             return None
         return _CRITERIA_BUCKET[v]
 
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
@@ -262,7 +262,7 @@ def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
     return result
 
 
-def _aggregate_dimension(
+def aggregate_dimension(
     closed: list[TradeModel],
     key_fn: Callable[[TradeModel], int | str | None],
 ) -> dict[Any, dict[str, Any]]:

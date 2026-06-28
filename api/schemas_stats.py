@@ -229,6 +229,9 @@ class TradeStatsResponse(BaseModel):
     drawdown: DrawdownStats | None = None
     robustness: RobustnessStats | None = None
     expectancy_ci: ExpectancyCi | None = None
+    # Backtest-mode news/holiday breakdowns (populated only when account_type="backtest")
+    by_news_day: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_market_holiday: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # Live-mode metrics (populated for all account types)
     live_drawdown: DrawdownMetrics | None = None
     avg_tp_capture_pct: float | None = None

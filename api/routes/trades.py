@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,6 +25,7 @@ from api.auth import get_current_user
 from api.db import get_db
 from api.models import AccountModel, TradeModel
 from api.schemas import (
+    DayTypeResponse,
     TradeCreateRequest,
     TradeResponse,
     TradeStatsResponse,
@@ -192,7 +193,63 @@ def trade_stats(
         metrics["drawdown"] = compute_drawdown_stats(equity_curve, closed)
         metrics["robustness"] = compute_edge_robustness(closed)
         metrics["expectancy_ci"] = compute_expectancy_ci(r_values)
+        metrics.update(_news_and_holiday_breakdowns(closed))
     return metrics
+
+
+def _news_and_holiday_breakdowns(closed: list[TradeModel]) -> dict[str, Any]:
+    """by_news_day / by_market_holiday breakdowns, scoped to backtest trades only."""
+    from api.services.trade_stats_news import (
+        aggregate_by_market_holiday,
+        aggregate_by_news_day,
+        build_holiday_day_map,
+        build_news_day_map,
+    )
+
+    open_dates = [t.open_time.date() for t in closed if t.open_time]
+    if not open_dates:
+        return {"by_news_day": {}, "by_market_holiday": {}}
+    start, end = min(open_dates), max(open_dates)
+    return {
+        "by_news_day": aggregate_by_news_day(closed, build_news_day_map(start, end)),
+        "by_market_holiday": aggregate_by_market_holiday(closed, build_holiday_day_map(start, end)),
+    }
+
+
+@router.get("/trades/day-types", response_model=list[DayTypeResponse])
+def list_day_types(
+    _: Annotated[str, Depends(get_current_user)],
+    date_from: Annotated[date, Query(alias="from")],
+    date_to: Annotated[date, Query(alias="to")],
+) -> list[dict[str, Any]]:
+    """Per-day news/holiday info for the backtest journal calendar.
+
+    news_impact/market_status are collapsed flags for the grid's day-cell dot;
+    news_events/holiday_events carry the full entries for the day-sheet detail
+    view (a day can have more than one news event or holiday entry).
+    """
+    from api.services.trade_stats_news import (
+        build_holiday_day_map,
+        build_news_day_map,
+        holiday_events_by_date,
+        news_events_by_date,
+    )
+
+    news_days = build_news_day_map(date_from, date_to)
+    holiday_days = build_holiday_day_map(date_from, date_to)
+    news_events = news_events_by_date(date_from, date_to)
+    holiday_events = holiday_events_by_date(date_from, date_to)
+    days = {*news_days.keys(), *holiday_days.keys()}
+    return [
+        {
+            "date": d.isoformat(),
+            "news_impact": news_days.get(d),
+            "market_status": holiday_days.get(d),
+            "news_events": news_events.get(d, []),
+            "holiday_events": holiday_events.get(d, []),
+        }
+        for d in sorted(days)
+    ]
 
 
 @router.get("/trades/{trade_id}", response_model=TradeResponse)

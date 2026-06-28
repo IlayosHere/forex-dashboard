@@ -21,6 +21,7 @@ interface UnifiedBreakdownsProps {
   ictStats: IctStatsResponse | null;
   loading: boolean;
   showMoney?: boolean;
+  isBacktest?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,13 +151,17 @@ function SmtTdoTab({ ictStats, showMoney }: { ictStats: IctStatsResponse; showMo
 function TabBar({
   activeTab,
   hasIct,
+  isBacktest,
   onSelect,
 }: {
   activeTab: UnifiedTabKey;
   hasIct: boolean;
+  isBacktest: boolean;
   onSelect: (key: UnifiedTabKey) => void;
 }) {
-  const visible = ALL_TABS.filter((t) => !t.requiresIct || hasIct);
+  const visible = ALL_TABS.filter(
+    (t) => (!t.requiresIct || hasIct) && (!t.requiresBacktest || isBacktest)
+  );
   return (
     <div className="flex flex-wrap gap-0 border-b border-border mb-4">
       {visible.map((t) => (
@@ -181,7 +186,7 @@ function TabBar({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true }: UnifiedBreakdownsProps) {
+export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true, isBacktest = false }: UnifiedBreakdownsProps) {
   const [activeTab, setActiveTab] = useState<UnifiedTabKey>("session");
 
   const rows = useMemo(
@@ -194,7 +199,7 @@ export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true }
 
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
-      <TabBar activeTab={activeTab} hasIct={ictStats !== null} onSelect={setActiveTab} />
+      <TabBar activeTab={activeTab} hasIct={ictStats !== null} isBacktest={isBacktest} onSelect={setActiveTab} />
       {isSmtTdo && ictStats ? (
         <SmtTdoTab ictStats={ictStats} showMoney={showMoney} />
       ) : (

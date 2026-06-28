@@ -11,7 +11,9 @@ export type UnifiedTabKey =
   | "day_of_week"
   | "smt_tdo"
   | "confidence"
-  | "rating";
+  | "rating"
+  | "news_day"
+  | "market_holiday";
 
 export interface UnifiedRow {
   key: string;
@@ -28,6 +30,9 @@ export interface TabDef {
   key: UnifiedTabKey;
   label: string;
   requiresIct: boolean;
+  // Only meaningful for backtest trades (news/holiday tagging is a backtest-only
+  // concept — see api/routes/trades.py's account_type=="backtest" stats block).
+  requiresBacktest?: boolean;
 }
 
 export const ALL_TABS: TabDef[] = [
@@ -41,6 +46,8 @@ export const ALL_TABS: TabDef[] = [
   { key: "smt_tdo", label: "SMT/TDO", requiresIct: true },
   { key: "confidence", label: "Confidence", requiresIct: false },
   { key: "rating", label: "Rating", requiresIct: false },
+  { key: "news_day", label: "News Day", requiresIct: false, requiresBacktest: true },
+  { key: "market_holiday", label: "Market Holiday", requiresIct: false, requiresBacktest: true },
 ];
 
 const SETUP_TYPE_LABELS: Record<string, string> = {
@@ -128,7 +135,25 @@ function sortByKeyAsc(rows: UnifiedRow[]): UnifiedRow[] {
   return [...rows].sort((a, b) => Number(a.key) - Number(b.key));
 }
 
-type StatsTabKey = "session" | "day_of_week" | "confidence" | "rating";
+// News/holiday buckets read best in severity order (most disruptive first),
+// not alphabetically or by P&L — "high" impact news belongs above "normal"
+// regardless of which one made more money.
+const FIXED_ORDER: Partial<Record<StatsTabKey, string[]>> = {
+  news_day: ["high", "medium", "normal"],
+  market_holiday: ["full_close", "early_close", "thin_volume", "normal"],
+};
+
+function sortByFixedOrder(rows: UnifiedRow[], order: string[]): UnifiedRow[] {
+  return [...rows].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+}
+
+type StatsTabKey =
+  | "session"
+  | "day_of_week"
+  | "confidence"
+  | "rating"
+  | "news_day"
+  | "market_holiday";
 
 function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
   const pnlTabs = new Set<StatsTabKey>(["session", "day_of_week"]);
@@ -136,8 +161,12 @@ function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
     tab === "session" ? stats.by_session
     : tab === "day_of_week" ? stats.by_day_of_week
     : tab === "confidence" ? stats.by_confidence
-    : stats.by_rating;
+    : tab === "rating" ? stats.by_rating
+    : tab === "news_day" ? stats.by_news_day
+    : stats.by_market_holiday;
   const rows = Object.entries(source).map(([k, v]) => fromBreakdownEntry(k, v));
+  const fixedOrder = FIXED_ORDER[tab];
+  if (fixedOrder) return sortByFixedOrder(rows, fixedOrder);
   return pnlTabs.has(tab) ? sortByPnl(rows) : sortByKeyAsc(rows);
 }
 
@@ -155,7 +184,9 @@ export function buildRows(
   stats: TradeStats | null,
   ict: IctStatsResponse | null
 ): UnifiedRow[] {
-  const statsTabs = new Set<UnifiedTabKey>(["session", "day_of_week", "confidence", "rating"]);
+  const statsTabs = new Set<UnifiedTabKey>([
+    "session", "day_of_week", "confidence", "rating", "news_day", "market_holiday",
+  ]);
   if (statsTabs.has(tab)) {
     if (!stats) return [];
     return buildStatsRows(tab as StatsTabKey, stats);

@@ -34,6 +34,8 @@ const BASE_STATS: TradeStats = {
   by_session: {},
   by_confidence: {},
   by_rating: {},
+  by_news_day: {},
+  by_market_holiday: {},
 };
 
 describe("OverviewKpiStrip — live mode", () => {

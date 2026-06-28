@@ -13,6 +13,7 @@ import type { InstrumentType, Account } from "@/lib/types";
 
 import { useDailySummary } from "@/lib/useDailySummary";
 import { usePremarketMonth } from "@/lib/usePremarketMonth";
+import { useDayTypes } from "@/lib/useDayTypes";
 import { useAccounts } from "@/lib/useAccounts";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { strategies } from "@/lib/strategies";
@@ -102,6 +103,7 @@ export default function CalendarPage() {
 
   const { data: dailyData } = useDailySummary(dailySummaryFilters);
   const { data: premarketData } = usePremarketMonth(fromDate, toDate);
+  const { data: dayTypesData } = useDayTypes(fromDate, toDate, backtestMode);
 
   function handlePrev() {
     if (month === 1) pushParams({ year: String(year - 1), month: "12", date: null });
@@ -319,6 +321,7 @@ export default function CalendarPage() {
         accountType={backtestMode ? "backtest" : "live"}
         strategy={strategyFilter || undefined}
         showMoney={showMoney}
+        dayType={backtestMode ? dayTypesData.find((d) => d.date === selectedDate) : undefined}
       />
     </div>
   );

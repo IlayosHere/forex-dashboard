@@ -173,3 +173,21 @@ class MarketHolidayResponse(BaseModel):
     closure_type: str
     early_close_et: str | None
     note: str | None
+
+
+class DayTypeResponse(BaseModel):
+    """Per-day news/holiday info for the backtest journal calendar.
+
+    news_impact/market_status are collapsed single flags for the calendar
+    grid's day-cell dot. news_events/holiday_events carry the full entries
+    (name/label/note) for the day-sheet detail view — same date can have
+    multiple news events.
+    """
+
+    model_config = ConfigDict()
+
+    date: str
+    news_impact: str | None  # "high" | "medium" | None — collapsed for the grid dot
+    market_status: str | None  # "full_close" | "early_close" | "thin_volume" | None
+    news_events: list[dict[str, str]] = []
+    holiday_events: list[dict[str, Any]] = []

@@ -370,6 +370,32 @@ export interface MarketClosure {
   note: string | null;
 }
 
+export type NewsImpact = "high" | "medium";
+export type MarketStatus = "full_close" | "early_close" | "thin_volume";
+
+export interface NewsEventEntry {
+  date: string;
+  name: string;
+  impact: NewsImpact;
+  currency: string;
+}
+
+export interface HolidayEventEntry {
+  date: string;
+  label: string;
+  closure_type: MarketStatus;
+  early_close_et: string | null;
+  note: string | null;
+}
+
+export interface DayType {
+  date: string;             // ISO date
+  news_impact: NewsImpact | null;       // collapsed flag, for the grid dot
+  market_status: MarketStatus | null;   // collapsed flag, for the grid dot
+  news_events: NewsEventEntry[];
+  holiday_events: HolidayEventEntry[];
+}
+
 export interface ComplianceBucket {
   total: number;
   wins: number;
@@ -424,6 +450,8 @@ export interface TradeStats {
   by_rule_compliance?: Record<string, ComplianceBucket>;
   by_criteria_met?: Record<string, ComplianceBucket>;
   be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
+  by_news_day: Record<string, BreakdownEntry>;
+  by_market_holiday: Record<string, BreakdownEntry>;
   r_distribution?: RDistributionBin[];
   drawdown?: DrawdownStats | null;
   robustness?: RobustnessStats | null;
