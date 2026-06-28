@@ -65,11 +65,11 @@ const BASE_STATS: TradeStats = {
 };
 
 describe("unifiedBreakdownsHelpers — news_day / market_holiday tabs", () => {
-  it("registers both tabs as backtest-only", () => {
+  it("registers both tabs without an ICT requirement — available in live and backtest mode", () => {
     const newsDay = ALL_TABS.find((t) => t.key === "news_day");
     const marketHoliday = ALL_TABS.find((t) => t.key === "market_holiday");
-    expect(newsDay?.requiresBacktest).toBe(true);
-    expect(marketHoliday?.requiresBacktest).toBe(true);
+    expect(newsDay?.requiresIct).toBe(false);
+    expect(marketHoliday?.requiresIct).toBe(false);
   });
 
   it("sorts news_day rows by severity (high, medium, normal), not P&L or alphabetically", () => {
@@ -91,5 +91,36 @@ describe("unifiedBreakdownsHelpers — news_day / market_holiday tabs", () => {
   it("returns an empty list when stats is null", () => {
     expect(buildRows("news_day", null, null)).toEqual([]);
     expect(buildRows("market_holiday", null, null)).toEqual([]);
+  });
+
+  it("nulls win-rate/avg-R/expectancy for buckets below the 5-decisive-trade floor, but keeps the count", () => {
+    const rows = buildRows("news_day", BASE_STATS, null);
+    // "high" bucket: wins=3, losses=0 → 3 decisive trades, below the floor.
+    const high = rows.find((r) => r.key === "high");
+    expect(high?.total).toBe(3);
+    expect(high?.winRate).toBeNull();
+    expect(high?.avgRr).toBeNull();
+  });
+
+  it("keeps win-rate/avg-R for buckets at or above the 5-decisive-trade floor", () => {
+    const rows = buildRows("news_day", BASE_STATS, null);
+    // "normal" bucket: wins=3, losses=3 → 6 decisive trades, at/above the floor.
+    const normal = rows.find((r) => r.key === "normal");
+    expect(normal?.winRate).toBe(50);
+    expect(normal?.avgRr).toBe(-0.5);
+  });
+
+  it("does not apply the sample floor to other tabs (e.g. day_of_week)", () => {
+    const statsWithSmallDayBucket: TradeStats = {
+      ...BASE_STATS,
+      by_day_of_week: {
+        "0": {
+          total: 1, wins: 1, losses: 0, win_rate: 100, total_pnl_pips: 0,
+          total_pnl_usd: 50, avg_pnl_usd: 50, avg_rr: 1, name: "Monday",
+        },
+      },
+    };
+    const rows = buildRows("day_of_week", statsWithSmallDayBucket, null);
+    expect(rows[0].winRate).toBe(100);
   });
 });

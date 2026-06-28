@@ -80,6 +80,15 @@ def cme_holidays_for_range(start: date, end: date) -> list[dict[str, Any]]:
     return results
 
 
+def cme_coverage_through() -> date:
+    """Latest date the hand-maintained CME_GLOBEX_HOLIDAYS table covers.
+
+    US thin-volume days (via the `holidays` package) have no such limit —
+    only the hand-maintained CME closure table needs annual re-extension.
+    """
+    return max(CME_GLOBEX_HOLIDAYS.keys())
+
+
 def us_thin_volume_days_for_range(start: date, end: date) -> list[dict[str, Any]]:
     """US bank holidays in [start, end] where NQ trades normal hours but thin.
 

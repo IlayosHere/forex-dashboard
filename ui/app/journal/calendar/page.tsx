@@ -103,7 +103,7 @@ export default function CalendarPage() {
 
   const { data: dailyData } = useDailySummary(dailySummaryFilters);
   const { data: premarketData } = usePremarketMonth(fromDate, toDate);
-  const { data: dayTypesData } = useDayTypes(fromDate, toDate, backtestMode);
+  const { data: dayTypesData } = useDayTypes(fromDate, toDate, true);
 
   function handlePrev() {
     if (month === 1) pushParams({ year: String(year - 1), month: "12", date: null });
@@ -321,7 +321,7 @@ export default function CalendarPage() {
         accountType={backtestMode ? "backtest" : "live"}
         strategy={strategyFilter || undefined}
         showMoney={showMoney}
-        dayType={backtestMode ? dayTypesData.find((d) => d.date === selectedDate) : undefined}
+        dayType={dayTypesData.find((d) => d.date === selectedDate)}
       />
     </div>
   );

@@ -14,7 +14,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from api.models import AccountModel
-from shared.economic_calendar import economic_events_for_range
+from shared.economic_calendar import coverage_through, economic_events_for_range
+from shared.market_holidays import cme_coverage_through
 from tests.conftest import TEST_USER, make_trade
 
 # ---------------------------------------------------------------------------
@@ -72,6 +73,17 @@ def test_results_sorted_by_date() -> None:
     results = economic_events_for_range(date(2026, 1, 1), date(2026, 3, 31))
     dates = [r["date"] for r in results]
     assert dates == sorted(dates)
+
+
+def test_news_coverage_through_is_the_most_limiting_table() -> None:
+    """GDP's last confirmed entry (2026-05-28) is earlier than FOMC/CPI/PPI's,
+    so it bounds the overall coverage — a single combined date can't overstate
+    confidence in the least-covered table."""
+    assert coverage_through() == date(2026, 5, 28)
+
+
+def test_holiday_coverage_through_matches_cme_table_max() -> None:
+    assert cme_coverage_through() == date(2026, 12, 31)
 
 
 # ---------------------------------------------------------------------------
@@ -180,9 +192,12 @@ def test_stats_includes_news_and_holiday_breakdowns_for_backtest(
     assert data["by_market_holiday"]["normal"]["total"] == 2
 
 
-def test_stats_omits_news_breakdown_for_non_backtest_accounts(
+def test_stats_includes_news_breakdown_for_live_accounts_too(
     client: TestClient, db: Session,
 ) -> None:
+    """News/holiday breakdowns are computed for every account type, not just
+    backtest — live trading is exactly where the trader most cares whether
+    news days actually hurt their real money."""
     live_acct = AccountModel(
         id=str(uuid.uuid4()), name="live", account_type="live",
         instrument_type="futures_mnq", status="active", owner=TEST_USER,
@@ -194,13 +209,15 @@ def test_stats_omits_news_breakdown_for_non_backtest_accounts(
         db, account_id=live_acct.id, status="closed", outcome="win",
         pnl_pips=10.0, pnl_usd=20.0, rr_achieved=1.0,
         instrument_type="futures_mnq",
+        open_time=datetime(2026, 6, 17, 14, 0, tzinfo=timezone.utc),  # FOMC day
     )
 
     resp = client.get("/api/trades/stats", params={"account_type": "live"})
     assert resp.status_code == 200
     data = resp.json()
-    assert data["by_news_day"] == {}
-    assert data["by_market_holiday"] == {}
+    assert data["by_news_day"]["high"]["total"] == 1
+    assert data["news_data_coverage_through"] == "2026-05-28"
+    assert data["holiday_data_coverage_through"] == "2026-12-31"
 
 
 # ---------------------------------------------------------------------------

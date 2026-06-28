@@ -452,6 +452,8 @@ export interface TradeStats {
   be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
   by_news_day: Record<string, BreakdownEntry>;
   by_market_holiday: Record<string, BreakdownEntry>;
+  news_data_coverage_through?: string | null;
+  holiday_data_coverage_through?: string | null;
   r_distribution?: RDistributionBin[];
   drawdown?: DrawdownStats | null;
   robustness?: RobustnessStats | null;

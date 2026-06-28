@@ -30,10 +30,13 @@ export interface TabDef {
   key: UnifiedTabKey;
   label: string;
   requiresIct: boolean;
-  // Only meaningful for backtest trades (news/holiday tagging is a backtest-only
-  // concept — see api/routes/trades.py's account_type=="backtest" stats block).
-  requiresBacktest?: boolean;
 }
+
+// News/holiday tagging works for live trades too (the lookup is account-type-
+// agnostic — see api/routes/trades.py), so these tabs are no longer gated to
+// backtest mode. Small live samples are protected by a per-bucket floor
+// instead (see NEWS_HOLIDAY_TABS / applySampleFloor below).
+export const NEWS_HOLIDAY_TABS = new Set<UnifiedTabKey>(["news_day", "market_holiday"]);
 
 export const ALL_TABS: TabDef[] = [
   { key: "session", label: "Session", requiresIct: false },
@@ -46,8 +49,8 @@ export const ALL_TABS: TabDef[] = [
   { key: "smt_tdo", label: "SMT/TDO", requiresIct: true },
   { key: "confidence", label: "Confidence", requiresIct: false },
   { key: "rating", label: "Rating", requiresIct: false },
-  { key: "news_day", label: "News Day", requiresIct: false, requiresBacktest: true },
-  { key: "market_holiday", label: "Market Holiday", requiresIct: false, requiresBacktest: true },
+  { key: "news_day", label: "News Day", requiresIct: false },
+  { key: "market_holiday", label: "Market Holiday", requiresIct: false },
 ];
 
 const SETUP_TYPE_LABELS: Record<string, string> = {
@@ -147,6 +150,22 @@ function sortByFixedOrder(rows: UnifiedRow[], order: string[]): UnifiedRow[] {
   return [...rows].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 }
 
+// Below this many decisive (win+loss) trades, a bucket's win-rate/avg-R reads
+// as a confident verdict it can't actually support — e.g. 1 trade showing
+// "100% win rate." Null the rate-style metrics but keep the count, so the
+// user still learns "I've only had N trades here" without a misleading %.
+// Scoped to news/holiday tabs only — live accounts are the case this matters
+// for (small samples), not the long-running backtest/ICT breakdowns.
+export const MIN_BUCKET_SAMPLE = 5;
+
+function fromBreakdownEntryWithFloor(key: string, entry: BreakdownEntry): UnifiedRow {
+  const row = fromBreakdownEntry(key, entry);
+  if (entry.wins + entry.losses < MIN_BUCKET_SAMPLE) {
+    return { ...row, winRate: null, avgRr: null, expectancyR: null };
+  }
+  return row;
+}
+
 type StatsTabKey =
   | "session"
   | "day_of_week"
@@ -164,7 +183,8 @@ function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
     : tab === "rating" ? stats.by_rating
     : tab === "news_day" ? stats.by_news_day
     : stats.by_market_holiday;
-  const rows = Object.entries(source).map(([k, v]) => fromBreakdownEntry(k, v));
+  const buildRow = NEWS_HOLIDAY_TABS.has(tab) ? fromBreakdownEntryWithFloor : fromBreakdownEntry;
+  const rows = Object.entries(source).map(([k, v]) => buildRow(k, v));
   const fixedOrder = FIXED_ORDER[tab];
   if (fixedOrder) return sortByFixedOrder(rows, fixedOrder);
   return pnlTabs.has(tab) ? sortByPnl(rows) : sortByKeyAsc(rows);

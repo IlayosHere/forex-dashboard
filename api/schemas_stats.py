@@ -229,9 +229,14 @@ class TradeStatsResponse(BaseModel):
     drawdown: DrawdownStats | None = None
     robustness: RobustnessStats | None = None
     expectancy_ci: ExpectancyCi | None = None
-    # Backtest-mode news/holiday breakdowns (populated only when account_type="backtest")
+    # News/holiday breakdowns — populated for every account type
     by_news_day: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_market_holiday: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # Latest date the hand-maintained news/holiday tables are confirmed through —
+    # see shared/economic_calendar.py / shared/market_holidays.py. Trades after
+    # this date aren't "confirmed no news," the table just isn't extended that far.
+    news_data_coverage_through: str | None = None
+    holiday_data_coverage_through: str | None = None
     # Live-mode metrics (populated for all account types)
     live_drawdown: DrawdownMetrics | None = None
     avg_tp_capture_pct: float | None = None

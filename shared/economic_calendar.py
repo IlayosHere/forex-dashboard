@@ -137,3 +137,17 @@ def _to_entry(day: date, name: str, impact: str) -> dict[str, Any]:
         "impact": impact,
         "currency": "USD",
     }
+
+
+def coverage_through() -> date:
+    """Latest date through which ALL hand-maintained tables (FOMC, CPI, PPI,
+    GDP) have confirmed entries — i.e. the most-limiting table's last date.
+
+    NFP is excluded since it's rule-based and never runs out. A date after
+    this is not "confirmed no news" — it just means at least one of the four
+    hand-maintained tables hasn't been extended that far yet. Re-derive
+    automatically as tables are extended; never hardcode this date.
+    """
+    hand_maintained = (FOMC_DECISION_DATES, CPI_RELEASE_DATES, PPI_RELEASE_DATES, GDP_RELEASE_DATES)
+    latest_per_table = (max(d for year_dates in table.values() for d in year_dates) for table in hand_maintained)
+    return min(latest_per_table)

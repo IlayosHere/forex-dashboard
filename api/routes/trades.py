@@ -170,6 +170,7 @@ def trade_stats(
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
+    metrics.update(_news_and_holiday_breakdowns(closed))
     from api.services.trade_stats_extended import build_equity_curve
     from api.services.trade_stats_live import compute_drawdown, compute_tp_capture
     curve = build_equity_curve(closed)
@@ -193,12 +194,18 @@ def trade_stats(
         metrics["drawdown"] = compute_drawdown_stats(equity_curve, closed)
         metrics["robustness"] = compute_edge_robustness(closed)
         metrics["expectancy_ci"] = compute_expectancy_ci(r_values)
-        metrics.update(_news_and_holiday_breakdowns(closed))
     return metrics
 
 
 def _news_and_holiday_breakdowns(closed: list[TradeModel]) -> dict[str, Any]:
-    """by_news_day / by_market_holiday breakdowns, scoped to backtest trades only."""
+    """by_news_day / by_market_holiday breakdowns — computed for every account
+    type. The trade data itself is what's scarce for live accounts, not the
+    lookup. Also reports the underlying hand-maintained tables' coverage
+    limit so the frontend can flag trades beyond it rather than silently
+    imply "confirmed no news"."""
+    from shared.economic_calendar import coverage_through as news_coverage_through
+    from shared.market_holidays import cme_coverage_through
+
     from api.services.trade_stats_news import (
         aggregate_by_market_holiday,
         aggregate_by_news_day,
@@ -206,13 +213,18 @@ def _news_and_holiday_breakdowns(closed: list[TradeModel]) -> dict[str, Any]:
         build_news_day_map,
     )
 
+    coverage = {
+        "news_data_coverage_through": news_coverage_through().isoformat(),
+        "holiday_data_coverage_through": cme_coverage_through().isoformat(),
+    }
     open_dates = [t.open_time.date() for t in closed if t.open_time]
     if not open_dates:
-        return {"by_news_day": {}, "by_market_holiday": {}}
+        return {"by_news_day": {}, "by_market_holiday": {}, **coverage}
     start, end = min(open_dates), max(open_dates)
     return {
         "by_news_day": aggregate_by_news_day(closed, build_news_day_map(start, end)),
         "by_market_holiday": aggregate_by_market_holiday(closed, build_holiday_day_map(start, end)),
+        **coverage,
     }
 
 
