@@ -275,7 +275,7 @@ def aggregate_dimension(
         if key not in buckets:
             buckets[key] = {
                 "total": 0, "wins": 0, "losses": 0,
-                "win_rate": None, "total_pnl_pips": 0.0,
+                "win_rate": None, "total_pnl_points": 0.0,
                 "total_pnl_usd": 0.0, "avg_pnl_usd": None,
                 "avg_rr": None, "_rr": [],
             }
@@ -286,7 +286,7 @@ def aggregate_dimension(
         elif t.outcome == "loss":
             b["losses"] += 1
         if t.pnl_pips is not None:
-            b["total_pnl_pips"] += t.pnl_pips
+            b["total_pnl_points"] += t.pnl_pips
         if t.pnl_usd is not None:
             b["total_pnl_usd"] += t.pnl_usd
         if t.rr_achieved is not None and t.outcome in ("win", "loss"):
@@ -294,7 +294,7 @@ def aggregate_dimension(
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
-        v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_points"] = round(v["total_pnl_points"], 1)
         v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
         if v["total"] > 0:
             v["avg_pnl_usd"] = round(v["total_pnl_usd"] / v["total"], 2)

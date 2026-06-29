@@ -27,7 +27,7 @@ def _account_payload(**overrides: object) -> dict:
     base: dict = {
         "name": "My Demo",
         "account_type": "demo",
-        "instrument_type": "forex",
+        "instrument_type": "futures",
     }
     base.update(overrides)
     return base
@@ -38,7 +38,7 @@ def _insert_account(db: Session, owner: str = TEST_USER) -> AccountModel:
         id=str(uuid.uuid4()),
         name="Isolation Account",
         account_type="demo",
-        instrument_type="forex",
+        instrument_type="futures",
         status="active",
         prop_firm=None,
         phase=None,

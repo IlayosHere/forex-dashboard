@@ -16,29 +16,14 @@ from sqlalchemy.orm import Session
 
 from api.models import AccountModel, MistakeModel, TradeMistakeModel, TradeModel
 from api.services.trade_filters import StatsFilterParams, TradeFilterParams
-from shared.calculator import (
-    futures_dollars_per_point,
-    is_futures_symbol,
-    pip_size,
-    pip_value_per_lot,
-)
+from shared.calculator import futures_dollars_per_point, is_futures_symbol
 
 logger = logging.getLogger(__name__)
 
 
-def compute_risk_pips(
-    entry_price: float, sl_price: float, symbol: str, instrument_type: str = "forex",
-) -> float:
-    """Derive risk in pips/points from entry and SL prices.
-
-    Futures contracts report distance in points (not pips). Detection is
-    symbol-first: MNQ, MES, etc. are recognised as futures. instrument_type
-    starting with 'futures' is the fallback for older records.
-    """
-    distance = abs(entry_price - sl_price)
-    if is_futures_symbol(symbol) or instrument_type.startswith("futures"):
-        return round(distance, 2)
-    return round(distance / pip_size(symbol), 1)
+def compute_risk_points(entry_price: float, sl_price: float) -> float:
+    """Derive risk in points from entry and SL prices."""
+    return round(abs(entry_price - sl_price), 2)
 
 
 @dataclass(frozen=True)
@@ -50,32 +35,21 @@ class PnlInput:
     exit_price: float
     lot_size: float
     risk_pips: float
-    instrument_type: str = "forex"
+    instrument_type: str = "futures"
 
 
 def calculate_pnl(pnl: PnlInput) -> tuple[float, float, float | None]:
-    """Return (pnl_pips, pnl_usd, rr_achieved).
+    """Return (pnl_points, pnl_usd, rr_achieved).
 
-    For futures, pnl_pips stores points and lot_size stores contracts.
-    The dollar-per-point multiplier comes from the symbol (MNQ=$2, MES=$5),
-    not from instrument_type. instrument_type is only used as a fallback for
-    older trade records that may not have a recognised symbol.
+    lot_size stores contracts. The dollar-per-point multiplier comes from the
+    symbol (MNQ=$2, MES=$5), falling back to $2/pt for unrecognised symbols.
     """
     direction_mult = 1.0 if pnl.direction == "BUY" else -1.0
-
-    if is_futures_symbol(pnl.symbol) or pnl.instrument_type.startswith("futures"):
-        dollars_per_point = futures_dollars_per_point(pnl.symbol) if is_futures_symbol(pnl.symbol) else 2.0
-        pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
-        pnl_usd = round(pnl_points * dollars_per_point * pnl.lot_size, 2)
-        rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
-        return pnl_points, pnl_usd, rr
-
-    ps = pip_size(pnl.symbol)
-    pnl_pips = round((pnl.exit_price - pnl.entry_price) / ps * direction_mult, 1)
-    pip_val = pip_value_per_lot(pnl.symbol, pnl.entry_price)
-    pnl_usd = round(pnl_pips * pip_val * pnl.lot_size, 2)
-    rr = round(pnl_pips / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
-    return pnl_pips, pnl_usd, rr
+    dollars_per_point = futures_dollars_per_point(pnl.symbol) if is_futures_symbol(pnl.symbol) else 2.0
+    pnl_points = round((pnl.exit_price - pnl.entry_price) * direction_mult, 2)
+    pnl_usd = round(pnl_points * dollars_per_point * pnl.lot_size, 2)
+    rr = round(pnl_points / pnl.risk_pips, 2) if pnl.risk_pips > 0 else None
+    return pnl_points, pnl_usd, rr
 
 
 def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterParams) -> Select:

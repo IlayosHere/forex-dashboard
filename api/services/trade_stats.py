@@ -143,7 +143,7 @@ def aggregate_by_field(
 
     Returns
     -------
-    dict mapping field values to {total, wins, losses, win_rate, total_pnl_pips}.
+    dict mapping field values to {total, wins, losses, win_rate, total_pnl_points}.
     """
     buckets: dict[str, dict[str, Any]] = {}
     for t in closed:
@@ -151,7 +151,7 @@ def aggregate_by_field(
         if key not in buckets:
             buckets[key] = {
                 "total": 0, "wins": 0, "losses": 0,
-                "win_rate": None, "total_pnl_pips": 0.0,
+                "win_rate": None, "total_pnl_points": 0.0,
                 "total_pnl_usd": 0.0, "total_r": 0.0,
             }
         buckets[key]["total"] += 1
@@ -160,7 +160,7 @@ def aggregate_by_field(
         elif t.outcome == "loss":
             buckets[key]["losses"] += 1
         if t.pnl_pips is not None:
-            buckets[key]["total_pnl_pips"] += t.pnl_pips
+            buckets[key]["total_pnl_points"] += t.pnl_pips
         if t.pnl_usd is not None:
             buckets[key]["total_pnl_usd"] += t.pnl_usd
         if t.rr_achieved is not None:
@@ -168,7 +168,7 @@ def aggregate_by_field(
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
-        v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_points"] = round(v["total_pnl_points"], 1)
         v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
         v["total_r"] = round(v["total_r"], 2)
     return buckets
@@ -201,7 +201,7 @@ def aggregate_by_account(
                 "account_type": acct.account_type if acct else None,
                 "instrument_type": acct.instrument_type if acct else None,
                 "total": 0, "wins": 0, "losses": 0,
-                "win_rate": None, "total_pnl_pips": 0.0,
+                "win_rate": None, "total_pnl_points": 0.0,
                 "total_pnl_usd": 0.0, "total_r": 0.0,
             }
         buckets[aid]["total"] += 1
@@ -210,7 +210,7 @@ def aggregate_by_account(
         elif t.outcome == "loss":
             buckets[aid]["losses"] += 1
         if t.pnl_pips is not None:
-            buckets[aid]["total_pnl_pips"] += t.pnl_pips
+            buckets[aid]["total_pnl_points"] += t.pnl_pips
         if t.pnl_usd is not None:
             buckets[aid]["total_pnl_usd"] += t.pnl_usd
         if t.rr_achieved is not None:
@@ -218,7 +218,7 @@ def aggregate_by_account(
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
-        v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_points"] = round(v["total_pnl_points"], 1)
         v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
         v["total_r"] = round(v["total_r"], 2)
     return buckets

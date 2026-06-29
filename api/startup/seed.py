@@ -80,8 +80,6 @@ def seed_default_accounts(db: Session) -> None:
     users = db.scalars(select(UserModel)).all()
     now = datetime.now(timezone.utc)
     defaults = [
-        ("Demo", "demo", "forex"),
-        ("Live", "live", "forex"),
         ("Demo", "demo", "futures"),
         ("Live", "live", "futures"),
     ]

@@ -42,20 +42,20 @@ def _validate_feeling(v: str | None) -> str | None:
 
 
 class TradeCreateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     signal_id: str | None = None
     scenario_id: str | None = None
     account_id: str | None = None
     strategy: str
     symbol: str
-    instrument_type: str = "forex"
+    instrument_type: str = "futures"
     direction: str
     entry_price: float = Field(gt=0)
     sl_price: float = Field(gt=0)
     tp_price: float | None = None
-    lot_size: float = Field(default=1.0, gt=0)
-    risk_pips: float | None = Field(default=None, gt=0)
+    lot_size: float = Field(default=1.0, gt=0, alias="contracts")
+    risk_pips: float | None = Field(default=None, gt=0, alias="risk_points")
     open_time: datetime
     tags: list[str] = Field(default_factory=list)
     notes: str = ""
@@ -108,8 +108,8 @@ class TradeCreateRequest(BaseModel):
         'futures' is the canonical value for new trades.
         'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
         """
-        if v not in ("forex", "futures", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex or futures")
+        if v not in ("futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be futures, futures_mnq, or futures_mes")
         return v
 
     @field_validator("ict_setup_type")
@@ -199,7 +199,7 @@ class TradeCreateRequest(BaseModel):
 
 
 class TradeUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     instrument_type: str | None = None
     direction: str | None = None
@@ -207,8 +207,8 @@ class TradeUpdateRequest(BaseModel):
     exit_price: float | None = Field(default=None, gt=0)
     sl_price: float | None = Field(default=None, gt=0)
     tp_price: float | None = None
-    lot_size: float | None = Field(default=None, gt=0)
-    risk_pips: float | None = Field(default=None, gt=0)
+    lot_size: float | None = Field(default=None, gt=0, alias="contracts")
+    risk_pips: float | None = Field(default=None, gt=0, alias="risk_points")
     status: str | None = None
     outcome: str | None = None
     open_time: datetime | None = None
@@ -265,8 +265,8 @@ class TradeUpdateRequest(BaseModel):
         'futures' is the canonical value for new trades.
         'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
         """
-        if v is not None and v not in ("forex", "futures", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex or futures")
+        if v is not None and v not in ("futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be futures, futures_mnq, or futures_mes")
         return v
 
     @field_validator("status")
@@ -391,13 +391,13 @@ class TradeResponse(BaseModel):
     exit_price: float | None
     sl_price: float
     tp_price: float | None
-    lot_size: float
+    lot_size: float = Field(alias="contracts")
     status: str
     outcome: str | None
-    pnl_pips: float | None
+    pnl_pips: float | None = Field(alias="pnl_points")
     pnl_usd: float | None
     rr_achieved: float | None
-    risk_pips: float
+    risk_pips: float = Field(alias="risk_points")
     open_time: datetime
     close_time: datetime | None
     tags: list[str]

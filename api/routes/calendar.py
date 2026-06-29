@@ -67,7 +67,7 @@ _ET_CLOSE_MINUTES = 16 * 60      # 16:00 ET → 960 min
 def _fetch_ff_json(week: str) -> list[dict[str, Any]]:
     """Synchronous HTTP GET of the ForexFactory feed. Called via asyncio.to_thread."""
     url = _FF_URLS[week]
-    req = urllib.request.Request(url, headers={"User-Agent": "forex-dashboard/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "trade-dashboard/1.0"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         raw: list[dict[str, Any]] = json.loads(resp.read().decode())
     return raw

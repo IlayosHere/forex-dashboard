@@ -35,7 +35,7 @@ from api.services.trade_filters import StatsFilterParams, TradeFilterParams
 from api.services.trade_helpers import (
     apply_trade_filters,
     build_account_lookup,
-    compute_risk_pips,
+    compute_risk_points,
     trade_to_response,
 )
 from api.services.trade_update import (
@@ -76,8 +76,8 @@ def create_trade(
             logger.warning("Linked account not found: %s", req.account_id)
             raise HTTPException(status_code=404, detail="Linked account not found")
 
-    risk_pips = req.risk_pips if req.risk_pips is not None else compute_risk_pips(
-        req.entry_price, req.sl_price, req.symbol, req.instrument_type,
+    risk_pips = req.risk_pips if req.risk_pips is not None else compute_risk_points(
+        req.entry_price, req.sl_price,
     )
 
     now = datetime.now(timezone.utc)

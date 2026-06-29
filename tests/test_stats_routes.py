@@ -49,9 +49,9 @@ def test_equity_curve_returns_correct_shape(
     assert "date" in point
     assert "close_time" in point
     assert "pnl_usd" in point
-    assert "pnl_pips" in point
+    assert "pnl_points" in point
     assert "cumulative_pnl_usd" in point
-    assert "cumulative_pnl_pips" in point
+    assert "cumulative_pnl_points" in point
     assert "trade_count" in point
     assert "outcome" in point
 
@@ -180,7 +180,7 @@ def test_daily_summary_returns_correct_shape(
     assert "losses" in point
     assert "breakevens" in point
     assert "pnl_usd" in point
-    assert "pnl_pips" in point
+    assert "pnl_points" in point
 
 
 def test_daily_summary_aggregates_same_day(

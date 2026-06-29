@@ -46,59 +46,10 @@ def _filters(
     return f
 
 
-# ---------------------------------------------------------------------------
-# calculate_pnl — forex
-# ---------------------------------------------------------------------------
-
-
-def test_pnl_buy_forex_profit() -> None:
-    pips, usd, rr = calculate_pnl(PnlInput(
-        symbol="EURUSD", direction="BUY",
-        entry_price=1.08000, exit_price=1.08300,
-        lot_size=1.0, risk_pips=20.0,
-    ))
-    assert pips == 30.0
-    assert usd == 300.0
-    assert rr == 1.5
-
-
-def test_pnl_sell_forex_profit() -> None:
-    pips, usd, rr = calculate_pnl(PnlInput(
-        symbol="EURUSD", direction="SELL",
-        entry_price=1.08300, exit_price=1.08000,
-        lot_size=1.0, risk_pips=20.0,
-    ))
-    assert pips == 30.0
-    assert usd == 300.0
-    assert rr == 1.5
-
-
-def test_pnl_buy_forex_loss() -> None:
-    pips, usd, rr = calculate_pnl(PnlInput(
-        symbol="EURUSD", direction="BUY",
-        entry_price=1.08300, exit_price=1.08000,
-        lot_size=1.0, risk_pips=20.0,
-    ))
-    assert pips == -30.0
-    assert usd == -300.0
-    assert rr == -1.5
-
-
-def test_pnl_jpy_pair() -> None:
-    pips, usd, rr = calculate_pnl(PnlInput(
-        symbol="USDJPY", direction="BUY",
-        entry_price=150.000, exit_price=150.200,
-        lot_size=1.0, risk_pips=10.0,
-    ))
-    assert pips == 20.0
-    expected_pip_val = (100_000 * 0.01) / 150.0
-    assert usd == pytest.approx(20.0 * expected_pip_val * 1.0, rel=0.01)
-
-
 def test_pnl_zero_risk_pips_returns_none_rr() -> None:
     _, _, rr = calculate_pnl(PnlInput(
-        symbol="EURUSD", direction="BUY",
-        entry_price=1.08000, exit_price=1.08100,
+        symbol="MNQ", direction="BUY",
+        entry_price=20000, exit_price=20010,
         lot_size=1.0, risk_pips=0.0,
     ))
     assert rr is None
@@ -133,16 +84,16 @@ def test_pnl_sell_futures_loss() -> None:
     assert usd == -60.0
 
 
-def test_pnl_symbol_detection_without_instrument_type() -> None:
-    """MNQ symbol alone triggers futures path even when instrument_type='forex'."""
+def test_pnl_unrecognized_symbol_falls_back_to_default_multiplier() -> None:
+    """Symbols not in the known futures table default to $2/pt."""
     pips, usd, _ = calculate_pnl(PnlInput(
-        symbol="MNQ", direction="BUY",
+        symbol="NQ", direction="BUY",
         entry_price=20000, exit_price=20010,
         lot_size=1, risk_pips=10.0,
-        instrument_type="forex",  # intentionally wrong — symbol wins
+        instrument_type="futures",
     ))
     assert pips == 10.0
-    assert usd == 20.0  # 10 pts * $2/pt * 1 contract
+    assert usd == 20.0  # 10 pts * $2/pt (default) * 1 contract
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +195,7 @@ def test_filter_no_filters_returns_all(db: Session) -> None:
 
 
 def test_filter_by_instrument_type(db: Session) -> None:
-    make_trade(db, instrument_type="forex")
+    make_trade(db, instrument_type="futures")
     make_trade(db, instrument_type="futures_mnq")
     stmt = select(TradeModel)
     stmt = apply_trade_filters(stmt, _filters(instrument_type="futures_mnq"))
@@ -255,7 +206,6 @@ def test_filter_by_instrument_type(db: Session) -> None:
 
 def test_filter_futures_virtual_matches_all_futures(db: Session) -> None:
     """instrument_type='futures' matches canonical 'futures' plus legacy futures_mnq/futures_mes."""
-    make_trade(db, instrument_type="forex")
     make_trade(db, instrument_type="futures")        # new canonical
     make_trade(db, instrument_type="futures_mnq")    # legacy
     make_trade(db, instrument_type="futures_mes")    # legacy
@@ -277,7 +227,7 @@ def test_trade_to_response_serializes_all_fields(db: Session) -> None:
     result = trade_to_response(trade, {})
     assert result["id"] == trade.id
     assert result["strategy"] == "mnq-daily"
-    assert result["symbol"] == "EURUSD"
+    assert result["symbol"] == "MNQ"
     assert result["direction"] == "BUY"
     assert result["account_name"] is None
     assert "trade_metadata" in result

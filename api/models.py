@@ -1,7 +1,7 @@
 """
 api/models.py
 -------------
-SQLAlchemy 2.0 ORM models for the Forex Trade Journal.
+SQLAlchemy 2.0 ORM models for the Trade Journal.
 
 Models:
   - UserModel: authenticated users
@@ -40,7 +40,7 @@ class AccountModel(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     account_type: Mapped[str] = mapped_column(String, nullable=False)  # demo, live, funded
-    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # forex, futures (account-level); futures_mnq, futures_mes (trade-level)
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # futures (account-level); futures_mnq, futures_mes (trade-level)
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")  # active, passed, failed, closed
     prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
     phase: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -74,7 +74,7 @@ class TradeModel(Base):
     # Trade setup
     strategy: Mapped[str] = mapped_column(String, nullable=False)
     symbol: Mapped[str] = mapped_column(String, nullable=False)
-    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="forex")
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="futures")
     direction: Mapped[str] = mapped_column(String, nullable=False)
     entry_price: Mapped[float] = mapped_column(Float, nullable=False)
     exit_price: Mapped[float | None] = mapped_column(Float, nullable=True)

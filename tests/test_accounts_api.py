@@ -17,7 +17,7 @@ def _account_payload(**overrides: object) -> dict:
     base: dict = {
         "name": "My Demo",
         "account_type": "demo",
-        "instrument_type": "forex",
+        "instrument_type": "futures",
     }
     base.update(overrides)
     return base
@@ -34,7 +34,7 @@ def test_create_account_returns_201(client: TestClient) -> None:
     data = resp.json()
     assert data["name"] == "My Demo"
     assert data["account_type"] == "demo"
-    assert data["instrument_type"] == "forex"
+    assert data["instrument_type"] == "futures"
     assert data["status"] == "active"
 
 
@@ -96,7 +96,7 @@ def test_list_accounts_returns_created(client: TestClient) -> None:
 
 
 def test_list_accounts_filter_by_instrument(client: TestClient) -> None:
-    client.post("/api/accounts", json=_account_payload(instrument_type="forex"))
+    client.post("/api/accounts", json=_account_payload(instrument_type="futures"))
     client.post(
         "/api/accounts",
         json=_account_payload(instrument_type="futures_mnq"),
