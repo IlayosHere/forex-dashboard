@@ -28,7 +28,6 @@ describe("CalendarDaySection — closures", () => {
         date="2026-12-23"
         events={[]}
         closures={[]}
-        context="mnq"
         defaultOpen={false}
         currentTime={new Date("2026-12-23T00:00:00Z")}
       />
@@ -43,7 +42,6 @@ describe("CalendarDaySection — closures", () => {
         date="2026-12-25"
         events={[]}
         closures={[makeClosure()]}
-        context="mnq"
         defaultOpen={false}
         currentTime={new Date("2026-12-25T00:00:00Z")}
       />
@@ -59,7 +57,6 @@ describe("CalendarDaySection — closures", () => {
         date="2026-06-19"
         events={[]}
         closures={[makeClosure({ closure_type: "thin_volume", label: "NQ — Juneteenth National Independence Day" })]}
-        context="mnq"
         defaultOpen={false}
         currentTime={new Date("2026-06-19T00:00:00Z")}
       />

@@ -112,7 +112,7 @@ export function TradeSetupFields({
               <Input
                 value={form.symbol}
                 onChange={(e) => onChange("symbol", e.target.value.toUpperCase())}
-                placeholder="EURUSD"
+                placeholder="MNQ"
                 className={`${INPUT_CLASS} ${errBorder(errors, "symbol")}`}
               />
             )}
@@ -151,7 +151,6 @@ export function TradeSetupFields({
         <TradePriceFields
           form={form}
           errors={errors}
-          isFutures={isFutures}
           isBacktest={isBacktest}
           onChange={onChange}
         />

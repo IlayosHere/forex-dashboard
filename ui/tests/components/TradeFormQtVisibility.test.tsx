@@ -42,7 +42,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     entry_price: "20000",
     sl_price: "19980",
     tp_price: "20040",
-    lot_size: "1",
+    contracts: "1",
     open_time: "2026-05-01T09:00",
     tags: [],
     notes: "",

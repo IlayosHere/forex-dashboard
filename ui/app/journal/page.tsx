@@ -19,7 +19,6 @@ import { nowNYDatetime } from "@/lib/dates";
 import { JOURNAL_LIST_STATE_KEY } from "@/lib/journalListState";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",   label: "FX" },
   { value: "futures", label: "Futures" },
 ];
 

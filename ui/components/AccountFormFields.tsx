@@ -42,7 +42,6 @@ const STATUS_OPTIONS = [
 ];
 
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
-  { value: "forex",    label: "FX" },
   { value: "futures",  label: "Futures" },
 ];
 
@@ -100,21 +99,6 @@ export function AccountFormFields({
 }: AccountFormFieldsProps) {
   const isFunded = form.account_type === "funded";
 
-  const isFuturesInstrument = form.instrument_type === "futures" || form.instrument_type === "futures_mnq" || form.instrument_type === "futures_mes";
-
-  const accountTypeOptions = ACCOUNT_TYPE_OPTIONS.map((opt) =>
-    opt.value === "funded" && !isFuturesInstrument
-      ? { ...opt, disabled: true, disabledReason: "Funded accounts require Futures instrument" }
-      : opt
-  );
-
-  function handleInstrumentChange(it: InstrumentType) {
-    onChange("instrument_type", it);
-    if (it === "forex" && form.account_type === "funded") {
-      onChange("account_type", "demo");
-    }
-  }
-
   return (
     <>
       <div className="space-y-2">
@@ -136,7 +120,7 @@ export function AccountFormFields({
                 <SegmentedControl
                   value={form.instrument_type}
                   options={INSTRUMENT_OPTIONS}
-                  onChange={handleInstrumentChange}
+                  onChange={(v) => onChange("instrument_type", v)}
                 />
               </div>
             </div>
@@ -144,7 +128,7 @@ export function AccountFormFields({
               <label className="label">Type</label>
               <SegmentedControl
                 value={form.account_type}
-                options={accountTypeOptions}
+                options={ACCOUNT_TYPE_OPTIONS}
                 onChange={(v) => onChange("account_type", v)}
               />
             </div>

@@ -23,7 +23,7 @@ export interface TradeFormData {
   entry_price: string;
   sl_price: string;
   tp_price: string;
-  lot_size: string;
+  contracts: string;
   open_time: string;
   tags: string[];
   notes: string;
@@ -192,8 +192,8 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
     const slNum = Number(form.sl_price);
     if (!form.sl_price || !isFinite(slNum) || slNum <= 0) errs.sl_price = true;
     if (!isBacktest) {
-      const lotNum = Number(form.lot_size);
-      if (!form.lot_size || !isFinite(lotNum) || lotNum <= 0) errs.lot_size = true;
+      const lotNum = Number(form.contracts);
+      if (!form.contracts || !isFinite(lotNum) || lotNum <= 0) errs.contracts = true;
     }
     if (form.tp_price) {
       const tpNum = Number(form.tp_price);
@@ -222,7 +222,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({ ...form, instrument_type: instrumentType, lot_size: isBacktest ? "1" : form.lot_size });
+      onSubmit({ ...form, instrument_type: instrumentType, contracts: isBacktest ? "1" : form.contracts });
     } else {
       setTimeout(() => {
         const el = document.querySelector(".border-bear");

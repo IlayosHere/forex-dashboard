@@ -51,20 +51,20 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     id: "t-1",
     signal_id: null,
     scenario_id: null,
-    strategy: "fvg-impulse",
-    symbol: "EURUSD",
+    strategy: "mnq-daily",
+    symbol: "MNQ",
     direction: "BUY",
-    entry_price: 1.1,
+    entry_price: 18500,
     exit_price: null,
-    sl_price: 1.09,
-    tp_price: 1.12,
-    lot_size: 0.1,
+    sl_price: 18480,
+    tp_price: 18540,
+    contracts: 1,
     status: "open",
     outcome: null,
-    pnl_pips: null,
+    pnl_points: null,
     pnl_usd: null,
     rr_achieved: null,
-    risk_pips: 10,
+    risk_points: 10,
     open_time: "2026-04-10T14:00:00Z",
     close_time: null,
     tags: [],
@@ -72,7 +72,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     rating: null,
     confidence: null,
     screenshot_url: null,
-    instrument_type: "forex",
+    instrument_type: "futures_mnq",
     account_id: null,
     account_name: null,
     metadata: {},
@@ -127,7 +127,7 @@ describe("CalendarDaySheet — open state with trades", () => {
 
   it("renders the trade symbol", async () => {
     render(<CalendarDaySheet date="2026-04-10" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText("EURUSD")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("MNQ")).toBeInTheDocument());
   });
 
   it("shows 'View in Journal' link after trades load", async () => {
@@ -139,12 +139,12 @@ describe("CalendarDaySheet — open state with trades", () => {
 describe("CalendarDaySheet — cancelled trade filtering", () => {
   it("does not render cancelled trades", async () => {
     vi.mocked(fetchTrades).mockResolvedValue([
-      makeTrade({ id: "t-open", symbol: "EURUSD", status: "open" }),
-      makeTrade({ id: "t-cancelled", symbol: "GBPUSD", status: "cancelled" }),
+      makeTrade({ id: "t-open", symbol: "MNQ", status: "open" }),
+      makeTrade({ id: "t-cancelled", symbol: "MES", status: "cancelled" }),
     ]);
     render(<CalendarDaySheet date="2026-04-10" onClose={() => {}} />);
-    await waitFor(() => expect(screen.getByText("EURUSD")).toBeInTheDocument());
-    expect(screen.queryByText("GBPUSD")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("MNQ")).toBeInTheDocument());
+    expect(screen.queryByText("MES")).not.toBeInTheDocument();
   });
 
   it("shows 'No trades on this day' when all trades are cancelled", async () => {
@@ -178,16 +178,16 @@ describe("CalendarDaySheet — error state", () => {
   });
 });
 
-describe("CalendarDaySheet — session grouping (forex)", () => {
-  it("groups all forex trades under 'All' header regardless of time", async () => {
+describe("CalendarDaySheet — session grouping (no instrumentType)", () => {
+  it("groups trades under 'All' header regardless of time when instrumentType is omitted", async () => {
     vi.mocked(fetchTrades).mockResolvedValue([
-      makeTrade({ id: "t-1", symbol: "EURUSD", open_time: "2026-04-10T10:00:00Z" }),
-      makeTrade({ id: "t-2", symbol: "GBPUSD", open_time: "2026-04-10T14:00:00Z" }),
+      makeTrade({ id: "t-1", symbol: "MNQ", open_time: "2026-04-10T10:00:00Z" }),
+      makeTrade({ id: "t-2", symbol: "MES", open_time: "2026-04-10T14:00:00Z" }),
     ]);
     render(
-      <CalendarDaySheet date="2026-04-10" onClose={() => {}} instrumentType="forex" />
+      <CalendarDaySheet date="2026-04-10" onClose={() => {}} />
     );
-    await waitFor(() => expect(screen.getByText("EURUSD")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("MNQ")).toBeInTheDocument());
     // Session header text is "All" (CSS uppercase is visual-only)
     expect(screen.getByText("All")).toBeInTheDocument();
     expect(screen.queryByText("AM")).not.toBeInTheDocument();

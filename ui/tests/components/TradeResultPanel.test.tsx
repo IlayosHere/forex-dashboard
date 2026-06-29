@@ -19,20 +19,20 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     id: "t-1",
     signal_id: null,
     scenario_id: null,
-    strategy: "fvg-impulse",
-    symbol: "EURUSD",
+    strategy: "mnq-daily",
+    symbol: "MNQ",
     direction: "BUY",
-    entry_price: 1.1,
+    entry_price: 20000,
     exit_price: null,
-    sl_price: 1.09,
-    tp_price: 1.12,
-    lot_size: 0.1,
+    sl_price: 19990,
+    tp_price: 20030,
+    contracts: 1,
     status: "closed",
     outcome: null,
-    pnl_pips: null,
+    pnl_points: null,
     pnl_usd: null,
     rr_achieved: null,
-    risk_pips: 10,
+    risk_points: 10,
     open_time: "2026-04-10T14:00:00Z",
     close_time: "2026-04-10T16:00:00Z",
     tags: [],
@@ -40,7 +40,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     rating: null,
     confidence: null,
     screenshot_url: null,
-    instrument_type: "forex",
+    instrument_type: "futures",
     account_id: null,
     account_name: null,
     metadata: {},
@@ -77,7 +77,7 @@ describe("TradeResultPanel — BE Outcome row visibility", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "breakeven", be_outcome: null })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.getByText("BE Outcome")).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("TradeResultPanel — BE Outcome row visibility", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "win", be_outcome: null })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.queryByText("BE Outcome")).not.toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("TradeResultPanel — BE Outcome row visibility", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "loss", be_outcome: null })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.queryByText("BE Outcome")).not.toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("TradeResultPanel — BE Outcome row visibility", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: null, be_outcome: null })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.queryByText("BE Outcome")).not.toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("TradeResultPanel — BE Outcome label values", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "breakeven", be_outcome: "prevented_loss" })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.getByText("Prevented Loss")).toBeInTheDocument();
@@ -129,7 +129,7 @@ describe("TradeResultPanel — BE Outcome label values", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "breakeven", be_outcome: "missed_tp" })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.getByText("Missed TP")).toBeInTheDocument();
@@ -139,7 +139,7 @@ describe("TradeResultPanel — BE Outcome label values", () => {
     render(
       <TradeResultPanel
         trade={makeTrade({ outcome: "breakeven", be_outcome: null })}
-        unitLabel="pips"
+        unitLabel="pts"
       />
     );
     expect(screen.getByText("Not reviewed")).toBeInTheDocument();

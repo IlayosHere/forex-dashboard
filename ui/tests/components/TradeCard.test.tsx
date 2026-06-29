@@ -27,20 +27,20 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     id: "t-1",
     signal_id: null,
     scenario_id: null,
-    strategy: "fvg-impulse",
-    symbol: "EURUSD",
+    strategy: "mnq-daily",
+    symbol: "MNQ",
     direction: "BUY",
-    entry_price: 1.1,
+    entry_price: 20000,
     exit_price: null,
-    sl_price: 1.09,
-    tp_price: 1.12,
-    lot_size: 0.1,
+    sl_price: 19990,
+    tp_price: 20030,
+    contracts: 1,
     status: "open",
     outcome: null,
-    pnl_pips: null,
+    pnl_points: null,
     pnl_usd: null,
     rr_achieved: null,
-    risk_pips: 10,
+    risk_points: 10,
     open_time: "2026-04-10T14:00:00Z",
     close_time: null,
     tags: [],
@@ -48,7 +48,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     rating: null,
     confidence: null,
     screenshot_url: null,
-    instrument_type: "forex",
+    instrument_type: "futures",
     account_id: null,
     account_name: null,
     metadata: {},
@@ -83,12 +83,12 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
 describe("TradeCard — basic rendering", () => {
   it("renders symbol", () => {
     render(<TradeCard trade={makeTrade()} onClick={() => {}} />);
-    expect(screen.getByText("EURUSD")).toBeInTheDocument();
+    expect(screen.getByText("MNQ")).toBeInTheDocument();
   });
 
   it("renders strategy", () => {
     render(<TradeCard trade={makeTrade()} onClick={() => {}} />);
-    expect(screen.getByText("fvg-impulse")).toBeInTheDocument();
+    expect(screen.getByText("mnq-daily")).toBeInTheDocument();
   });
 
   it("renders status badge", () => {

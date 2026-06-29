@@ -27,71 +27,64 @@ const MOCK_EVENT: CalendarEvent = {
 describe("CalendarNextStrip", () => {
   it("renders nothing when event prop is null", () => {
     const { container } = render(
-      <CalendarNextStrip event={null} secondsUntil={3600} context="forex" />
+      <CalendarNextStrip event={null} secondsUntil={3600} />
     );
     expect(container.firstChild).toBeNull();
   });
 
   it("shows event name when event is provided", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} />
     );
     expect(screen.getByText("Non-Farm Payrolls")).toBeInTheDocument();
   });
 
   it("shows event currency when event is provided", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} />
     );
     expect(screen.getByText("USD")).toBeInTheDocument();
   });
 
   it("displays countdown in HH:MM:SS format", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3661} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3661} />
     );
     expect(screen.getByText("01:01:01")).toBeInTheDocument();
   });
 
   it("displays countdown with zero-padded hours and minutes", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3665} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3665} />
     );
     expect(screen.getByText("01:01:05")).toBeInTheDocument();
   });
 
   it("shows RELEASING NOW text when secondsUntil is at threshold (300)", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={300} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={300} />
     );
     expect(screen.getByText("RELEASING NOW")).toBeInTheDocument();
   });
 
   it("shows RELEASING NOW text when secondsUntil is below threshold", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={60} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={60} />
     );
     expect(screen.getByText("RELEASING NOW")).toBeInTheDocument();
   });
 
   it("shows countdown text when secondsUntil is above threshold", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={301} context="forex" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={301} />
     );
     expect(screen.queryByText("RELEASING NOW")).not.toBeInTheDocument();
     expect(screen.getByText("00:05:01")).toBeInTheDocument();
   });
 
-  it("shows UTC time suffix when context is forex", () => {
+  it("shows ET time suffix", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="forex" />
-    );
-    expect(screen.getByText(/UTC/)).toBeInTheDocument();
-  });
-
-  it("shows ET time suffix when context is mnq", () => {
-    render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} />
     );
     expect(screen.getByText(/ET/)).toBeInTheDocument();
   });
@@ -117,7 +110,7 @@ const EARLY_CLOSE: MarketClosure = {
 describe("CalendarNextStrip — closure override", () => {
   it("renders the closed banner instead of the countdown when closure is full_close", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" closure={FULL_CLOSE} />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} closure={FULL_CLOSE} />
     );
     expect(screen.getByText("Closed")).toBeInTheDocument();
     expect(screen.getByText("CME Globex — Christmas Day")).toBeInTheDocument();
@@ -125,20 +118,20 @@ describe("CalendarNextStrip — closure override", () => {
   });
 
   it("renders nothing when closure is full_close and there is no event either", () => {
-    render(<CalendarNextStrip event={null} secondsUntil={0} context="mnq" closure={FULL_CLOSE} />);
+    render(<CalendarNextStrip event={null} secondsUntil={0} closure={FULL_CLOSE} />);
     expect(screen.getByText("Closed")).toBeInTheDocument();
   });
 
   it("shows an early-close badge alongside the normal countdown", () => {
     render(
-      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="mnq" closure={EARLY_CLOSE} />
+      <CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} closure={EARLY_CLOSE} />
     );
     expect(screen.getByText(/Early close/)).toBeInTheDocument();
     expect(screen.getByText("Non-Farm Payrolls")).toBeInTheDocument();
   });
 
   it("does not render a closure badge when closure prop is null", () => {
-    render(<CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} context="forex" closure={null} />);
+    render(<CalendarNextStrip event={MOCK_EVENT} secondsUntil={3600} closure={null} />);
     expect(screen.queryByText(/Early close/)).not.toBeInTheDocument();
     expect(screen.queryByText("Closed")).not.toBeInTheDocument();
   });

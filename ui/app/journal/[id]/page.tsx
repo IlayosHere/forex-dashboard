@@ -164,8 +164,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const tradeAccount = trade.account_id ? accounts.find((a) => a.id === trade.account_id) : null;
   const tradeAccountType: AccountType = tradeAccount?.account_type ?? "demo";
   const instrumentType = trade.instrument_type ?? getInstrumentType(trade.strategy);
-  const unitLabel = getUnitLabel(instrumentType);
-  const sizeLabel = getSizeLabel(instrumentType);
+  const unitLabel = getUnitLabel();
+  const sizeLabel = getSizeLabel();
   const isBuy = trade.direction === "BUY";
 
   const FEELING_FIELD_MAP = {

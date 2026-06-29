@@ -3,61 +3,29 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 import { CalendarFilters } from "@/components/CalendarFilters";
 
-import type { CalendarContext, CalendarImpact } from "@/lib/types";
+import type { CalendarImpact } from "@/lib/types";
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 interface DefaultProps {
-  context: CalendarContext;
-  onContextChange: (ctx: CalendarContext) => void;
   week: "current" | "next";
   onWeekChange: (w: "current" | "next") => void;
   impactFilter: CalendarImpact[];
   onImpactChange: (impacts: CalendarImpact[]) => void;
-  currencyFilter: string;
-  onCurrencyChange: (currency: string) => void;
 }
 
 function defaultProps(): DefaultProps {
   return {
-    context: "forex",
-    onContextChange: vi.fn() as (ctx: CalendarContext) => void,
     week: "current",
     onWeekChange: vi.fn() as (w: "current" | "next") => void,
     impactFilter: ["High"],
     onImpactChange: vi.fn() as (impacts: CalendarImpact[]) => void,
-    currencyFilter: "All",
-    onCurrencyChange: vi.fn() as (currency: string) => void,
   };
 }
 
 describe("CalendarFilters", () => {
-  it("renders the FX context button", () => {
-    render(<CalendarFilters {...defaultProps()} />);
-    expect(screen.getByRole("button", { name: "FX" })).toBeInTheDocument();
-  });
-
-  it("renders the MNQ context button", () => {
-    render(<CalendarFilters {...defaultProps()} />);
-    expect(screen.getByRole("button", { name: "MNQ" })).toBeInTheDocument();
-  });
-
-  it("clicking MNQ calls onContextChange with 'mnq'", () => {
-    const props = defaultProps();
-    render(<CalendarFilters {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "MNQ" }));
-    expect(props.onContextChange).toHaveBeenCalledWith("mnq");
-  });
-
-  it("clicking FX calls onContextChange with 'forex'", () => {
-    const props = defaultProps();
-    render(<CalendarFilters {...props} context="mnq" />);
-    fireEvent.click(screen.getByRole("button", { name: "FX" }));
-    expect(props.onContextChange).toHaveBeenCalledWith("forex");
-  });
-
   it("renders High impact pill", () => {
     render(<CalendarFilters {...defaultProps()} />);
     expect(screen.getByRole("button", { name: "High" })).toBeInTheDocument();
@@ -94,20 +62,8 @@ describe("CalendarFilters", () => {
     expect(props.onImpactChange).toHaveBeenCalledWith(["High", "Low"]);
   });
 
-  it("Reset filters button is NOT visible when defaults are active (forex context)", () => {
+  it("Reset filters button is NOT visible when defaults are active", () => {
     render(<CalendarFilters {...defaultProps()} />);
-    expect(screen.queryByRole("button", { name: "Reset filters" })).not.toBeInTheDocument();
-  });
-
-  it("Reset filters button is NOT visible when defaults are active (mnq context with USD)", () => {
-    render(
-      <CalendarFilters
-        {...defaultProps()}
-        context="mnq"
-        impactFilter={["High"]}
-        currencyFilter="USD"
-      />
-    );
     expect(screen.queryByRole("button", { name: "Reset filters" })).not.toBeInTheDocument();
   });
 
@@ -120,11 +76,6 @@ describe("CalendarFilters", () => {
     render(
       <CalendarFilters {...defaultProps()} impactFilter={["High", "Medium"]} />
     );
-    expect(screen.getByRole("button", { name: "Reset filters" })).toBeInTheDocument();
-  });
-
-  it("Reset filters button IS visible when currency is non-default", () => {
-    render(<CalendarFilters {...defaultProps()} currencyFilter="EUR" />);
     expect(screen.getByRole("button", { name: "Reset filters" })).toBeInTheDocument();
   });
 

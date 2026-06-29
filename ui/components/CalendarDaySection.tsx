@@ -6,13 +6,12 @@ import { CalendarClosureRow } from "@/components/CalendarClosureRow";
 import { CalendarEventRow } from "@/components/CalendarEventRow";
 import { getTodayKeyUTC } from "@/lib/utils";
 
-import type { CalendarContext, CalendarEvent, CalendarImpact, MarketClosure } from "@/lib/types";
+import type { CalendarEvent, CalendarImpact, MarketClosure } from "@/lib/types";
 
 interface CalendarDaySectionProps {
   date: string;
   events: CalendarEvent[];
   closures: MarketClosure[];
-  context: CalendarContext;
   defaultOpen: boolean;
   currentTime: Date;
 }
@@ -38,7 +37,7 @@ function buildSummary(events: CalendarEvent[]): string {
   return `${events.length} event${events.length !== 1 ? "s" : ""}`;
 }
 
-export function CalendarDaySection({ date, events, closures, context, defaultOpen, currentTime }: CalendarDaySectionProps) {
+export function CalendarDaySection({ date, events, closures, defaultOpen, currentTime }: CalendarDaySectionProps) {
   const hasFullClose = closures.some((c) => c.closure_type === "full_close");
   const [open, setOpen] = useState(defaultOpen || hasFullClose);
   const { dayName, formatted, isToday } = parseDateLabel(date);
@@ -94,7 +93,6 @@ export function CalendarDaySection({ date, events, closures, context, defaultOpe
             <CalendarEventRow
               key={event.id}
               event={event}
-              context={context}
               isPast={new Date(event.datetime_utc) < currentTime}
             />
           ))}

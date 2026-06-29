@@ -18,7 +18,6 @@ function ErrMsg({ errors, field, msg }: { errors: Record<string, boolean>; field
 interface TradePriceFieldsProps {
   form: TradeFormData;
   errors: Record<string, boolean>;
-  isFutures: boolean;
   isBacktest?: boolean;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
 }
@@ -26,7 +25,6 @@ interface TradePriceFieldsProps {
 export function TradePriceFields({
   form,
   errors,
-  isFutures,
   isBacktest = false,
   onChange,
 }: TradePriceFieldsProps) {
@@ -46,15 +44,15 @@ export function TradePriceFields({
         </div>
         {!isBacktest && (
           <div className="space-y-1">
-            <label className="label">{isFutures ? "Contracts" : "Lot Size"}</label>
+            <label className="label">Contracts</label>
             <Input
               type="number"
-              step={isFutures ? "1" : "0.01"}
-              value={form.lot_size}
-              onChange={(e) => onChange("lot_size", e.target.value)}
-              className={`${INPUT_CLASS} ${errBorder(errors, "lot_size")}`}
+              step="1"
+              value={form.contracts}
+              onChange={(e) => onChange("contracts", e.target.value)}
+              className={`${INPUT_CLASS} ${errBorder(errors, "contracts")}`}
             />
-            <ErrMsg errors={errors} field="lot_size" msg="Required" />
+            <ErrMsg errors={errors} field="contracts" msg="Required" />
           </div>
         )}
       </div>

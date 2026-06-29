@@ -1,8 +1,7 @@
-import type { BeatMiss, CalendarContext, CalendarEvent } from "@/lib/types";
+import type { BeatMiss, CalendarEvent } from "@/lib/types";
 
 interface CalendarEventRowProps {
   event: CalendarEvent;
-  context: CalendarContext;
   isPast: boolean;
 }
 
@@ -21,12 +20,11 @@ function formatActual(actual: string | null, beatMiss: BeatMiss): { text: string
   return { text: actual, className: "text-muted-foreground" };
 }
 
-function formatTime(event: CalendarEvent, context: CalendarContext): string {
-  const iso = context === "mnq" ? event.datetime_et : event.datetime_utc;
-  return iso.slice(11, 16);
+function formatTime(event: CalendarEvent): string {
+  return event.datetime_et.slice(11, 16);
 }
 
-export function CalendarEventRow({ event, context, isPast }: CalendarEventRowProps) {
+export function CalendarEventRow({ event, isPast }: CalendarEventRowProps) {
   const borderClass = LEFT_BORDER[event.impact] ?? LEFT_BORDER["Low"];
   const rowBase = `overflow-x-auto grid grid-cols-[4px_52px_52px_1fr_72px_72px_80px] gap-x-3 items-center px-3 py-1.5 text-xs ${borderClass}`;
   const rowStateClass = isPast
@@ -39,7 +37,7 @@ export function CalendarEventRow({ event, context, isPast }: CalendarEventRowPro
     <div className={`${rowBase} ${rowStateClass}`} role="row">
       <span />
       <span className="font-mono text-muted-foreground tabular-nums">
-        {formatTime(event, context)}
+        {formatTime(event)}
       </span>
       <span className="font-semibold text-foreground uppercase tracking-wide text-[10px]">
         {event.currency}

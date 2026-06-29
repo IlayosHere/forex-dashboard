@@ -19,7 +19,6 @@ import { useShowMoney } from "@/lib/useShowMoney";
 import { strategies } from "@/lib/strategies";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",   label: "FX" },
   { value: "futures", label: "Futures" },
 ];
 

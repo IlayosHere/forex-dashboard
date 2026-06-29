@@ -1,9 +1,8 @@
-import type { CalendarContext, CalendarEvent, MarketClosure } from "@/lib/types";
+import type { CalendarEvent, MarketClosure } from "@/lib/types";
 
 interface CalendarNextStripProps {
   event: CalendarEvent | null;
   secondsUntil: number;
-  context: CalendarContext;
   closure?: MarketClosure | null;
 }
 
@@ -16,10 +15,8 @@ function formatCountdown(seconds: number): string {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-function formatEventTime(event: CalendarEvent, context: CalendarContext): string {
-  const iso = context === "mnq" ? event.datetime_et : event.datetime_utc;
-  const suffix = context === "mnq" ? " ET" : " UTC";
-  return `${iso.slice(11, 16)}${suffix}`;
+function formatEventTime(event: CalendarEvent): string {
+  return `${event.datetime_et.slice(11, 16)} ET`;
 }
 
 const IMPACT_BADGE_CLASS: Record<string, string> = {
@@ -28,7 +25,7 @@ const IMPACT_BADGE_CLASS: Record<string, string> = {
   Low: "bg-border-light/15 text-text-dim border border-border-light/30",
 };
 
-export function CalendarNextStrip({ event, secondsUntil, context, closure }: CalendarNextStripProps) {
+export function CalendarNextStrip({ event, secondsUntil, closure }: CalendarNextStripProps) {
   if (closure?.closure_type === "full_close") {
     return (
       <div className="w-full h-[52px] flex items-center gap-3 px-6 bg-card border-b border-bear/30">
@@ -69,7 +66,7 @@ export function CalendarNextStrip({ event, secondsUntil, context, closure }: Cal
         {event.name}
       </span>
       <span className="text-xs text-text-dim">
-        {formatEventTime(event, context)}
+        {formatEventTime(event)}
       </span>
       <span className={countdownClass}>
         {isLive ? "RELEASING NOW" : formatCountdown(secondsUntil)}

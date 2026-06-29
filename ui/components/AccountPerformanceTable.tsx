@@ -15,7 +15,7 @@ interface AccountRow {
   wins: number;
   losses: number;
   winRate: number | null;
-  pnlPips: number | null;
+  pnlPoints: number | null;
   pnlUsd: number | null;
 }
 
@@ -44,7 +44,7 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
             <th className="text-left px-4 py-2 font-medium">Account</th>
             <th className="text-right px-4 py-2 font-medium">Trades</th>
             <th className="text-right px-4 py-2 font-medium">Win %</th>
-            <th className="text-right px-4 py-2 font-medium">P&L (pips)</th>
+            <th className="text-right px-4 py-2 font-medium">P&L (pts)</th>
             <th className="text-right px-4 py-2 font-medium">P&L (USD)</th>
           </tr>
         </thead>
@@ -54,9 +54,7 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
               <td className="px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <AccountBadge name={row.name} accountType={row.accountType} />
-                  <span className="text-xs text-[#777777]">
-                    {row.instrumentType?.startsWith("futures") ? "Futures" : "FX"}
-                  </span>
+                  <span className="text-xs text-[#777777]">Futures</span>
                 </div>
               </td>
               <td className="px-4 py-2.5 text-right text-[#e0e0e0] tabular-nums">
@@ -70,8 +68,8 @@ export function AccountPerformanceTable({ rows }: AccountPerformanceTableProps) 
               >
                 {row.winRate !== null ? `${fmt(row.winRate)}%` : "--"}
               </td>
-              <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: pnlColor(row.pnlPips) }}>
-                {row.pnlPips != null ? (row.pnlPips >= 0 ? "+" : "") : ""}{fmt(row.pnlPips)}
+              <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: pnlColor(row.pnlPoints) }}>
+                {row.pnlPoints != null ? (row.pnlPoints >= 0 ? "+" : "") : ""}{fmt(row.pnlPoints)}
               </td>
               <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: pnlColor(row.pnlUsd) }}>
                 {row.pnlUsd != null ? (row.pnlUsd >= 0 ? "+" : "") : ""}${fmt(row.pnlUsd, 2)}

@@ -38,7 +38,7 @@ function buildRows(stats: TradeStats | null, tab: TabKey): RowData[] {
       name: "name" in d ? (d as { name: string }).name : key,
       total: d.total,
       winRate: d.win_rate,
-      pnl: d.total_pnl_usd ?? (d as { total_pnl_pips?: number }).total_pnl_pips ?? 0,
+      pnl: d.total_pnl_usd ?? (d as { total_pnl_points?: number }).total_pnl_points ?? 0,
       filterKey: "",
       filterValue: key,
     }))
