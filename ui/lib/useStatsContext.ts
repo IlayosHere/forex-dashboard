@@ -50,7 +50,6 @@ const INSTRUMENT_LABELS: Record<string, string> = {
   futures:     "Futures",
   futures_mnq: "MNQ",
   futures_mes: "MES",
-  forex:       "FX",
   "":          "All instruments",
 };
 

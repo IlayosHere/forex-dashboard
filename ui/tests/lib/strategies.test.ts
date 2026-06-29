@@ -8,13 +8,6 @@ import {
 } from "@/lib/strategies";
 
 describe("strategies registry", () => {
-  it("contains fvg-impulse strategy", () => {
-    const fvg = strategies.find((s) => s.slug === "fvg-impulse");
-    expect(fvg).toBeDefined();
-    expect(fvg?.label).toBe("FVG Impulse");
-    expect(fvg?.instrumentType).toBe("forex");
-  });
-
   it("contains mnq-daily strategy", () => {
     const mnq = strategies.find((s) => s.slug === "mnq-daily");
     expect(mnq).toBeDefined();
@@ -42,10 +35,6 @@ describe("strategies registry", () => {
 });
 
 describe("getInstrumentType", () => {
-  it("returns forex for fvg-impulse", () => {
-    expect(getInstrumentType("fvg-impulse")).toBe("forex");
-  });
-
   it("returns futures_mnq for mnq-daily", () => {
     expect(getInstrumentType("mnq-daily")).toBe("futures_mnq");
   });
@@ -54,27 +43,19 @@ describe("getInstrumentType", () => {
     expect(getInstrumentType("qt-mnq")).toBe("futures_mnq");
   });
 
-  it("defaults to forex for unknown strategy", () => {
-    expect(getInstrumentType("unknown-strategy")).toBe("forex");
+  it("defaults to futures_mnq for unknown strategy", () => {
+    expect(getInstrumentType("unknown-strategy")).toBe("futures_mnq");
   });
 });
 
 describe("getUnitLabel", () => {
-  it("returns pips for forex", () => {
-    expect(getUnitLabel("forex")).toBe("pips");
-  });
-
-  it("returns pts for futures_mnq", () => {
-    expect(getUnitLabel("futures_mnq")).toBe("pts");
+  it("returns pts", () => {
+    expect(getUnitLabel()).toBe("pts");
   });
 });
 
 describe("getSizeLabel", () => {
-  it("returns lots for forex", () => {
-    expect(getSizeLabel("forex")).toBe("lots");
-  });
-
-  it("returns contracts for futures_mnq", () => {
-    expect(getSizeLabel("futures_mnq")).toBe("contracts");
+  it("returns contracts", () => {
+    expect(getSizeLabel()).toBe("contracts");
   });
 });

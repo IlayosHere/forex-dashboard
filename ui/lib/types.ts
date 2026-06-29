@@ -1,4 +1,4 @@
-export type InstrumentType = "forex" | "futures" | "futures_mnq" | "futures_mes";
+export type InstrumentType = "futures" | "futures_mnq" | "futures_mes";
 export type BeOutcome = "prevented_loss" | "missed_tp";
 export type TradingFeeling =
   | "calm" | "focused" | "confident"
@@ -61,8 +61,8 @@ export interface TradeCreateRequest {
   entry_price: number;
   sl_price: number;
   tp_price?: number | null;
-  lot_size: number;
-  risk_pips?: number;
+  contracts: number;
+  risk_points?: number;
   open_time: string;
   tags?: string[];
   notes?: string;
@@ -99,8 +99,8 @@ export interface TradeUpdateRequest {
   exit_price?: number | null;
   sl_price?: number | null;
   tp_price?: number | null;
-  lot_size?: number | null;
-  risk_pips?: number | null;
+  contracts?: number | null;
+  risk_points?: number | null;
   status?: "open" | "closed" | "breakeven" | "cancelled" | null;
   outcome?: "win" | "loss" | "breakeven" | null;
   open_time?: string | null;
@@ -145,13 +145,13 @@ export interface Trade {
   exit_price: number | null;
   sl_price: number;
   tp_price: number | null;
-  lot_size: number;
+  contracts: number;
   status: "open" | "closed" | "breakeven" | "cancelled";
   outcome: "win" | "loss" | "breakeven" | null;
-  pnl_pips: number | null;
+  pnl_points: number | null;
   pnl_usd: number | null;
   rr_achieved: number | null;
-  risk_pips: number;
+  risk_points: number;
   open_time: string;
   close_time: string | null;
   tags: string[];
@@ -327,7 +327,7 @@ export interface BreakdownEntry {
   wins: number;
   losses: number;
   win_rate: number | null;
-  total_pnl_pips: number;
+  total_pnl_points: number;
   total_pnl_usd: number;
   total_r?: number;
   avg_pnl_usd: number;
@@ -340,7 +340,6 @@ export interface BreakdownEntry {
 // ---------------------------------------------------------------------------
 
 export type CalendarImpact = "High" | "Medium" | "Low";
-export type CalendarContext = "forex" | "mnq";
 export type SessionBucket = "pre_market" | "cash_session" | "none";
 export type BeatMiss = "beat" | "miss" | "in_line" | "pending";
 
@@ -414,7 +413,7 @@ export interface TradeStats {
   breakevens: number;
   win_rate: number | null;
   avg_rr: number | null;
-  total_pnl_pips: number;
+  total_pnl_points: number;
   total_pnl_usd: number;
   total_r?: number;
   best_trade_pnl: number | null;
@@ -422,15 +421,15 @@ export interface TradeStats {
   current_streak: number;
   profit_factor: number | null;
   avg_hold_time_hours: number | null;
-  avg_win_pips: number | null;
-  avg_loss_pips: number | null;
+  avg_win_points: number | null;
+  avg_loss_points: number | null;
   avg_win_usd: number | null;
   avg_loss_usd: number | null;
   expectancy_usd: number | null;
-  expectancy_pips: number | null;
+  expectancy_points: number | null;
   consistency_ratio: number | null;
-  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
-  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
+  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_points: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
+  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_points: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
   by_account: Record<string, {
     account_name: string;
     account_type: AccountType;
@@ -439,7 +438,7 @@ export interface TradeStats {
     wins: number;
     losses: number;
     win_rate: number | null;
-    total_pnl_pips: number;
+    total_pnl_points: number;
     total_pnl_usd: number;
     total_r?: number;
   }>;
@@ -510,9 +509,9 @@ export interface EquityCurvePoint {
   date: string | null;
   close_time: string | null;
   pnl_usd: number;
-  pnl_pips: number;
+  pnl_points: number;
   cumulative_pnl_usd: number;
-  cumulative_pnl_pips: number;
+  cumulative_pnl_points: number;
   pnl_r: number;
   cumulative_r: number;
   trade_count: number;
@@ -526,7 +525,7 @@ export interface DailySummaryPoint {
   losses: number;
   breakevens: number;
   pnl_usd: number;
-  pnl_pips: number;
+  pnl_points: number;
   pnl_r: number;
   compliant: number;
   mistakes: number;

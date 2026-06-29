@@ -10,24 +10,6 @@ export interface StrategyMeta {
 
 export const strategies: StrategyMeta[] = [
   {
-    slug: "fvg-impulse",
-    label: "FVG Impulse",
-    instrumentType: "forex",
-    description: "Fair Value Gap detection on M15 with impulse confirmation",
-  },
-  {
-    slug: "fvg-impulse-5m",
-    label: "FVG Impulse 5M",
-    instrumentType: "forex",
-    description: "FVG wick-test on M5 — SL at far edge + 2 pips",
-  },
-  {
-    slug: "nova-candle",
-    label: "Nova Candle",
-    instrumentType: "forex",
-    description: "Wickless momentum candle detection on M15",
-  },
-  {
     slug: "mnq-daily",
     label: "MNQ Daily",
     instrumentType: "futures_mnq",
@@ -45,17 +27,17 @@ export const strategies: StrategyMeta[] = [
 
 export function getInstrumentType(strategySlug: string): InstrumentType {
   const match = strategies.find((s) => s.slug === strategySlug);
-  return match?.instrumentType ?? "forex";
+  return match?.instrumentType ?? "futures_mnq";
 }
 
 export function isFutures(instrumentType: InstrumentType | string): boolean {
   return instrumentType?.startsWith("futures") === true;
 }
 
-export function getUnitLabel(instrumentType: InstrumentType): string {
-  return isFutures(instrumentType) ? "pts" : "pips";
+export function getUnitLabel(): string {
+  return "pts";
 }
 
-export function getSizeLabel(instrumentType: InstrumentType): string {
-  return isFutures(instrumentType) ? "contracts" : "lots";
+export function getSizeLabel(): string {
+  return "contracts";
 }

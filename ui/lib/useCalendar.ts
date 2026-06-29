@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 import { fetchCalendar } from "@/lib/api";
-import type { CalendarContext, CalendarEvent } from "@/lib/types";
+import type { CalendarEvent } from "@/lib/types";
 
 // Calendar data is weekly — 5-minute poll is intentional, not the 30s project default
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -16,7 +16,6 @@ export interface UseCalendarResult {
 
 interface UseCalendarOptions {
   week: "current" | "next";
-  context: CalendarContext;
 }
 
 function isMnqRelevant(event: CalendarEvent): boolean {
@@ -26,7 +25,7 @@ function isMnqRelevant(event: CalendarEvent): boolean {
   return false;
 }
 
-export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarResult {
+export function useCalendar({ week }: UseCalendarOptions): UseCalendarResult {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +36,7 @@ export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarR
     try {
       const data = await fetchCalendar(week);
       if (cancelRef.current !== id) return;
-      const filtered = context === "mnq" ? data.filter(isMnqRelevant) : data;
-      setEvents(filtered);
+      setEvents(data.filter(isMnqRelevant));
       setError(null);
     } catch (err) {
       if (cancelRef.current !== id) return;
@@ -46,7 +44,7 @@ export function useCalendar({ week, context }: UseCalendarOptions): UseCalendarR
     } finally {
       if (cancelRef.current === id) setLoading(false);
     }
-  }, [week, context]);
+  }, [week]);
 
   useEffect(() => {
     setLoading(true);

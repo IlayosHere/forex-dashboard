@@ -50,80 +50,68 @@ const ALL_EVENTS = [
   GBP_EVENT,
 ];
 
-describe("useCalendar — forex context", () => {
+describe("useCalendar — MNQ-relevant macro filtering", () => {
   beforeEach(() => {
     vi.mocked(fetchCalendar).mockResolvedValue(ALL_EVENTS);
   });
 
-  it("returns all events when context is forex", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.events).toHaveLength(ALL_EVENTS.length);
-  });
-
   it("loading starts true and becomes false after fetch", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     expect(result.current.loading).toBe(true);
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
   it("error is null on successful fetch", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBeNull();
   });
-});
-
-describe("useCalendar — mnq context filtering", () => {
-  beforeEach(() => {
-    vi.mocked(fetchCalendar).mockResolvedValue(ALL_EVENTS);
-  });
 
   it("includes USD events", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "usd-1")).toBe(true);
   });
 
   it("includes CNY events named 'China PMI'", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "cny-1")).toBe(true);
   });
 
   it("excludes CNY events NOT named 'China PMI'", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "cny-2")).toBe(false);
   });
 
   it("includes JPY events named 'BOJ ...'", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "jpy-1")).toBe(true);
   });
 
   it("excludes JPY events NOT named 'BOJ ...'", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "jpy-2")).toBe(false);
   });
 
   it("excludes EUR events", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "eur-1")).toBe(false);
   });
 
   it("excludes GBP events", async () => {
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events.some((e) => e.id === "gbp-1")).toBe(false);
   });
 
   it("returns empty array when no events are MNQ-relevant", async () => {
     vi.mocked(fetchCalendar).mockResolvedValue([EUR_EVENT, GBP_EVENT]);
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "mnq" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events).toHaveLength(0);
   });
@@ -132,21 +120,21 @@ describe("useCalendar — mnq context filtering", () => {
 describe("useCalendar — error handling", () => {
   it("sets error message when fetch throws", async () => {
     vi.mocked(fetchCalendar).mockRejectedValue(new Error("Network failure"));
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe("Network failure");
   });
 
   it("sets fallback error string when thrown value is not an Error", async () => {
     vi.mocked(fetchCalendar).mockRejectedValue("bad");
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe("Failed to load calendar");
   });
 
   it("events remain empty on error", async () => {
     vi.mocked(fetchCalendar).mockRejectedValue(new Error("Network failure"));
-    const { result } = renderHook(() => useCalendar({ week: "current", context: "forex" }));
+    const { result } = renderHook(() => useCalendar({ week: "current" }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.events).toHaveLength(0);
   });
