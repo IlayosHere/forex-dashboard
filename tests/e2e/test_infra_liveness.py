@@ -33,6 +33,6 @@ def test_ui_login_page(ui_url: str, client: httpx.Client) -> None:
     # Next.js 16 hydrates the form client-side so the "Sign in" button
     # label is NOT in the initial SSR HTML. The <title> tag IS emitted
     # server-side from the app layout and is the stable liveness marker.
-    assert "Forex Signal Dashboard" in body, (
-        f"/login body did not contain 'Forex Signal Dashboard' title: {body[:500]}"
+    assert "Trade Journal" in body, (
+        f"/login body did not contain 'Trade Journal' title: {body[:500]}"
     )

@@ -131,16 +131,16 @@ def test_equity_curve_symbol_filter(
 ) -> None:
     """symbol query param filters results to the matching symbol."""
     make_trade(
-        db, symbol="EURUSD", status="closed", outcome="win",
+        db, symbol="MNQ", status="closed", outcome="win",
         pnl_usd=80.0, pnl_pips=16.0,
         close_time=BASE,
     )
     make_trade(
-        db, symbol="GBPUSD", status="closed", outcome="loss",
+        db, symbol="MES", status="closed", outcome="loss",
         pnl_usd=-30.0, pnl_pips=-6.0,
         close_time=BASE,
     )
-    resp = client.get(EQUITY_CURVE_URL, params={"symbol": "EURUSD"})
+    resp = client.get(EQUITY_CURVE_URL, params={"symbol": "MNQ"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
@@ -244,16 +244,16 @@ def test_daily_summary_symbol_filter(
 ) -> None:
     """symbol query param filters to the matching symbol only."""
     make_trade(
-        db, symbol="EURUSD", status="closed", outcome="win",
+        db, symbol="MNQ", status="closed", outcome="win",
         pnl_usd=80.0, pnl_pips=16.0,
         close_time=BASE,
     )
     make_trade(
-        db, symbol="GBPUSD", status="closed", outcome="loss",
+        db, symbol="MES", status="closed", outcome="loss",
         pnl_usd=-30.0, pnl_pips=-6.0,
         close_time=BASE,
     )
-    resp = client.get(DAILY_SUMMARY_URL, params={"symbol": "GBPUSD"})
+    resp = client.get(DAILY_SUMMARY_URL, params={"symbol": "MES"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1

@@ -125,7 +125,7 @@ def test_user_cannot_link_trade_to_other_users_account(
     account = _insert_account(db, owner=TEST_USER)
     payload = {
         "strategy": "mnq-daily",
-        "symbol": "EURUSD",
+        "symbol": "MNQ",
         "direction": "BUY",
         "entry_price": 1.085,
         "sl_price": 1.082,

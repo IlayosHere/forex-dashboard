@@ -230,7 +230,7 @@ def test_create_trade_qt_fields_null_by_default(client: TestClient) -> None:
         "/api/trades",
         json={
             "strategy": "mnq-daily",
-            "symbol": "EURUSD",
+            "symbol": "MNQ",
             "direction": "BUY",
             "entry_price": 1.085,
             "sl_price": 1.082,
