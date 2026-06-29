@@ -124,7 +124,7 @@ def test_user_cannot_link_trade_to_other_users_account(
 ) -> None:
     account = _insert_account(db, owner=TEST_USER)
     payload = {
-        "strategy": "fvg-impulse",
+        "strategy": "mnq-daily",
         "symbol": "EURUSD",
         "direction": "BUY",
         "entry_price": 1.085,

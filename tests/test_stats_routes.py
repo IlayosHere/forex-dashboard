@@ -109,7 +109,7 @@ def test_equity_curve_strategy_filter(
 ) -> None:
     """strategy query param filters results to the matching strategy."""
     make_trade(
-        db, strategy="fvg-impulse", status="closed", outcome="win",
+        db, strategy="mnq-daily", status="closed", outcome="win",
         pnl_usd=100.0, pnl_pips=20.0,
         close_time=BASE,
     )
@@ -118,7 +118,7 @@ def test_equity_curve_strategy_filter(
         pnl_usd=200.0, pnl_pips=40.0,
         close_time=BASE,
     )
-    resp = client.get(EQUITY_CURVE_URL, params={"strategy": "fvg-impulse"})
+    resp = client.get(EQUITY_CURVE_URL, params={"strategy": "mnq-daily"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
@@ -222,7 +222,7 @@ def test_daily_summary_strategy_filter(
 ) -> None:
     """strategy query param filters to the matching strategy only."""
     make_trade(
-        db, strategy="fvg-impulse", status="closed", outcome="win",
+        db, strategy="mnq-daily", status="closed", outcome="win",
         pnl_usd=100.0, pnl_pips=20.0,
         close_time=BASE,
     )
@@ -231,7 +231,7 @@ def test_daily_summary_strategy_filter(
         pnl_usd=200.0, pnl_pips=40.0,
         close_time=BASE,
     )
-    resp = client.get(DAILY_SUMMARY_URL, params={"strategy": "fvg-impulse"})
+    resp = client.get(DAILY_SUMMARY_URL, params={"strategy": "mnq-daily"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1

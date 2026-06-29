@@ -276,7 +276,7 @@ def test_trade_to_response_serializes_all_fields(db: Session) -> None:
     trade = make_trade(db, status="open")
     result = trade_to_response(trade, {})
     assert result["id"] == trade.id
-    assert result["strategy"] == "fvg-impulse"
+    assert result["strategy"] == "mnq-daily"
     assert result["symbol"] == "EURUSD"
     assert result["direction"] == "BUY"
     assert result["account_name"] is None

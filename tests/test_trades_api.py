@@ -16,7 +16,7 @@ from tests.conftest import make_trade
 def _trade_payload(**overrides: object) -> dict:
     """Return a valid TradeCreateRequest body with optional overrides."""
     base: dict = {
-        "strategy": "fvg-impulse",
+        "strategy": "mnq-daily",
         "symbol": "EURUSD",
         "direction": "BUY",
         "entry_price": 1.08500,
@@ -39,7 +39,7 @@ def test_create_trade_returns_201(client: TestClient) -> None:
     resp = client.post("/api/trades", json=_trade_payload())
     assert resp.status_code == 201
     data = resp.json()
-    assert data["strategy"] == "fvg-impulse"
+    assert data["strategy"] == "mnq-daily"
     assert data["status"] == "open"
     assert data["outcome"] is None
 

@@ -274,7 +274,7 @@ def test_trade_can_link_to_scenario(client: TestClient, sample_account: object) 
     resp = client.post("/api/trades", json={
         "account_id": sample_account.id,
         "scenario_id": scenario_id,
-        "strategy": "fvg-impulse",
+        "strategy": "mnq-daily",
         "symbol": "EURUSD",
         "instrument_type": "forex",
         "direction": "BUY",
@@ -298,7 +298,7 @@ def test_deleting_scenario_does_not_delete_linked_trade(client: TestClient, samp
     trade_resp = client.post("/api/trades", json={
         "account_id": sample_account.id,
         "scenario_id": scenario_id,
-        "strategy": "fvg-impulse",
+        "strategy": "mnq-daily",
         "symbol": "EURUSD",
         "instrument_type": "forex",
         "direction": "BUY",

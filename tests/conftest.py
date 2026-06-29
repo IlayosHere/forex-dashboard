@@ -129,7 +129,7 @@ def make_trade(
     db: Session,
     *,
     owner: str = TEST_USER,
-    strategy: str = "fvg-impulse",
+    strategy: str = "mnq-daily",
     symbol: str = "EURUSD",
     direction: str = "BUY",
     entry_price: float = 1.08500,
