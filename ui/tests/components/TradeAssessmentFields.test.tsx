@@ -51,6 +51,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     qt_fvg_date: "",
     qt_fvg_type: "",
     qt_entry_type: "",
+    trade_location: "home",
     ...overrides,
   };
 }

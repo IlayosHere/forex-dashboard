@@ -32,6 +32,7 @@ from shared.ict_taxonomy import (
     validate_setup_detail,
 )
 from shared.qt_taxonomy import QT_ENTRY_TYPES, QT_FVG_TYPES, QT_QUARTERS, QT_TP_TARGETS
+from shared.trade_location import TRADE_LOCATION_VALUES
 
 
 def _validate_feeling(v: str | None) -> str | None:
@@ -91,6 +92,9 @@ class TradeCreateRequest(BaseModel):
     qt_fvg_date: str | None = None
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
+
+    # Trade location — live trades only; None for backtest
+    trade_location: str = "home"
 
     @field_validator("direction")
     @classmethod
@@ -192,6 +196,13 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
         return v
 
+    @field_validator("trade_location")
+    @classmethod
+    def validate_trade_location(cls, v: str) -> str:
+        if v not in TRADE_LOCATION_VALUES:
+            raise ValueError(f"trade_location must be one of {TRADE_LOCATION_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
@@ -248,6 +259,9 @@ class TradeUpdateRequest(BaseModel):
     qt_fvg_date: str | None = None
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
+
+    # Trade location — live trades only; None leaves existing value unchanged
+    trade_location: str | None = None
 
     @field_validator("direction")
     @classmethod
@@ -365,6 +379,13 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
         return v
 
+    @field_validator("trade_location")
+    @classmethod
+    def validate_trade_location(cls, v: str | None) -> str | None:
+        if v is not None and v not in TRADE_LOCATION_VALUES:
+            raise ValueError(f"trade_location must be one of {TRADE_LOCATION_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
@@ -428,6 +449,7 @@ class TradeResponse(BaseModel):
     qt_fvg_date: str | None = None
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
+    trade_location: str | None = None
     created_at: datetime
     updated_at: datetime
 

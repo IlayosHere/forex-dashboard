@@ -244,6 +244,17 @@ def aggregate_by_criteria_met(closed: list[TradeModel]) -> dict[str, dict]:
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
+def aggregate_by_location(closed: list[TradeModel]) -> dict[str, dict]:
+    """Group closed trades by trade_location.
+
+    Trades with trade_location=None (backtest/legacy) are excluded by aggregate_dimension.
+    Buckets: 'home', 'phone', 'pc_outside'.
+    """
+    from shared.trade_location import TRADE_LOCATION_LABELS
+    raw = aggregate_dimension(closed, lambda t: t.trade_location)
+    return {k: {**v, "name": TRADE_LOCATION_LABELS.get(k, k)} for k, v in raw.items()}
+
+
 def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
     """Count BE trades by be_outcome value.
 

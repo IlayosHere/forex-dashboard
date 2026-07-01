@@ -324,6 +324,24 @@ def migrate_add_trades_scenario_id_column() -> None:
     logger.info("Added scenario_id column to trades")
 
 
+def migrate_add_trade_location_column() -> None:
+    """Add trade_location column to trades table if it does not exist yet.
+
+    Values: 'home' | 'phone' | 'pc_outside' — nullable (None for backtest/legacy trades).
+    Safe at startup for new installs. On prod, pre-apply the ALTER manually via
+    /prod-connect before deploying (see CLAUDE.md §Production Migration Safety).
+    """
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
+    if "trade_location" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE trades ADD COLUMN trade_location VARCHAR"))
+    logger.info("Added trade_location column to trades")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -341,3 +359,4 @@ def run_all() -> None:
     migrate_add_plan_scenarios_table()
     migrate_add_plan_reviews_table()
     migrate_add_trades_scenario_id_column()
+    migrate_add_trade_location_column()

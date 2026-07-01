@@ -134,6 +134,9 @@ class TradeModel(Base):
     # 'missed_tp': BE stop cut off a trade that would have hit TP
     be_outcome: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Trade location — live trades only (None for backtest); 'home' | 'phone' | 'pc_outside'
+    trade_location: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 

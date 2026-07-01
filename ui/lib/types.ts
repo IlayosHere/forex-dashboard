@@ -1,5 +1,6 @@
 export type InstrumentType = "futures" | "futures_mnq" | "futures_mes";
 export type BeOutcome = "prevented_loss" | "missed_tp";
+export type TradeLocation = "home" | "phone" | "pc_outside";
 export type TradingFeeling =
   | "calm" | "focused" | "confident"
   | "anxious" | "impatient" | "fearful" | "greedy" | "distracted" | "revenge" | "tired";
@@ -90,6 +91,7 @@ export interface TradeCreateRequest {
   qt_fvg_date?: string | null;
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
+  trade_location?: TradeLocation;
 }
 
 export interface TradeUpdateRequest {
@@ -132,6 +134,7 @@ export interface TradeUpdateRequest {
   qt_fvg_date?: string | null;
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
+  trade_location?: TradeLocation | null;
 }
 
 export interface Trade {
@@ -184,6 +187,7 @@ export interface Trade {
   qt_fvg_date: string | null;
   qt_fvg_type: QtFvgType | null;
   qt_entry_type: QtEntryType | null;
+  trade_location: TradeLocation | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
