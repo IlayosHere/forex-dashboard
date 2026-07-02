@@ -97,6 +97,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     qt_fvg_date: null,
     qt_fvg_type: null,
     qt_entry_type: null,
+    trade_location: null,
     linked_mistakes: [],
     created_at: "2026-04-10T14:00:00Z",
     updated_at: "2026-04-10T14:00:00Z",

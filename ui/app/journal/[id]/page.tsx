@@ -15,7 +15,7 @@ import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
 import { TradeFeelingsPanel } from "@/components/TradeFeelingsPanel";
 
-import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome } from "@/lib/types";
+import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome, TradeLocation } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
 import type { IctParamsState } from "@/components/IctParamsPanel";
 
@@ -45,6 +45,7 @@ interface EditableFields {
   feelingDuring: TradingFeeling | null;
   feelingAfter: TradingFeeling | null;
   beOutcome: BeOutcome | null;
+  tradeLocation: TradeLocation;
 }
 
 type EditAction =
@@ -67,6 +68,7 @@ const INITIAL_EDITABLE: EditableFields = {
   feelingDuring: null,
   feelingAfter: null,
   beOutcome: null,
+  tradeLocation: "home",
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -149,6 +151,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             feelingDuring: t.feeling_during,
             feelingAfter: t.feeling_after,
             beOutcome: t.be_outcome,
+            tradeLocation: (t.trade_location ?? "home") as TradeLocation,
           },
         });
       })
@@ -255,6 +258,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         rule_followed: editable.ruleFollowed,
         criteria_met_at_entry: editable.criteriaMetAtEntry,
         be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
+        trade_location: editable.tradeLocation,
         ...ictUpdate,
         ...qtUpdate,
       };
@@ -386,6 +390,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           criteriaMetAtEntry={editable.criteriaMetAtEntry}
           isBreakeven={trade.outcome === "breakeven"}
           beOutcome={editable.beOutcome}
+          tradeLocation={editable.tradeLocation}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
           onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
           onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
@@ -394,6 +399,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
           onCriteriaMetChange={(v) => dispatch({ type: "SET_FIELD", field: "criteriaMetAtEntry", value: v })}
           onBeOutcomeChange={(v) => dispatch({ type: "SET_FIELD", field: "beOutcome", value: v })}
+          onTradeLocationChange={(v) => dispatch({ type: "SET_FIELD", field: "tradeLocation", value: v })}
         />
 
         {/* Rule Compliance */}

@@ -224,6 +224,8 @@ class TradeStatsResponse(BaseModel):
     by_criteria_met: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # BE outcome breakdown — counts only trades with outcome='breakeven'
     be_outcome_breakdown: dict[str, int] = Field(default_factory=dict)
+    # Location breakdown — live trades only (backtest/legacy trades have None → excluded)
+    by_location: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # Backtest-mode robustness fields (populated only when account_type="backtest")
     r_distribution: list[RDistributionBin] = Field(default_factory=list)
     drawdown: DrawdownStats | None = None

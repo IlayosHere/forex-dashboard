@@ -53,6 +53,7 @@ from api.services.trade_stats_extended import (
     aggregate_by_assessment,
     aggregate_by_criteria_met,
     aggregate_by_day_of_week,
+    aggregate_by_location,
     aggregate_by_rule_compliance,
     aggregate_by_session,
     calculate_edge_metrics,
@@ -114,6 +115,7 @@ def create_trade(
         qt_fvg_date=req.qt_fvg_date,
         qt_fvg_type=req.qt_fvg_type,
         qt_entry_type=req.qt_entry_type,
+        trade_location=req.trade_location,
     )
     db.add(trade)
     db.commit()
@@ -170,6 +172,7 @@ def trade_stats(
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
+    metrics["by_location"] = aggregate_by_location(closed)
     metrics.update(_news_and_holiday_breakdowns(closed))
     from api.services.trade_stats_extended import build_equity_curve
     from api.services.trade_stats_live import compute_drawdown, compute_tp_capture

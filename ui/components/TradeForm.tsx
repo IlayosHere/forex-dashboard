@@ -47,6 +47,7 @@ export interface TradeFormData {
   qt_fvg_date: string;
   qt_fvg_type: string;
   qt_entry_type: string;
+  trade_location: string;
 }
 
 interface TradeFormProps {

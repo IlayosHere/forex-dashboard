@@ -47,6 +47,7 @@ function makeEmptyForm(): TradeFormData {
     qt_fvg_date: "",
     qt_fvg_type: "",
     qt_entry_type: "",
+    trade_location: "home",
   };
 }
 
@@ -138,6 +139,7 @@ function NewTradeContent() {
         qt_fvg_date: data.qt_fvg_date || null,
         qt_fvg_type: data.qt_fvg_type || null,
         qt_entry_type: data.qt_entry_type || null,
+        trade_location: (data.trade_location || "home") as import("@/lib/types").TradeLocation,
       };
       const trade = await createTrade(body);
       router.push(`/journal/${trade.id}`);

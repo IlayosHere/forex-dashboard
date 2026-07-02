@@ -36,6 +36,7 @@ _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "be_outcome",
     "qt_fvg_quarter", "qt_entry_quarter", "qt_fvg_date",
     "qt_fvg_type", "qt_entry_type",
+    "trade_location",
 })
 
 
