@@ -7,6 +7,7 @@ Models:
   - UserModel: authenticated users
   - AccountModel: trading accounts (demo, live, funded)
   - TradeModel: trade journal entries
+  - LifeEntryModel: personal life journal entries
 """
 from __future__ import annotations
 
@@ -278,4 +279,24 @@ class RuleMistakeLink(Base):
 
     rule: Mapped[RuleModel] = relationship(
         "RuleModel", back_populates="mistake_links", lazy="noload",
+    )
+
+
+class LifeEntryModel(Base):
+    """Personal life journal entry — free-form text with optional mood and tags."""
+
+    __tablename__ = "life_entries"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    owner: Mapped[str] = mapped_column(String, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    mood: Mapped[str | None] = mapped_column(String, nullable=True)
+    tags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    entry_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_life_entries_owner", "owner"),
+        Index("ix_life_entries_owner_entry_at", "owner", "entry_at"),
     )

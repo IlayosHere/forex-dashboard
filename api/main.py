@@ -23,6 +23,7 @@ from api.db import Base, SessionLocal, engine
 from api.routes.accounts import router as accounts_router
 from api.routes.calendar import router as calendar_router
 from api.routes.categories import router as categories_router
+from api.routes.life import router as life_router
 from api.routes.market_holidays import router as market_holidays_router
 from api.routes.mistakes import router as mistakes_router
 from api.routes.premarket import router as premarket_router
@@ -89,3 +90,4 @@ app.include_router(sessions_router, prefix="/api", tags=["sessions"])
 app.include_router(premarket_router, prefix="/api", tags=["premarket"])
 app.include_router(rules_router, prefix="/api", tags=["rules"])
 app.include_router(categories_router, prefix="/api", tags=["rule-categories"])
+app.include_router(life_router, prefix="/api", tags=["life"])

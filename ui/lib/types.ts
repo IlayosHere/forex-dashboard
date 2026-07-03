@@ -576,3 +576,40 @@ export interface Rule {
   linked_mistakes: LinkedMistake[];
 }
 
+// ---------------------------------------------------------------------------
+// Life Journal
+// ---------------------------------------------------------------------------
+
+export type LifeMood = "happy" | "excited" | "calm" | "sad" | "anxious" | "angry";
+
+export interface LifeEntry {
+  id: string;
+  owner: string;
+  body: string;
+  mood: LifeMood | null;
+  tags: string[];
+  entry_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LifeEntryCreateRequest {
+  body: string;
+  mood?: LifeMood | null;
+  tags?: string[];
+  entry_at?: string | null;
+}
+
+export interface LifeEntryUpdateRequest {
+  body?: string;
+  mood?: LifeMood | null;
+  tags?: string[];
+  entry_at?: string | null;
+  clear_mood?: boolean;
+}
+
+export interface LifeSummaryPoint {
+  date: string;
+  count: number;
+  dominant_mood: LifeMood | null;
+}
