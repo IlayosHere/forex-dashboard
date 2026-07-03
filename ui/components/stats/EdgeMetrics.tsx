@@ -192,9 +192,9 @@ export function EdgeMetrics({ stats, loading, isBacktest, showMoney = true }: Ed
           />
         )}
         <MetricRow
-          label="Per Trade (Pips)"
-          value={stats?.expectancy_pips != null ? fmt(stats.expectancy_pips, 1) : "--"}
-          color={signedColor(stats?.expectancy_pips ?? null)}
+          label="Per Trade (Pts)"
+          value={stats?.expectancy_points != null ? fmt(stats.expectancy_points, 1) : "--"}
+          color={signedColor(stats?.expectancy_points ?? null)}
         />
         {showMoney !== false && (
           <MetricRow

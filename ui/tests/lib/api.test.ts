@@ -52,8 +52,8 @@ describe("fetchTrades", () => {
 
   it("builds correct URL with all filters", async () => {
     await fetchTrades({
-      strategy: "fvg-impulse",
-      symbol: "GBPUSD",
+      strategy: "mnq-daily",
+      symbol: "MES",
       status: "open",
       outcome: "win",
       from: "2024-01-01",
@@ -63,8 +63,8 @@ describe("fetchTrades", () => {
       offset: 5,
     });
     const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toContain("strategy=fvg-impulse");
-    expect(url).toContain("symbol=GBPUSD");
+    expect(url).toContain("strategy=mnq-daily");
+    expect(url).toContain("symbol=MES");
     expect(url).toContain("status=open");
     expect(url).toContain("outcome=win");
     expect(url).toContain("from=2024-01-01");
@@ -82,7 +82,7 @@ describe("fetchTrades", () => {
 
 describe("createTrade", () => {
   it("posts trade data", async () => {
-    const body = { strategy: "fvg-impulse", symbol: "EURUSD" } as Parameters<typeof createTrade>[0];
+    const body = { strategy: "mnq-daily", symbol: "MNQ" } as Parameters<typeof createTrade>[0];
     await createTrade(body);
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe(`${BASE_URL}/api/trades`);
@@ -118,11 +118,11 @@ describe("deleteTrade", () => {
 
 describe("fetchTradeStats", () => {
   it("builds correct URL with filters", async () => {
-    await fetchTradeStats({ strategy: "fvg-impulse", symbol: "EURUSD" });
+    await fetchTradeStats({ strategy: "mnq-daily", symbol: "MNQ" });
     const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(url).toContain("/api/trades/stats");
-    expect(url).toContain("strategy=fvg-impulse");
-    expect(url).toContain("symbol=EURUSD");
+    expect(url).toContain("strategy=mnq-daily");
+    expect(url).toContain("symbol=MNQ");
   });
 });
 
@@ -162,16 +162,16 @@ describe("fetchAccounts", () => {
   });
 
   it("builds correct URL with filters", async () => {
-    await fetchAccounts({ instrument_type: "forex", status: "active" });
+    await fetchAccounts({ instrument_type: "futures", status: "active" });
     const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-    expect(url).toContain("instrument_type=forex");
+    expect(url).toContain("instrument_type=futures");
     expect(url).toContain("status=active");
   });
 });
 
 describe("createAccount", () => {
   it("posts account data", async () => {
-    const data = { name: "Test", account_type: "demo", instrument_type: "forex" };
+    const data = { name: "Test", account_type: "demo", instrument_type: "futures" };
     await createAccount(data);
     const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe(`${BASE_URL}/api/accounts`);

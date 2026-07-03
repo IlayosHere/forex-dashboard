@@ -44,4 +44,7 @@ When deploying a new version to the live system:
 | 007 | `007_ict_ifvg_bars.sql` | Adds `ict_ifvg_bars` (INTEGER) to `trades`; tracks bars elapsed between FVG formation and IFVG trigger | 2026-05-05 |
 | 008 | `008_backtest_field.sql` | Adds `criteria_met_at_entry` (BOOLEAN) to `trades`; anti-hindsight-bias check for backtest journal | 2026-05-08 (prod) |
 | 009 | `009_feelings_and_sessions.sql` | Adds `feeling_before/during/after` to `trades`; creates `trading_sessions` table for day-level session journaling | 2026-05-08 (prod) |
-| 010 | `010_be_outcome.sql` | Adds `be_outcome` (TEXT) to `trades`; tracks whether a breakeven stop prevented a loss or missed a valid TP | pending |
+| 010 | `010_be_outcome.sql` | Adds `be_outcome` (TEXT) to `trades`; tracks whether a breakeven stop prevented a loss or missed a valid TP | 2026-06-21 (prod) — confirmed already applied, this row was just stale |
+| 011 | `011_qt_fields.sql` | Adds `qt_fvg_quarter/entry_quarter/fvg_date/fvg_type/entry_type` to `trades` for qt-mnq strategy journaling | 2026-06-21 (prod) — confirmed already applied |
+| 012 | `012_gates_grades_experiments.sql` | Creates `gate_sets`, `grade_thresholds`, `experiments` tables; adds gate/grade columns to `signals` | 2026-06-21 (prod) — confirmed already applied |
+| 013 | `013_cisd_field.sql` | Adds `ict_cisd_present` (BOOLEAN) to `trades`; tracks whether a CISD confirmation was present at entry | 2026-06-21 (prod) |

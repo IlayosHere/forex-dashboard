@@ -4,10 +4,20 @@ description: Tail recent Cloud Run logs for a service (api, runner, or ui)
 
 You are fetching recent logs from a Cloud Run service.
 
-## Environment constants
+## OS detection — run this first, every time
+
+```bash
+UNAME=$(uname -s 2>/dev/null || echo "Unknown")
+if [ "$UNAME" = "Darwin" ]; then
+  GCLOUD="/opt/homebrew/bin/gcloud"
+else
+  GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
+fi
+```
+
+## Environment constants (same on both platforms)
 
 ```
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 REGION="europe-west1"
 ```
@@ -73,5 +83,6 @@ When the user asks you to check logs, highlight these if present:
 ## Safety rules
 
 - This is a read-only operation — no mutations.
-- gcloud binary is the full `.cmd` path — never bare `gcloud`.
+- Run the OS detection block first and use `$GCLOUD` — never bare `gcloud`,
+  on either platform.
 - Always use `--region` and `--project` flags.

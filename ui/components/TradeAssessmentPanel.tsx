@@ -1,9 +1,16 @@
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
 
-import type { BeOutcome } from "@/lib/types";
+import type { BeOutcome, TradeLocation } from "@/lib/types";
+
+const LOCATION_OPTIONS: { value: TradeLocation; label: string }[] = [
+  { value: "home", label: "Home" },
+  { value: "phone", label: "Phone" },
+  { value: "pc_outside", label: "PC Outside" },
+];
 
 // ---------------------------------------------------------------------------
 // BeOutcomeControl — segmented 3-state control for breakeven outcome
@@ -64,6 +71,7 @@ interface TradeAssessmentPanelProps {
   criteriaMetAtEntry?: boolean | null;
   isBreakeven?: boolean;
   beOutcome?: BeOutcome | null;
+  tradeLocation?: TradeLocation | null;
   onRatingChange: (v: number | null) => void;
   onConfidenceChange: (v: number | null) => void;
   onTagsChange: (v: string[]) => void;
@@ -72,6 +80,7 @@ interface TradeAssessmentPanelProps {
   onFeesChange: (v: string) => void;
   onCriteriaMetChange?: (v: boolean | null) => void;
   onBeOutcomeChange?: (v: BeOutcome | null) => void;
+  onTradeLocationChange?: (v: TradeLocation) => void;
 }
 
 const INPUT_CLASS =
@@ -88,6 +97,7 @@ export function TradeAssessmentPanel({
   criteriaMetAtEntry = null,
   isBreakeven = false,
   beOutcome = null,
+  tradeLocation = null,
   onRatingChange,
   onConfidenceChange,
   onTagsChange,
@@ -96,6 +106,7 @@ export function TradeAssessmentPanel({
   onFeesChange,
   onCriteriaMetChange,
   onBeOutcomeChange,
+  onTradeLocationChange,
 }: TradeAssessmentPanelProps) {
   return (
     <div className="border border-border rounded p-4 space-y-4 bg-card">
@@ -127,6 +138,26 @@ export function TradeAssessmentPanel({
 
       {isBreakeven && onBeOutcomeChange && (
         <BeOutcomeControl value={beOutcome ?? null} onChange={onBeOutcomeChange} />
+      )}
+
+      {!isBacktest && onTradeLocationChange && (
+        <div className="space-y-1">
+          <label className="label">Traded from</label>
+          <div className="flex gap-1">
+            {LOCATION_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                type="button"
+                variant={tradeLocation === opt.value ? "default" : "outline"}
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => onTradeLocationChange(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="space-y-1">

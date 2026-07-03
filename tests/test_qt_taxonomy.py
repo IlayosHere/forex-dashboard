@@ -229,8 +229,8 @@ def test_create_trade_qt_fields_null_by_default(client: TestClient) -> None:
     resp = client.post(
         "/api/trades",
         json={
-            "strategy": "fvg-impulse",
-            "symbol": "EURUSD",
+            "strategy": "mnq-daily",
+            "symbol": "MNQ",
             "direction": "BUY",
             "entry_price": 1.085,
             "sl_price": 1.082,

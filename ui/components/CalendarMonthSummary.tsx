@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 
+import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
+
 import type { DailySummaryPoint } from "@/lib/types";
 
 export interface CalendarMonthSummaryProps {
@@ -59,6 +61,42 @@ function formatR(r: number): string {
   return `${r.toFixed(2)}R`;
 }
 
+function DotKeyPopover() {
+  return (
+    <Popover>
+      <PopoverTrigger
+        aria-label="Calendar symbol key"
+        className="self-center text-[#777] hover:text-[#e0e0e0] transition-colors text-xs border border-[#333] rounded-full w-5 h-5 flex items-center justify-center shrink-0"
+      >
+        ?
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="start" className="w-64">
+        <PopoverHeader>
+          <PopoverTitle className="text-xs">Calendar symbols</PopoverTitle>
+        </PopoverHeader>
+        <div className="flex flex-col gap-2 text-xs text-[#aaa]">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+            <span>Mistake logged on a trade that day</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#26a69a] font-bold">▲</span>
+            <span>Pre-market plan: bullish bias</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#ef5350] font-bold">▼</span>
+            <span>Pre-market plan: bearish bias</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#777777] font-bold">–</span>
+            <span>Pre-market plan: neutral bias</span>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function CalendarMonthSummary({
   dailyData,
   year,
@@ -75,7 +113,7 @@ export function CalendarMonthSummary({
     primaryValue > 0 ? "#26a69a" : primaryValue < 0 ? "#ef5350" : "#e0e0e0";
 
   return (
-    <div className="flex gap-3 flex-wrap mb-4">
+    <div className="flex gap-3 flex-wrap items-center mb-4">
       <div className="bg-[#111111] border border-[#1e1e1e] rounded-lg px-4 py-3">
         <div className="text-[10px] uppercase tracking-widest text-[#777] mb-1">
           {showMoney ? "Net P&L" : "Net R"}
@@ -114,6 +152,8 @@ export function CalendarMonthSummary({
           {stats.totalTrades}
         </div>
       </div>
+
+      <DotKeyPopover />
     </div>
   );
 }

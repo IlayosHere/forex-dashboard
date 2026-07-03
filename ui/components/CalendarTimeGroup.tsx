@@ -1,15 +1,14 @@
 import { CalendarEventRow } from "@/components/CalendarEventRow";
 
-import type { CalendarContext, CalendarEvent } from "@/lib/types";
+import type { CalendarEvent } from "@/lib/types";
 
 interface CalendarTimeGroupProps {
   timeLabel: string;
   events: CalendarEvent[];
-  context: CalendarContext;
   currentTime: Date;
 }
 
-export function CalendarTimeGroup({ timeLabel, events, context, currentTime }: CalendarTimeGroupProps) {
+export function CalendarTimeGroup({ timeLabel, events, currentTime }: CalendarTimeGroupProps) {
   if (events.length === 0) return null;
 
   return (
@@ -25,7 +24,6 @@ export function CalendarTimeGroup({ timeLabel, events, context, currentTime }: C
         <CalendarEventRow
           key={event.id}
           event={event}
-          context={context}
           isPast={new Date(event.datetime_utc) < currentTime}
         />
       ))}

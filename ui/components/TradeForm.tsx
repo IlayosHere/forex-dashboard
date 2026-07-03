@@ -16,13 +16,14 @@ import { strategies, getInstrumentType, isFutures as isFuturesHelper } from "@/l
 export interface TradeFormData {
   account_id: string;
   signal_id: string | null;
+  scenario_id: string | null;
   strategy: string;
   symbol: string;
   direction: string;
   entry_price: string;
   sl_price: string;
   tp_price: string;
-  lot_size: string;
+  contracts: string;
   open_time: string;
   tags: string[];
   notes: string;
@@ -37,6 +38,7 @@ export interface TradeFormData {
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
+  ict_cisd_present: boolean | null;
   ict_htf_bias: string | null;
   fees: string;
   criteria_met_at_entry: boolean | null;
@@ -45,6 +47,7 @@ export interface TradeFormData {
   qt_fvg_date: string;
   qt_fvg_type: string;
   qt_entry_type: string;
+  trade_location: string;
 }
 
 interface TradeFormProps {
@@ -134,6 +137,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
         ict_ifvg_bars: null,
         ict_smt_present: null,
         ict_tdo_aligned: null,
+        ict_cisd_present: null,
         ict_htf_bias: null,
       }));
     }
@@ -189,8 +193,8 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
     const slNum = Number(form.sl_price);
     if (!form.sl_price || !isFinite(slNum) || slNum <= 0) errs.sl_price = true;
     if (!isBacktest) {
-      const lotNum = Number(form.lot_size);
-      if (!form.lot_size || !isFinite(lotNum) || lotNum <= 0) errs.lot_size = true;
+      const lotNum = Number(form.contracts);
+      if (!form.contracts || !isFinite(lotNum) || lotNum <= 0) errs.contracts = true;
     }
     if (form.tp_price) {
       const tpNum = Number(form.tp_price);
@@ -204,6 +208,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
       if (!form.ict_ifvg_timeframe) errs.ict_ifvg_timeframe = true;
       if (form.ict_smt_present === null || form.ict_smt_present === undefined) errs.ict_smt_present = true;
       if (form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined) errs.ict_tdo_aligned = true;
+      if (form.ict_cisd_present === null || form.ict_cisd_present === undefined) errs.ict_cisd_present = true;
     }
     if (isQtMnq) {
       if (!form.qt_fvg_quarter) errs.qt_fvg_quarter = true;
@@ -218,7 +223,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({ ...form, instrument_type: instrumentType, lot_size: isBacktest ? "1" : form.lot_size });
+      onSubmit({ ...form, instrument_type: instrumentType, contracts: isBacktest ? "1" : form.contracts });
     } else {
       setTimeout(() => {
         const el = document.querySelector(".border-bear");

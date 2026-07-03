@@ -1,42 +1,22 @@
 "use client";
 
-import type { CalendarContext, CalendarImpact } from "@/lib/types";
+import type { CalendarImpact } from "@/lib/types";
 
 interface CalendarFiltersProps {
-  context: CalendarContext;
-  onContextChange: (ctx: CalendarContext) => void;
   week: "current" | "next";
   onWeekChange: (w: "current" | "next") => void;
   impactFilter: CalendarImpact[];
   onImpactChange: (impacts: CalendarImpact[]) => void;
-  currencyFilter: string;
-  onCurrencyChange: (cur: string) => void;
 }
 
 const IMPACT_OPTIONS: CalendarImpact[] = ["High", "Medium", "Low"];
-const CURRENCIES = ["All", "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "NZD", "CHF", "CNY"];
 
 const pillBase = "px-3 py-1 text-xs rounded-full border transition-colors cursor-pointer";
 const pillActive = "border-primary bg-primary/10 text-primary";
 const pillInactive = "border-border text-muted-foreground hover:border-border-light hover:text-foreground";
 
-const ctxBase = "px-3 py-1 text-xs font-medium border transition-colors cursor-pointer";
-const ctxActive = "border-primary bg-primary/10 text-primary";
-const ctxInactive = "border-border text-muted-foreground hover:border-border-light hover:text-foreground";
-
-function isDefault(
-  context: CalendarContext,
-  week: "current" | "next",
-  impactFilter: CalendarImpact[],
-  currencyFilter: string,
-): boolean {
-  const defaultCurrency = context === "mnq" ? "USD" : "All";
-  return (
-    week === "current" &&
-    impactFilter.length === 1 &&
-    impactFilter[0] === "High" &&
-    currencyFilter === defaultCurrency
-  );
+function isDefault(week: "current" | "next", impactFilter: CalendarImpact[]): boolean {
+  return week === "current" && impactFilter.length === 1 && impactFilter[0] === "High";
 }
 
 function toggleImpact(current: CalendarImpact[], impact: CalendarImpact): CalendarImpact[] {
@@ -46,40 +26,20 @@ function toggleImpact(current: CalendarImpact[], impact: CalendarImpact): Calend
 }
 
 export function CalendarFilters({
-  context,
-  onContextChange,
   week,
   onWeekChange,
   impactFilter,
   onImpactChange,
-  currencyFilter,
-  onCurrencyChange,
 }: CalendarFiltersProps) {
-  const showReset = !isDefault(context, week, impactFilter, currencyFilter);
-  const defaultCurrency = context === "mnq" ? "USD" : "All";
+  const showReset = !isDefault(week, impactFilter);
 
   function handleReset() {
     onWeekChange("current");
     onImpactChange(["High"]);
-    onCurrencyChange(defaultCurrency);
   }
 
   return (
     <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-border">
-      {/* Context toggle */}
-      <div className="flex rounded overflow-hidden border border-border">
-        {(["forex", "mnq"] as CalendarContext[]).map((ctx) => (
-          <button
-            key={ctx}
-            type="button"
-            onClick={() => onContextChange(ctx)}
-            className={`${ctxBase} ${context === ctx ? ctxActive : ctxInactive} ${ctx === "forex" ? "border-r border-border" : ""}`}
-          >
-            {ctx === "forex" ? "FX" : "MNQ"}
-          </button>
-        ))}
-      </div>
-
       {/* Week nav */}
       <div className="flex items-center gap-1">
         <button
@@ -116,17 +76,6 @@ export function CalendarFilters({
           </button>
         ))}
       </div>
-
-      {/* Currency filter */}
-      <select
-        className="bg-elevated border border-border text-sm text-foreground rounded px-2 py-1 outline-none focus:border-primary cursor-pointer"
-        value={currencyFilter}
-        onChange={(e) => onCurrencyChange(e.target.value)}
-      >
-        {CURRENCIES.map((c) => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
 
       {/* Reset link */}
       {showReset && (

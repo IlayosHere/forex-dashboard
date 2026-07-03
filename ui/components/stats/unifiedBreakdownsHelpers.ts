@@ -11,7 +11,9 @@ export type UnifiedTabKey =
   | "day_of_week"
   | "smt_tdo"
   | "confidence"
-  | "rating";
+  | "rating"
+  | "news_day"
+  | "market_holiday";
 
 export interface UnifiedRow {
   key: string;
@@ -30,6 +32,12 @@ export interface TabDef {
   requiresIct: boolean;
 }
 
+// News/holiday tagging works for live trades too (the lookup is account-type-
+// agnostic — see api/routes/trades.py), so these tabs are no longer gated to
+// backtest mode. Small live samples are protected by a per-bucket floor
+// instead (see NEWS_HOLIDAY_TABS / applySampleFloor below).
+export const NEWS_HOLIDAY_TABS = new Set<UnifiedTabKey>(["news_day", "market_holiday"]);
+
 export const ALL_TABS: TabDef[] = [
   { key: "session", label: "Session", requiresIct: false },
   { key: "setup_type", label: "Setup Type", requiresIct: true },
@@ -41,6 +49,8 @@ export const ALL_TABS: TabDef[] = [
   { key: "smt_tdo", label: "SMT/TDO", requiresIct: true },
   { key: "confidence", label: "Confidence", requiresIct: false },
   { key: "rating", label: "Rating", requiresIct: false },
+  { key: "news_day", label: "News Day", requiresIct: false },
+  { key: "market_holiday", label: "Market Holiday", requiresIct: false },
 ];
 
 const SETUP_TYPE_LABELS: Record<string, string> = {
@@ -128,7 +138,41 @@ function sortByKeyAsc(rows: UnifiedRow[]): UnifiedRow[] {
   return [...rows].sort((a, b) => Number(a.key) - Number(b.key));
 }
 
-type StatsTabKey = "session" | "day_of_week" | "confidence" | "rating";
+// News/holiday buckets read best in severity order (most disruptive first),
+// not alphabetically or by P&L — "high" impact news belongs above "normal"
+// regardless of which one made more money.
+const FIXED_ORDER: Partial<Record<StatsTabKey, string[]>> = {
+  news_day: ["high", "medium", "normal"],
+  market_holiday: ["full_close", "early_close", "thin_volume", "normal"],
+};
+
+function sortByFixedOrder(rows: UnifiedRow[], order: string[]): UnifiedRow[] {
+  return [...rows].sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+}
+
+// Below this many decisive (win+loss) trades, a bucket's win-rate/avg-R reads
+// as a confident verdict it can't actually support — e.g. 1 trade showing
+// "100% win rate." Null the rate-style metrics but keep the count, so the
+// user still learns "I've only had N trades here" without a misleading %.
+// Scoped to news/holiday tabs only — live accounts are the case this matters
+// for (small samples), not the long-running backtest/ICT breakdowns.
+export const MIN_BUCKET_SAMPLE = 5;
+
+function fromBreakdownEntryWithFloor(key: string, entry: BreakdownEntry): UnifiedRow {
+  const row = fromBreakdownEntry(key, entry);
+  if (entry.wins + entry.losses < MIN_BUCKET_SAMPLE) {
+    return { ...row, winRate: null, avgRr: null, expectancyR: null };
+  }
+  return row;
+}
+
+type StatsTabKey =
+  | "session"
+  | "day_of_week"
+  | "confidence"
+  | "rating"
+  | "news_day"
+  | "market_holiday";
 
 function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
   const pnlTabs = new Set<StatsTabKey>(["session", "day_of_week"]);
@@ -136,8 +180,13 @@ function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
     tab === "session" ? stats.by_session
     : tab === "day_of_week" ? stats.by_day_of_week
     : tab === "confidence" ? stats.by_confidence
-    : stats.by_rating;
-  const rows = Object.entries(source).map(([k, v]) => fromBreakdownEntry(k, v));
+    : tab === "rating" ? stats.by_rating
+    : tab === "news_day" ? stats.by_news_day
+    : stats.by_market_holiday;
+  const buildRow = NEWS_HOLIDAY_TABS.has(tab) ? fromBreakdownEntryWithFloor : fromBreakdownEntry;
+  const rows = Object.entries(source).map(([k, v]) => buildRow(k, v));
+  const fixedOrder = FIXED_ORDER[tab];
+  if (fixedOrder) return sortByFixedOrder(rows, fixedOrder);
   return pnlTabs.has(tab) ? sortByPnl(rows) : sortByKeyAsc(rows);
 }
 
@@ -155,7 +204,9 @@ export function buildRows(
   stats: TradeStats | null,
   ict: IctStatsResponse | null
 ): UnifiedRow[] {
-  const statsTabs = new Set<UnifiedTabKey>(["session", "day_of_week", "confidence", "rating"]);
+  const statsTabs = new Set<UnifiedTabKey>([
+    "session", "day_of_week", "confidence", "rating", "news_day", "market_holiday",
+  ]);
   if (statsTabs.has(tab)) {
     if (!stats) return [];
     return buildStatsRows(tab as StatsTabKey, stats);

@@ -31,7 +31,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   name: "",
   account_type: "demo",
-  instrument_type: "forex",
+  instrument_type: "futures",
   status: "active",
   prop_firm: "",
   phase: "",

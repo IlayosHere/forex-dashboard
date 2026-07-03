@@ -1,5 +1,6 @@
-export type InstrumentType = "forex" | "futures" | "futures_mnq" | "futures_mes";
+export type InstrumentType = "futures" | "futures_mnq" | "futures_mes";
 export type BeOutcome = "prevented_loss" | "missed_tp";
+export type TradeLocation = "home" | "phone" | "pc_outside";
 export type TradingFeeling =
   | "calm" | "focused" | "confident"
   | "anxious" | "impatient" | "fearful" | "greedy" | "distracted" | "revenge" | "tired";
@@ -52,6 +53,7 @@ export interface Account {
 
 export interface TradeCreateRequest {
   signal_id?: string | null;
+  scenario_id?: string | null;
   account_id?: string | null;
   strategy: string;
   symbol: string;
@@ -60,8 +62,8 @@ export interface TradeCreateRequest {
   entry_price: number;
   sl_price: number;
   tp_price?: number | null;
-  lot_size: number;
-  risk_pips?: number;
+  contracts: number;
+  risk_points?: number;
   open_time: string;
   tags?: string[];
   notes?: string;
@@ -76,6 +78,7 @@ export interface TradeCreateRequest {
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_cisd_present?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
   criteria_met_at_entry?: boolean | null;
@@ -88,6 +91,7 @@ export interface TradeCreateRequest {
   qt_fvg_date?: string | null;
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
+  trade_location?: TradeLocation;
 }
 
 export interface TradeUpdateRequest {
@@ -97,8 +101,8 @@ export interface TradeUpdateRequest {
   exit_price?: number | null;
   sl_price?: number | null;
   tp_price?: number | null;
-  lot_size?: number | null;
-  risk_pips?: number | null;
+  contracts?: number | null;
+  risk_points?: number | null;
   status?: "open" | "closed" | "breakeven" | "cancelled" | null;
   outcome?: "win" | "loss" | "breakeven" | null;
   open_time?: string | null;
@@ -116,6 +120,7 @@ export interface TradeUpdateRequest {
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
   ict_tdo_aligned?: boolean | null;
+  ict_cisd_present?: boolean | null;
   ict_htf_bias?: string | null;
   fees?: number | null;
   rule_followed?: boolean | null;
@@ -129,11 +134,13 @@ export interface TradeUpdateRequest {
   qt_fvg_date?: string | null;
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
+  trade_location?: TradeLocation | null;
 }
 
 export interface Trade {
   id: string;
   signal_id: string | null;
+  scenario_id: string | null;
   strategy: string;
   symbol: string;
   direction: "BUY" | "SELL";
@@ -141,13 +148,13 @@ export interface Trade {
   exit_price: number | null;
   sl_price: number;
   tp_price: number | null;
-  lot_size: number;
+  contracts: number;
   status: "open" | "closed" | "breakeven" | "cancelled";
   outcome: "win" | "loss" | "breakeven" | null;
-  pnl_pips: number | null;
+  pnl_points: number | null;
   pnl_usd: number | null;
   rr_achieved: number | null;
-  risk_pips: number;
+  risk_points: number;
   open_time: string;
   close_time: string | null;
   tags: string[];
@@ -166,6 +173,7 @@ export interface Trade {
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
   ict_tdo_aligned: boolean | null;
+  ict_cisd_present: boolean | null;
   ict_htf_bias: string | null;
   fees: number | null;
   rule_followed: boolean | null;
@@ -179,9 +187,112 @@ export interface Trade {
   qt_fvg_date: string | null;
   qt_fvg_type: QtFvgType | null;
   qt_entry_type: QtEntryType | null;
+  trade_location: TradeLocation | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Pre-Market Routine
+// ---------------------------------------------------------------------------
+
+export type DailyBias = "bullish" | "bearish" | "neutral";
+export type ScenarioOutcome = "played_out" | "partial" | "invalidated" | "never_triggered";
+
+export interface PlanScenario {
+  id: string;
+  plan_id: string;
+  date: string;
+  reaction_setup_type: string | null;
+  reaction_setup_detail: string | null;
+  target_level_type: string | null;
+  target_level_detail: string | null;
+  notes: string;
+  outcome_status: ScenarioOutcome | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PremarketPlan {
+  id: string;
+  owner: string;
+  date: string;
+  weekly_dealing_range: string | null;
+  weekly_dol: string | null;
+  weekly_opening_gap: string | null;
+  daily_bias: DailyBias | null;
+  daily_bias_signals: Record<string, unknown>;
+  h4_pd_array: string | null;
+  h4_pd_location: string | null;
+  h1_zone: string | null;
+  h1_structure: string | null;
+  ltf_notes: string | null;
+  narrative: string;
+  checkpoints: Checkpoint[];
+  scenarios: PlanScenario[];
+  review: PlanReview | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Checkpoint {
+  note: string;
+  timestamp: string;
+}
+
+export interface PlanUpsertRequest {
+  weekly_dealing_range?: string | null;
+  weekly_dol?: string | null;
+  weekly_opening_gap?: string | null;
+  daily_bias?: DailyBias | null;
+  daily_bias_signals?: Record<string, unknown>;
+  h4_pd_array?: string | null;
+  h4_pd_location?: string | null;
+  h1_zone?: string | null;
+  h1_structure?: string | null;
+  ltf_notes?: string | null;
+  narrative?: string;
+}
+
+export interface ScenarioCreateRequest {
+  reaction_setup_type?: string | null;
+  reaction_setup_detail?: string | null;
+  target_level_type?: string | null;
+  target_level_detail?: string | null;
+  notes?: string;
+}
+
+export interface ScenarioUpdateRequest extends ScenarioCreateRequest {
+  outcome_status?: ScenarioOutcome | null;
+}
+
+export interface CheckpointCreateRequest {
+  note: string;
+}
+
+// "Did you follow your plan?" — the minimal seed of the deferred full review screen.
+export type ExecutionGrade = "yes" | "mostly" | "no";
+
+export interface PlanReview {
+  id: string;
+  plan_id: string;
+  bias_correct: string | null;
+  execution_grade: ExecutionGrade | null;
+  emotion_tags: string[];
+  review_notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewUpsertRequest {
+  execution_grade?: ExecutionGrade | null;
+}
+
+export interface PremarketDaySummary {
+  date: string;
+  daily_bias: DailyBias | null;
+  scenario_count: number;
 }
 
 export interface TradingSession {
@@ -220,7 +331,7 @@ export interface BreakdownEntry {
   wins: number;
   losses: number;
   win_rate: number | null;
-  total_pnl_pips: number;
+  total_pnl_points: number;
   total_pnl_usd: number;
   total_r?: number;
   avg_pnl_usd: number;
@@ -233,7 +344,6 @@ export interface BreakdownEntry {
 // ---------------------------------------------------------------------------
 
 export type CalendarImpact = "High" | "Medium" | "Low";
-export type CalendarContext = "forex" | "mnq";
 export type SessionBucket = "pre_market" | "cash_session" | "none";
 export type BeatMiss = "beat" | "miss" | "in_line" | "pending";
 
@@ -250,6 +360,43 @@ export interface CalendarEvent {
   actual: string | null;   // null until released
   beat_miss: BeatMiss;     // computed by backend from actual vs forecast
   session_bucket: SessionBucket; // pre_market / cash_session / none
+}
+
+export type ClosureType = "full_close" | "early_close" | "thin_volume";
+
+export interface MarketClosure {
+  id: string;
+  date: string;            // ISO date, whole-day concept
+  label: string;
+  closure_type: ClosureType;
+  early_close_et: string | null;
+  note: string | null;
+}
+
+export type NewsImpact = "high" | "medium";
+export type MarketStatus = "full_close" | "early_close" | "thin_volume";
+
+export interface NewsEventEntry {
+  date: string;
+  name: string;
+  impact: NewsImpact;
+  currency: string;
+}
+
+export interface HolidayEventEntry {
+  date: string;
+  label: string;
+  closure_type: MarketStatus;
+  early_close_et: string | null;
+  note: string | null;
+}
+
+export interface DayType {
+  date: string;             // ISO date
+  news_impact: NewsImpact | null;       // collapsed flag, for the grid dot
+  market_status: MarketStatus | null;   // collapsed flag, for the grid dot
+  news_events: NewsEventEntry[];
+  holiday_events: HolidayEventEntry[];
 }
 
 export interface ComplianceBucket {
@@ -270,7 +417,7 @@ export interface TradeStats {
   breakevens: number;
   win_rate: number | null;
   avg_rr: number | null;
-  total_pnl_pips: number;
+  total_pnl_points: number;
   total_pnl_usd: number;
   total_r?: number;
   best_trade_pnl: number | null;
@@ -278,15 +425,15 @@ export interface TradeStats {
   current_streak: number;
   profit_factor: number | null;
   avg_hold_time_hours: number | null;
-  avg_win_pips: number | null;
-  avg_loss_pips: number | null;
+  avg_win_points: number | null;
+  avg_loss_points: number | null;
   avg_win_usd: number | null;
   avg_loss_usd: number | null;
   expectancy_usd: number | null;
-  expectancy_pips: number | null;
+  expectancy_points: number | null;
   consistency_ratio: number | null;
-  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
-  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_pips: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
+  by_strategy: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_points: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
+  by_symbol: Record<string, { total: number; wins: number; losses: number; win_rate: number | null; total_pnl_points: number; total_pnl_usd: number; avg_pnl_usd: number; avg_rr: number | null }>;
   by_account: Record<string, {
     account_name: string;
     account_type: AccountType;
@@ -295,7 +442,7 @@ export interface TradeStats {
     wins: number;
     losses: number;
     win_rate: number | null;
-    total_pnl_pips: number;
+    total_pnl_points: number;
     total_pnl_usd: number;
     total_r?: number;
   }>;
@@ -306,6 +453,10 @@ export interface TradeStats {
   by_rule_compliance?: Record<string, ComplianceBucket>;
   by_criteria_met?: Record<string, ComplianceBucket>;
   be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
+  by_news_day: Record<string, BreakdownEntry>;
+  by_market_holiday: Record<string, BreakdownEntry>;
+  news_data_coverage_through?: string | null;
+  holiday_data_coverage_through?: string | null;
   r_distribution?: RDistributionBin[];
   drawdown?: DrawdownStats | null;
   robustness?: RobustnessStats | null;
@@ -362,9 +513,9 @@ export interface EquityCurvePoint {
   date: string | null;
   close_time: string | null;
   pnl_usd: number;
-  pnl_pips: number;
+  pnl_points: number;
   cumulative_pnl_usd: number;
-  cumulative_pnl_pips: number;
+  cumulative_pnl_points: number;
   pnl_r: number;
   cumulative_r: number;
   trade_count: number;
@@ -378,7 +529,7 @@ export interface DailySummaryPoint {
   losses: number;
   breakevens: number;
   pnl_usd: number;
-  pnl_pips: number;
+  pnl_points: number;
   pnl_r: number;
   compliant: number;
   mistakes: number;

@@ -23,7 +23,7 @@ function winRateColor(v: number | null): string {
   return v >= 50 ? "#26a69a" : "#ef5350";
 }
 
-export function PerformanceTable({ title, rows, pnlUnit = "pips" }: PerformanceTableProps) {
+export function PerformanceTable({ title, rows, pnlUnit = "pts" }: PerformanceTableProps) {
   if (rows.length === 0) {
     return (
       <div className="border border-[#2a2a2a] rounded-lg p-4 bg-[#161616]">

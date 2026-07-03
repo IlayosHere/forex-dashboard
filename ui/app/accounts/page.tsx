@@ -25,7 +25,6 @@ interface FormState {
 }
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",    label: "FX" },
   { value: "futures",  label: "Futures" },
 ];
 

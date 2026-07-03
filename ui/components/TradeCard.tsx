@@ -7,7 +7,7 @@ import { AccountBadge } from "./AccountBadge";
 import type { Trade, AccountType } from "@/lib/types";
 
 import { formatShortDate } from "@/lib/dates";
-import { getUnitLabel, getInstrumentType } from "@/lib/strategies";
+import { getUnitLabel } from "@/lib/strategies";
 import { pnlColor } from "@/lib/format";
 
 interface TradeCardProps {
@@ -25,7 +25,7 @@ function pnlSign(v: number | null, decimals = 1): string {
 
 export function TradeCard({ trade, onClick, accountType, showMoney = true }: TradeCardProps) {
   const isBuy = trade.direction === "BUY";
-  const unitLabel = getUnitLabel(trade.instrument_type ?? getInstrumentType(trade.strategy));
+  const unitLabel = getUnitLabel();
 
   return (
     <div
@@ -53,8 +53,8 @@ export function TradeCard({ trade, onClick, accountType, showMoney = true }: Tra
             </span>
           ) : (
             <>
-              <span className="price text-sm" style={{ color: pnlColor(trade.pnl_pips) }}>
-                {pnlSign(trade.pnl_pips)} {unitLabel}
+              <span className="price text-sm" style={{ color: pnlColor(trade.pnl_points) }}>
+                {pnlSign(trade.pnl_points)} {unitLabel}
               </span>
               <span className="price text-sm" style={{ color: pnlColor(trade.pnl_usd) }}>
                 {trade.pnl_usd !== null ? `${trade.pnl_usd >= 0 ? "+$" : "-$"}${Math.abs(trade.pnl_usd).toFixed(2)}` : ""}

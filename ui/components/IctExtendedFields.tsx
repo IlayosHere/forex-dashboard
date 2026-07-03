@@ -1,14 +1,13 @@
 "use client";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import type { TradeFormData } from "./TradeForm";
 
 interface IctExtendedFieldsProps {
   form: TradeFormData;
   onChange: <K extends keyof TradeFormData>(key: K, value: TradeFormData[K]) => void;
 }
-
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 
 const LABEL_CLASS = "block text-xs text-text-muted mb-1";
 
@@ -24,16 +23,13 @@ export function IctExtendedFields({ form, onChange }: IctExtendedFieldsProps) {
       {/* HTF Bias */}
       <div>
         <label className={LABEL_CLASS}>HTF Bias</label>
-        <select
-          className={SELECT_CLASS}
-          value={form.ict_htf_bias ?? ""}
-          onChange={(e) => onChange("ict_htf_bias", e.target.value || null)}
-        >
-          <option value="">Select bias</option>
-          {HTF_BIAS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          options={HTF_BIAS_OPTIONS}
+          value={form.ict_htf_bias ?? null}
+          onChange={(v) => onChange("ict_htf_bias", v)}
+          placeholder="Select bias"
+          filterable={false}
+        />
       </div>
     </>
   );

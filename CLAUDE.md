@@ -1,4 +1,4 @@
-# Forex Signal Dashboard — Project Context
+# Trading Dashboard — Project Context
 
 This file is read by all agents automatically. It contains the decisions already made,
 the patterns to follow, and the context behind the work. Do not re-debate these decisions.
@@ -24,9 +24,10 @@ must be refactored before submission.
 
 ## What We Are Building
 
-A private web dashboard for a solo forex trader. It runs multiple rule-based strategy
-scanners against TradingView data feeds, persists signals, and displays them in a UI
-where the trader can adjust SL/TP and instantly calculate lot size before executing manually.
+A private web dashboard for a solo futures trader (NQ/MNQ/MES, ICT methodology). It runs
+multiple rule-based strategy scanners against TradingView data feeds, persists signals,
+and displays them in a UI where the trader can adjust SL/TP and instantly calculate
+contract size before executing manually.
 
 **Not** an algo trading system. **Not** a public product. **Not** broker-integrated (yet).
 
@@ -45,7 +46,7 @@ where the trader can adjust SL/TP and instantly calculate lot size before execut
 | Frontend | Next.js 14 App Router | TypeScript strict mode |
 | UI components | shadcn/ui + Tailwind | Dark mode only |
 | Deployment | Docker Compose + nginx | Self-hosted VPS |
-| Data feed | TradingView via tvDatafeed | PEPPERSTONE exchange, M15 |
+| Data feed | TradingView via tvDatafeed | CME futures (NQ/MNQ/MES), M15 |
 | Notifications | Discord webhook | Unchanged from existing code |
 | Local API port | **8070** | `http://localhost:8070` — use this for all smoke tests and curl commands |
 
@@ -59,10 +60,6 @@ forex-dashboard/
     signal.py          ← Signal dataclass — the contract between scanner and API
     calculator.py      ← lot size pure function (no DB, no side effects)
   strategies/
-    fvg-impulse/       ← renamed from impulse-notifier
-      scanner.py       ← exports scan() -> list[Signal]
-      calculations.py
-      config.py
     <new-strategy>/    ← /add-strategy command scaffolds this
       scanner.py       ← must export scan() -> list[Signal]
   api/
@@ -119,15 +116,14 @@ all existing scanners and the DB schema.
 @dataclass
 class Signal:
     strategy: str          # matches the folder name and URL slug
-    symbol: str            # e.g. "EURUSD"
+    symbol: str            # e.g. "MNQ"
     direction: str         # "BUY" or "SELL"
     candle_time: datetime  # UTC, when the signal candle closed
     entry: float           # close price of signal candle
     sl: float              # suggested stop loss (user can override in UI)
     tp: float              # suggested take profit (user can override in UI)
-    lot_size: float        # pre-calculated at default account settings
-    risk_pips: float
-    spread_pips: float
+    lot_size: float        # pre-calculated contract size at default account settings
+    risk_pips: float       # risk distance in points
     metadata: dict         # strategy-specific extras — free-form, rendered as key-value
 ```
 
@@ -138,7 +134,7 @@ class Signal:
 ### Signals (3 endpoints)
 ```
 GET  /api/signals                            → list[SignalResponse]
-     ?strategy=fvg-impulse  (optional filter)
+     ?strategy=mnq-daily    (optional filter)
      ?limit=50              (default 50, max 200)
 
 GET  /api/signals/{id}                       → SignalResponse
@@ -190,21 +186,12 @@ DELETE /api/trades/{id}                      → 204
 
 ---
 
-## Spread & Calculation Config
+## Position-Size Calculation
 
-Located in `strategies/fvg-impulse/config.py` (and imported by other strategies as needed).
-- 3-tier spread model: H0 (midnight), H1 (transition), H2+ (normal)
-- JPY pairs: pip size = 0.01, all others = 0.0001
-- Lot size formula: `risk_usd / (sl_pips * pip_value_per_lot)`
-
----
-
-## Existing Code — Do Not Rewrite
-
-`strategies/fvg_impulse/` is production-tested code. Adapt imports, do not rewrite logic.
-- `scanner.py` — FVG detection algorithm is correct, keep it
-- `calculations.py` — trade param logic is correct, keep it
-- `config.py` — spread tables are measured from real broker data, keep them
+Located in `shared/calculator.py`. Futures-only — no broker spread model (futures spread
+is just bid/ask, not a forex-style spread-by-session table).
+- Contract multiplier is keyed by symbol (`_FUTURES_DOLLARS_PER_POINT`: MNQ=$2/pt, MES=$5/pt)
+- Contract size formula: `risk_usd / (sl_points * dollars_per_point)`, floored, min 1 contract
 
 ---
 
@@ -340,3 +327,31 @@ component looks bad, unclear feedback, etc.), you MUST consult the specialist ag
 - The specific complaint the user raised
 - Available shadcn components (check `ui/components/ui/`)
 - Space constraints (e.g., inside a side sheet, inside a grid cell)
+
+## Parallel & Isolated Feature Development
+
+Multiple features may be in progress at once, across different conversations.
+
+**New conversation, one feature:** before making any edits, call EnterWorktree to
+check out a fresh branch/worktree for that feature — do this automatically, without
+asking first. Skip this for quick fixes, typos, config tweaks, questions, or when
+continuing work already in progress on the conversation's current branch — only a
+distinct, new, named feature triggers it. If the user says not to (e.g. "just edit
+here", "no worktree"), respect that instead.
+
+**One conversation, several features at once:** use `/parallel-features` — one
+feature description per line — to fan them out to N parallel background agents.
+See `.claude/commands/parallel-features.md` for the full mechanism.
+
+**Branch base guarantee:** every feature branch — from `EnterWorktree` or from the
+`Agent` tool's `isolation: "worktree"` — starts fresh from `origin/main`, never from
+whatever branch the current conversation happens to be on. Locked in via
+`.claude/settings.json` (`worktree.baseRef: "fresh"`).
+
+Non-negotiables for both paths:
+- Every feature gets its own branch/worktree — never edit two features in the same
+  working tree.
+- Commit to the feature's own branch only — never push, never open a PR.
+- Integration into `main` is manual and sequential (merge one, test, merge next);
+  conflicts between parallel features are expected and resolved by hand, not
+  automated.

@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 
+import { CalendarClosedPanel } from "@/components/CalendarClosedPanel";
+import { CalendarClosureRow } from "@/components/CalendarClosureRow";
 import { CalendarDaySection } from "@/components/CalendarDaySection";
 import { CalendarFilters } from "@/components/CalendarFilters";
 import { CalendarNextStrip } from "@/components/CalendarNextStrip";
 import { CalendarTimeGroup } from "@/components/CalendarTimeGroup";
 import { useCalendar } from "@/lib/useCalendar";
+import { useMarketHolidays } from "@/lib/useMarketHolidays";
 import { useNextEvent } from "@/lib/useNextEvent";
 
-import type { CalendarContext, CalendarEvent, CalendarImpact, SessionBucket } from "@/lib/types";
+import type { CalendarEvent, CalendarImpact, MarketClosure, SessionBucket } from "@/lib/types";
 
 const SESSION_LABELS: Record<SessionBucket, string> = {
   pre_market: "Pre-Market",
@@ -24,27 +27,8 @@ const tabClass = (active: boolean) =>
       : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
   }`;
 
-function applyFilters(
-  events: CalendarEvent[],
-  impactFilter: CalendarImpact[],
-  currencyFilter: string,
-): CalendarEvent[] {
-  return events.filter((ev) => {
-    const impactMatch = impactFilter.includes(ev.impact);
-    const currencyMatch = currencyFilter === "All" || ev.currency === currencyFilter;
-    return impactMatch && currencyMatch;
-  });
-}
-
-function groupByTimeSlot(events: CalendarEvent[], context: CalendarContext): Record<string, CalendarEvent[]> {
-  const result: Record<string, CalendarEvent[]> = {};
-  for (const ev of events) {
-    const iso = context === "mnq" ? ev.datetime_et : ev.datetime_utc;
-    const label = iso.slice(11, 16);
-    if (!result[label]) result[label] = [];
-    result[label].push(ev);
-  }
-  return result;
+function applyFilters(events: CalendarEvent[], impactFilter: CalendarImpact[]): CalendarEvent[] {
+  return events.filter((ev) => impactFilter.includes(ev.impact));
 }
 
 function groupBySession(events: CalendarEvent[]): Record<SessionBucket, CalendarEvent[]> {
@@ -59,14 +43,22 @@ function groupBySession(events: CalendarEvent[]): Record<SessionBucket, Calendar
   return buckets;
 }
 
+function groupClosuresByDay(closures: MarketClosure[]): Record<string, MarketClosure[]> {
+  const result: Record<string, MarketClosure[]> = {};
+  for (const c of closures) {
+    if (!result[c.date]) result[c.date] = [];
+    result[c.date].push(c);
+  }
+  return result;
+}
+
 export default function CalendarPage() {
-  const [context, setContext] = useState<CalendarContext>("mnq");
   const [week, setWeek] = useState<"current" | "next">("current");
   const [impactFilter, setImpactFilter] = useState<CalendarImpact[]>(["High"]);
-  const [currencyFilter, setCurrencyFilter] = useState("All");
   const [activeTab, setActiveTab] = useState<"today" | "week">("today");
 
-  const { events, loading } = useCalendar({ week, context });
+  const { events, loading } = useCalendar({ week });
+  const { closures } = useMarketHolidays({ week });
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -79,8 +71,8 @@ export default function CalendarPage() {
   const todayKey = useMemo(() => todayDateStr, [todayDateStr]);
 
   const filteredEvents = useMemo(
-    () => applyFilters(events, impactFilter, currencyFilter),
-    [events, impactFilter, currencyFilter],
+    () => applyFilters(events, impactFilter),
+    [events, impactFilter],
   );
 
   const filteredByDay = useMemo(() => {
@@ -93,23 +85,24 @@ export default function CalendarPage() {
     return result;
   }, [filteredEvents]);
 
-  const todayEvents = filteredByDay[todayKey] ?? [];
-  const todayGroups = useMemo(() => {
-    if (context === "mnq") {
-      return (["pre_market", "cash_session", "none"] as SessionBucket[])
-        .map((bucket) => ({ label: SESSION_LABELS[bucket], events: groupBySession(todayEvents)[bucket] }))
-        .filter((g) => g.events.length > 0);
-    }
-    return Object.entries(groupByTimeSlot(todayEvents, context))
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([timeLabel, slotEvents]) => ({ label: `${timeLabel} UTC`, events: slotEvents }));
-  }, [todayEvents, context]);
-  const sortedDays = useMemo(() => Object.keys(filteredByDay).sort(), [filteredByDay]);
+  const closuresByDay = useMemo(() => groupClosuresByDay(closures), [closures]);
 
-  function handleContextChange(ctx: CalendarContext) {
-    setContext(ctx);
-    setCurrencyFilter(ctx === "mnq" ? "USD" : "All");
-  }
+  const todayEvents = filteredByDay[todayKey] ?? [];
+  const todayClosures = closuresByDay[todayKey] ?? [];
+  const todayFullClose = todayClosures.find((c) => c.closure_type === "full_close");
+  const todayEarlyClose = todayClosures.find((c) => c.closure_type === "early_close");
+  const todayAdvisories = todayClosures.filter((c) => c.closure_type !== "full_close");
+  const stripClosure = todayFullClose ?? todayEarlyClose ?? null;
+
+  const todayGroups = useMemo(() => {
+    return (["pre_market", "cash_session", "none"] as SessionBucket[])
+      .map((bucket) => ({ label: SESSION_LABELS[bucket], events: groupBySession(todayEvents)[bucket] }))
+      .filter((g) => g.events.length > 0);
+  }, [todayEvents]);
+  const sortedDays = useMemo(
+    () => Array.from(new Set([...Object.keys(filteredByDay), ...Object.keys(closuresByDay)])).sort(),
+    [filteredByDay, closuresByDay],
+  );
 
   if (loading) {
     return (
@@ -123,17 +116,13 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <CalendarNextStrip event={nextEvent} secondsUntil={secondsUntil} context={context} />
+      <CalendarNextStrip event={nextEvent} secondsUntil={secondsUntil} closure={stripClosure} />
 
       <CalendarFilters
-        context={context}
-        onContextChange={handleContextChange}
         week={week}
         onWeekChange={setWeek}
         impactFilter={impactFilter}
         onImpactChange={setImpactFilter}
-        currencyFilter={currencyFilter}
-        onCurrencyChange={setCurrencyFilter}
       />
 
       <div className="flex gap-0 border-b border-border px-4">
@@ -148,20 +137,35 @@ export default function CalendarPage() {
       <div className="flex-1 overflow-y-auto">
         {activeTab === "today" && (
           <>
-            {todayEvents.length === 0 && (
-              <div className="flex items-center justify-center py-16 text-sm text-text-dim">
-                No events match the current filters.
-              </div>
+            {todayFullClose ? (
+              <CalendarClosedPanel closure={todayFullClose} />
+            ) : (
+              <>
+                {todayAdvisories.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-text-dim px-3 py-1 border-b border-border">
+                      ALL DAY
+                    </div>
+                    {todayAdvisories.map((c) => (
+                      <CalendarClosureRow key={c.id} closure={c} />
+                    ))}
+                  </div>
+                )}
+                {todayEvents.length === 0 && todayAdvisories.length === 0 && (
+                  <div className="flex items-center justify-center py-16 text-sm text-text-dim">
+                    No events match the current filters.
+                  </div>
+                )}
+                {todayGroups.map(({ label, events: groupEvents }) => (
+                  <CalendarTimeGroup
+                    key={label}
+                    timeLabel={label}
+                    events={groupEvents}
+                    currentTime={now}
+                  />
+                ))}
+              </>
             )}
-            {todayGroups.map(({ label, events: groupEvents }) => (
-              <CalendarTimeGroup
-                key={label}
-                timeLabel={label}
-                events={groupEvents}
-                context={context}
-                currentTime={now}
-              />
-            ))}
           </>
         )}
 
@@ -176,8 +180,8 @@ export default function CalendarPage() {
               <CalendarDaySection
                 key={day}
                 date={day}
-                events={filteredByDay[day]}
-                context={context}
+                events={filteredByDay[day] ?? []}
+                closures={closuresByDay[day] ?? []}
                 defaultOpen={day === todayKey}
                 currentTime={now}
               />

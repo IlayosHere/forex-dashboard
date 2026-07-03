@@ -148,17 +148,17 @@ def test_aggregate_by_strategy(db: Session) -> None:
 def test_aggregate_by_symbol(db: Session) -> None:
     base = datetime(2025, 3, 1, 10, 0, tzinfo=timezone.utc)
     make_trade(
-        db, symbol="EURUSD", status="closed", outcome="win",
+        db, symbol="MNQ", status="closed", outcome="win",
         pnl_pips=10.0, open_time=base,
         close_time=base + timedelta(hours=1),
     )
     make_trade(
-        db, symbol="GBPUSD", status="closed", outcome="loss",
+        db, symbol="MES", status="closed", outcome="loss",
         pnl_pips=-5.0, open_time=base + timedelta(hours=2),
         close_time=base + timedelta(hours=3),
     )
     closed = list(db.query(TradeModel).filter_by(status="closed").all())
     result = aggregate_by_field(closed, "symbol")
-    assert set(result.keys()) == {"EURUSD", "GBPUSD"}
-    assert result["EURUSD"]["win_rate"] == 100.0
-    assert result["GBPUSD"]["win_rate"] == 0.0
+    assert set(result.keys()) == {"MNQ", "MES"}
+    assert result["MNQ"]["win_rate"] == 100.0
+    assert result["MES"]["win_rate"] == 0.0

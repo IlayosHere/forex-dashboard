@@ -12,12 +12,13 @@ import { CalendarDaySheet } from "@/components/CalendarDaySheet";
 import type { InstrumentType, Account } from "@/lib/types";
 
 import { useDailySummary } from "@/lib/useDailySummary";
+import { usePremarketMonth } from "@/lib/usePremarketMonth";
+import { useDayTypes } from "@/lib/useDayTypes";
 import { useAccounts } from "@/lib/useAccounts";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { strategies } from "@/lib/strategies";
 
 const instrumentTabs: { value: InstrumentType; label: string }[] = [
-  { value: "forex",   label: "FX" },
   { value: "futures", label: "Futures" },
 ];
 
@@ -100,6 +101,8 @@ export default function CalendarPage() {
   }, [instrumentType, fromDate, toDate, accountId, strategyFilter, backtestMode]);
 
   const { data: dailyData } = useDailySummary(dailySummaryFilters);
+  const { data: premarketData } = usePremarketMonth(fromDate, toDate);
+  const { data: dayTypesData } = useDayTypes(fromDate, toDate, true);
 
   function handlePrev() {
     if (month === 1) pushParams({ year: String(year - 1), month: "12", date: null });
@@ -302,6 +305,7 @@ export default function CalendarPage() {
         year={year}
         month={month}
         dailyData={dailyData}
+        premarketData={premarketData}
         selectedDate={selectedDate}
         showMoney={showMoney}
         onDaySelect={(date) => pushParams({ date })}
@@ -316,6 +320,7 @@ export default function CalendarPage() {
         accountType={backtestMode ? "backtest" : "live"}
         strategy={strategyFilter || undefined}
         showMoney={showMoney}
+        dayType={dayTypesData.find((d) => d.date === selectedDate)}
       />
     </div>
   );

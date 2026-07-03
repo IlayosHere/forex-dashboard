@@ -1,13 +1,13 @@
 "use client";
 
 import { strategies } from "@/lib/strategies";
+import { Combobox } from "@/components/ui/combobox";
 
 import type { InstrumentType, Account } from "@/lib/types";
 import type { PresetKey, UseStatsContextResult } from "@/lib/useStatsContext";
 
 const INSTRUMENT_OPTIONS: { value: InstrumentType | ""; label: string }[] = [
   { value: "futures", label: "Futures" },
-  { value: "forex",   label: "FX" },
   { value: "",        label: "All" },
 ];
 
@@ -114,29 +114,21 @@ export function ContextBar({ ctx, accounts }: ContextBarProps) {
           onChange={(v) => setFilter("instrumentType", v)}
         />
 
-        <select
+        <Combobox
           value={context.accountId}
-          onChange={(e) => setFilter("accountId", e.target.value)}
+          onChange={(v) => setFilter("accountId", v ?? "")}
           aria-label="Filter by account"
-          className={SELECT_CLS}
-        >
-          <option value="">All Accounts</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+          className="w-auto h-7 text-xs px-2 py-1"
+          options={[{ value: "", label: "All Accounts" }, ...accounts.map((a) => ({ value: a.id, label: a.name }))]}
+        />
 
-        <select
+        <Combobox
           value={context.strategy}
-          onChange={(e) => setFilter("strategy", e.target.value)}
+          onChange={(v) => setFilter("strategy", v ?? "")}
           aria-label="Filter by strategy"
-          className={SELECT_CLS}
-        >
-          <option value="">All Strategies</option>
-          {strategies.map((s) => (
-            <option key={s.slug} value={s.slug}>{s.label}</option>
-          ))}
-        </select>
+          className="w-auto h-7 text-xs px-2 py-1"
+          options={[{ value: "", label: "All Strategies" }, ...strategies.map((s) => ({ value: s.slug, label: s.label }))]}
+        />
 
         <PresetPills
           value={context.preset}

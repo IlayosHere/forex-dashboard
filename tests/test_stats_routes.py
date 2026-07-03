@@ -49,9 +49,9 @@ def test_equity_curve_returns_correct_shape(
     assert "date" in point
     assert "close_time" in point
     assert "pnl_usd" in point
-    assert "pnl_pips" in point
+    assert "pnl_points" in point
     assert "cumulative_pnl_usd" in point
-    assert "cumulative_pnl_pips" in point
+    assert "cumulative_pnl_points" in point
     assert "trade_count" in point
     assert "outcome" in point
 
@@ -109,7 +109,7 @@ def test_equity_curve_strategy_filter(
 ) -> None:
     """strategy query param filters results to the matching strategy."""
     make_trade(
-        db, strategy="fvg-impulse", status="closed", outcome="win",
+        db, strategy="mnq-daily", status="closed", outcome="win",
         pnl_usd=100.0, pnl_pips=20.0,
         close_time=BASE,
     )
@@ -118,7 +118,7 @@ def test_equity_curve_strategy_filter(
         pnl_usd=200.0, pnl_pips=40.0,
         close_time=BASE,
     )
-    resp = client.get(EQUITY_CURVE_URL, params={"strategy": "fvg-impulse"})
+    resp = client.get(EQUITY_CURVE_URL, params={"strategy": "mnq-daily"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
@@ -131,16 +131,16 @@ def test_equity_curve_symbol_filter(
 ) -> None:
     """symbol query param filters results to the matching symbol."""
     make_trade(
-        db, symbol="EURUSD", status="closed", outcome="win",
+        db, symbol="MNQ", status="closed", outcome="win",
         pnl_usd=80.0, pnl_pips=16.0,
         close_time=BASE,
     )
     make_trade(
-        db, symbol="GBPUSD", status="closed", outcome="loss",
+        db, symbol="MES", status="closed", outcome="loss",
         pnl_usd=-30.0, pnl_pips=-6.0,
         close_time=BASE,
     )
-    resp = client.get(EQUITY_CURVE_URL, params={"symbol": "EURUSD"})
+    resp = client.get(EQUITY_CURVE_URL, params={"symbol": "MNQ"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
@@ -180,7 +180,7 @@ def test_daily_summary_returns_correct_shape(
     assert "losses" in point
     assert "breakevens" in point
     assert "pnl_usd" in point
-    assert "pnl_pips" in point
+    assert "pnl_points" in point
 
 
 def test_daily_summary_aggregates_same_day(
@@ -222,7 +222,7 @@ def test_daily_summary_strategy_filter(
 ) -> None:
     """strategy query param filters to the matching strategy only."""
     make_trade(
-        db, strategy="fvg-impulse", status="closed", outcome="win",
+        db, strategy="mnq-daily", status="closed", outcome="win",
         pnl_usd=100.0, pnl_pips=20.0,
         close_time=BASE,
     )
@@ -231,7 +231,7 @@ def test_daily_summary_strategy_filter(
         pnl_usd=200.0, pnl_pips=40.0,
         close_time=BASE,
     )
-    resp = client.get(DAILY_SUMMARY_URL, params={"strategy": "fvg-impulse"})
+    resp = client.get(DAILY_SUMMARY_URL, params={"strategy": "mnq-daily"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
@@ -244,16 +244,16 @@ def test_daily_summary_symbol_filter(
 ) -> None:
     """symbol query param filters to the matching symbol only."""
     make_trade(
-        db, symbol="EURUSD", status="closed", outcome="win",
+        db, symbol="MNQ", status="closed", outcome="win",
         pnl_usd=80.0, pnl_pips=16.0,
         close_time=BASE,
     )
     make_trade(
-        db, symbol="GBPUSD", status="closed", outcome="loss",
+        db, symbol="MES", status="closed", outcome="loss",
         pnl_usd=-30.0, pnl_pips=-6.0,
         close_time=BASE,
     )
-    resp = client.get(DAILY_SUMMARY_URL, params={"symbol": "GBPUSD"})
+    resp = client.get(DAILY_SUMMARY_URL, params={"symbol": "MES"})
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1

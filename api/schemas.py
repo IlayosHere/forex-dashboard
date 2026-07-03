@@ -1,7 +1,7 @@
 """
 api/schemas.py
 --------------
-Pydantic v2 request/response models for the Forex Trade Journal API.
+Pydantic v2 request/response models for the Trade Journal API.
 
 All models use ConfigDict(from_attributes=True) so they can be built directly
 from SQLAlchemy ORM instances with model_validate().
@@ -37,7 +37,7 @@ from api.schemas_trade import (  # noqa: F401 -- re-export
 # ---------------------------------------------------------------------------
 
 _VALID_ACCOUNT_TYPES = ("demo", "live", "funded", "backtest")
-_VALID_INSTRUMENT_TYPES = ("forex", "futures", "futures_mnq", "futures_mes")
+_VALID_INSTRUMENT_TYPES = ("futures", "futures_mnq", "futures_mes")
 _VALID_ACCOUNT_STATUSES = ("active", "passed", "failed", "closed")
 
 
@@ -121,22 +121,21 @@ class CalculateRequest(BaseModel):
 
     symbol: str
     entry: float
-    sl_pips: float = Field(gt=0)
+    sl_points: float = Field(gt=0)
     account_balance: float
     risk_percent: float
-    tp_pips: float | None = None
-    instrument_type: str = "forex"
+    tp_points: float | None = None
+    instrument_type: str = "futures"
 
 
 class CalculateResponse(BaseModel):
     model_config = ConfigDict()
 
-    lot_size: float
+    contracts: float
     risk_usd: float
-    sl_pips: float
+    sl_points: float
     rr: float | None
-    instrument_type: str = "forex"
-    min_lot_applied: bool = False
+    instrument_type: str = "futures"
 
 
 # ---------------------------------------------------------------------------
@@ -160,3 +159,34 @@ class CalendarEventResponse(BaseModel):
     actual: str | None
     beat_miss: str
     session_bucket: str
+
+
+class MarketHolidayResponse(BaseModel):
+    """Pydantic v2 response model for an NQ/CME Globex closure or thin-volume day."""
+
+    model_config = ConfigDict()
+
+    id: str
+    date: str
+    label: str
+    closure_type: str
+    early_close_et: str | None
+    note: str | None
+
+
+class DayTypeResponse(BaseModel):
+    """Per-day news/holiday info for the backtest journal calendar.
+
+    news_impact/market_status are collapsed single flags for the calendar
+    grid's day-cell dot. news_events/holiday_events carry the full entries
+    (name/label/note) for the day-sheet detail view — same date can have
+    multiple news events.
+    """
+
+    model_config = ConfigDict()
+
+    date: str
+    news_impact: str | None  # "high" | "medium" | None — collapsed for the grid dot
+    market_status: str | None  # "full_close" | "early_close" | "thin_volume" | None
+    news_events: list[dict[str, str]] = []
+    holiday_events: list[dict[str, Any]] = []

@@ -1,7 +1,7 @@
 """
 api/models.py
 -------------
-SQLAlchemy 2.0 ORM models for the Forex Trade Journal.
+SQLAlchemy 2.0 ORM models for the Trade Journal.
 
 Models:
   - UserModel: authenticated users
@@ -41,7 +41,7 @@ class AccountModel(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     account_type: Mapped[str] = mapped_column(String, nullable=False)  # demo, live, funded
-    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # forex, futures (account-level); futures_mnq, futures_mes (trade-level)
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False)  # futures (account-level); futures_mnq, futures_mes (trade-level)
     status: Mapped[str] = mapped_column(String, nullable=False, default="active")  # active, passed, failed, closed
     prop_firm: Mapped[str | None] = mapped_column(String, nullable=True)
     phase: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -63,6 +63,9 @@ class TradeModel(Base):
     # Identity
     id: Mapped[str] = mapped_column(String, primary_key=True)
     signal_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # No FK constraint — same reasoning as signal_id (see migrate_drop_signals_fk):
+    # a trade should keep its scenario reference even if the scenario itself is later pruned.
+    scenario_id: Mapped[str | None] = mapped_column(String, nullable=True)
     account_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("accounts.id", ondelete="RESTRICT"), nullable=True
     )
@@ -72,7 +75,7 @@ class TradeModel(Base):
     # Trade setup
     strategy: Mapped[str] = mapped_column(String, nullable=False)
     symbol: Mapped[str] = mapped_column(String, nullable=False)
-    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="forex")
+    instrument_type: Mapped[str] = mapped_column(String, nullable=False, default="futures")
     direction: Mapped[str] = mapped_column(String, nullable=False)
     entry_price: Mapped[float] = mapped_column(Float, nullable=False)
     exit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -109,6 +112,7 @@ class TradeModel(Base):
     ict_ifvg_timeframe: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_smt_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_tdo_aligned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    ict_cisd_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_htf_bias: Mapped[str | None] = mapped_column(String, nullable=True)    # aligned / counter / neutral
     ict_ifvg_bars: Mapped[int | None] = mapped_column(Integer, nullable=True)   # bars from FVG to IFVG trigger
     fees: Mapped[float | None] = mapped_column(Float, nullable=True)             # broker fees/commission (USD)
@@ -130,6 +134,9 @@ class TradeModel(Base):
     # 'prevented_loss': BE stop saved from a losing trade
     # 'missed_tp': BE stop cut off a trade that would have hit TP
     be_outcome: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Trade location — live trades only (None for backtest); 'home' | 'phone' | 'pc_outside'
+    trade_location: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Extensibility
     trade_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)

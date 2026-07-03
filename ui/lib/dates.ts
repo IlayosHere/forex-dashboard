@@ -77,6 +77,14 @@ export function nyDatetimeToUtcISO(nyDatetime: string): string {
   return new Date(nyDatetime + "Z").toISOString();
 }
 
+/** Adds (or subtracts, with a negative delta) whole days to a "YYYY-MM-DD" string. */
+export function addDays(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + delta);
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
 /**
  * Pre-fills a datetime-local input from a stored ISO string.
  * Reads the UTC numbers directly (they are already ET).

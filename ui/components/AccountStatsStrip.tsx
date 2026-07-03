@@ -49,9 +49,7 @@ export function AccountStatsStrip({ byAccount, selectedAccountId, onSelect, load
                 name={data.account_name}
                 accountType={data.account_type as AccountType}
               />
-              <span className="text-xs text-muted-foreground">
-                {data.instrument_type?.startsWith("futures") ? "Futures" : "FX"}
-              </span>
+              <span className="text-xs text-muted-foreground">Futures</span>
             </div>
             <div className="flex items-center gap-4 shrink-0 text-xs">
               <span className="text-muted-foreground">{data.total} trades</span>

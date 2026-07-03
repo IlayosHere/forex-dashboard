@@ -184,7 +184,7 @@ def aggregate_by_day_of_week(closed: list[TradeModel]) -> dict[str, dict]:
     """Group closed trades by day-of-week (from open_time)."""
     def key_fn(t: TradeModel) -> int | None:
         return t.open_time.weekday() if t.open_time else None
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {str(k): {**v, "name": _DAY_NAMES[k]} for k, v in sorted(raw.items())}
 
 
@@ -192,7 +192,7 @@ def aggregate_by_session(closed: list[TradeModel]) -> dict[str, dict]:
     """Group closed trades by trading session (from open_time UTC hour)."""
     def key_fn(t: TradeModel) -> str | None:
         return _classify_session(t.open_time.hour) if t.open_time else None
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
@@ -202,7 +202,7 @@ def aggregate_by_assessment(
     """Group by an integer assessment field (confidence or rating)."""
     def key_fn(t: TradeModel) -> int | None:
         return getattr(t, field, None)
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {str(k): {**v, "name": str(k)} for k, v in sorted(raw.items())}
 
 
@@ -224,7 +224,7 @@ def aggregate_by_rule_compliance(closed: list[TradeModel]) -> dict[str, dict]:
     def key_fn(t: TradeModel) -> str:
         return _RULE_BUCKET[t.rule_followed]
 
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
 
 
@@ -240,8 +240,19 @@ def aggregate_by_criteria_met(closed: list[TradeModel]) -> dict[str, dict]:
             return None
         return _CRITERIA_BUCKET[v]
 
-    raw = _aggregate_dimension(closed, key_fn)
+    raw = aggregate_dimension(closed, key_fn)
     return {k: {**v, "name": k} for k, v in raw.items()}
+
+
+def aggregate_by_location(closed: list[TradeModel]) -> dict[str, dict]:
+    """Group closed trades by trade_location.
+
+    Trades with trade_location=None (backtest/legacy) are excluded by aggregate_dimension.
+    Buckets: 'home', 'phone', 'pc_outside'.
+    """
+    from shared.trade_location import TRADE_LOCATION_LABELS
+    raw = aggregate_dimension(closed, lambda t: t.trade_location)
+    return {k: {**v, "name": TRADE_LOCATION_LABELS.get(k, k)} for k, v in raw.items()}
 
 
 def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
@@ -262,7 +273,7 @@ def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
     return result
 
 
-def _aggregate_dimension(
+def aggregate_dimension(
     closed: list[TradeModel],
     key_fn: Callable[[TradeModel], int | str | None],
 ) -> dict[Any, dict[str, Any]]:
@@ -275,7 +286,7 @@ def _aggregate_dimension(
         if key not in buckets:
             buckets[key] = {
                 "total": 0, "wins": 0, "losses": 0,
-                "win_rate": None, "total_pnl_pips": 0.0,
+                "win_rate": None, "total_pnl_points": 0.0,
                 "total_pnl_usd": 0.0, "avg_pnl_usd": None,
                 "avg_rr": None, "_rr": [],
             }
@@ -286,7 +297,7 @@ def _aggregate_dimension(
         elif t.outcome == "loss":
             b["losses"] += 1
         if t.pnl_pips is not None:
-            b["total_pnl_pips"] += t.pnl_pips
+            b["total_pnl_points"] += t.pnl_pips
         if t.pnl_usd is not None:
             b["total_pnl_usd"] += t.pnl_usd
         if t.rr_achieved is not None and t.outcome in ("win", "loss"):
@@ -294,7 +305,7 @@ def _aggregate_dimension(
     for v in buckets.values():
         denom = v["wins"] + v["losses"]
         v["win_rate"] = round(v["wins"] / denom * 100, 1) if denom > 0 else None
-        v["total_pnl_pips"] = round(v["total_pnl_pips"], 1)
+        v["total_pnl_points"] = round(v["total_pnl_points"], 1)
         v["total_pnl_usd"] = round(v["total_pnl_usd"], 2)
         if v["total"] > 0:
             v["avg_pnl_usd"] = round(v["total_pnl_usd"] / v["total"], 2)

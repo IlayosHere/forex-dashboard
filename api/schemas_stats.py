@@ -153,10 +153,10 @@ class EquityCurvePoint(BaseModel):
     date: str | None
     close_time: str | None
     pnl_usd: float
-    pnl_pips: float
+    pnl_pips: float = Field(serialization_alias="pnl_points")
     pnl_r: float = 0.0
     cumulative_pnl_usd: float
-    cumulative_pnl_pips: float
+    cumulative_pnl_pips: float = Field(serialization_alias="cumulative_pnl_points")
     cumulative_r: float = 0.0
     trade_count: int
     outcome: str | None
@@ -199,19 +199,19 @@ class TradeStatsResponse(BaseModel):
     win_rate: float | None
     avg_rr: float | None
     total_r: float = 0.0
-    total_pnl_pips: float
+    total_pnl_pips: float = Field(serialization_alias="total_pnl_points")
     total_pnl_usd: float
     best_trade_pnl: float | None
     worst_trade_pnl: float | None
     current_streak: int
     profit_factor: float | None
     avg_hold_time_hours: float | None
-    avg_win_pips: float | None = None
-    avg_loss_pips: float | None = None
+    avg_win_pips: float | None = Field(default=None, serialization_alias="avg_win_points")
+    avg_loss_pips: float | None = Field(default=None, serialization_alias="avg_loss_points")
     avg_win_usd: float | None = None
     avg_loss_usd: float | None = None
     expectancy_usd: float | None = None
-    expectancy_pips: float | None = None
+    expectancy_pips: float | None = Field(default=None, serialization_alias="expectancy_points")
     consistency_ratio: float | None = None
     by_strategy: dict[str, dict[str, Any]] = Field(default_factory=dict)
     by_symbol: dict[str, dict[str, Any]] = Field(default_factory=dict)
@@ -224,11 +224,21 @@ class TradeStatsResponse(BaseModel):
     by_criteria_met: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # BE outcome breakdown — counts only trades with outcome='breakeven'
     be_outcome_breakdown: dict[str, int] = Field(default_factory=dict)
+    # Location breakdown — live trades only (backtest/legacy trades have None → excluded)
+    by_location: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # Backtest-mode robustness fields (populated only when account_type="backtest")
     r_distribution: list[RDistributionBin] = Field(default_factory=list)
     drawdown: DrawdownStats | None = None
     robustness: RobustnessStats | None = None
     expectancy_ci: ExpectancyCi | None = None
+    # News/holiday breakdowns — populated for every account type
+    by_news_day: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    by_market_holiday: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # Latest date the hand-maintained news/holiday tables are confirmed through —
+    # see shared/economic_calendar.py / shared/market_holidays.py. Trades after
+    # this date aren't "confirmed no news," the table just isn't extended that far.
+    news_data_coverage_through: str | None = None
+    holiday_data_coverage_through: str | None = None
     # Live-mode metrics (populated for all account types)
     live_drawdown: DrawdownMetrics | None = None
     avg_tp_capture_pct: float | None = None
@@ -246,7 +256,7 @@ class DailySummaryPoint(BaseModel):
     losses: int
     breakevens: int
     pnl_usd: float
-    pnl_pips: float
+    pnl_pips: float = Field(serialization_alias="pnl_points")
     pnl_r: float = 0.0
     compliant: int = 0
     mistakes: int = 0

@@ -35,13 +35,14 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "qt-mnq",
     symbol: "MNQ",
     direction: "BUY",
     entry_price: "20000",
     sl_price: "19980",
     tp_price: "20040",
-    lot_size: "1",
+    contracts: "1",
     open_time: "2026-05-01T09:00",
     tags: [],
     notes: "",
@@ -55,6 +56,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     ict_ifvg_bars: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_cisd_present: null,
     ict_htf_bias: null,
     fees: "",
     criteria_met_at_entry: null,
@@ -63,6 +65,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     qt_fvg_date: "",
     qt_fvg_type: "",
     qt_entry_type: "",
+    trade_location: "home",
     ...overrides,
   };
 }

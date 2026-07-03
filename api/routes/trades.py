@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,6 +25,7 @@ from api.auth import get_current_user
 from api.db import get_db
 from api.models import AccountModel, TradeModel
 from api.schemas import (
+    DayTypeResponse,
     TradeCreateRequest,
     TradeResponse,
     TradeStatsResponse,
@@ -34,7 +35,7 @@ from api.services.trade_filters import StatsFilterParams, TradeFilterParams
 from api.services.trade_helpers import (
     apply_trade_filters,
     build_account_lookup,
-    compute_risk_pips,
+    compute_risk_points,
     trade_to_response,
 )
 from api.services.trade_update import (
@@ -52,6 +53,7 @@ from api.services.trade_stats_extended import (
     aggregate_by_assessment,
     aggregate_by_criteria_met,
     aggregate_by_day_of_week,
+    aggregate_by_location,
     aggregate_by_rule_compliance,
     aggregate_by_session,
     calculate_edge_metrics,
@@ -75,13 +77,13 @@ def create_trade(
             logger.warning("Linked account not found: %s", req.account_id)
             raise HTTPException(status_code=404, detail="Linked account not found")
 
-    risk_pips = req.risk_pips if req.risk_pips is not None else compute_risk_pips(
-        req.entry_price, req.sl_price, req.symbol, req.instrument_type,
+    risk_pips = req.risk_pips if req.risk_pips is not None else compute_risk_points(
+        req.entry_price, req.sl_price,
     )
 
     now = datetime.now(timezone.utc)
     trade = TradeModel(
-        id=str(uuid.uuid4()), signal_id=req.signal_id,
+        id=str(uuid.uuid4()), signal_id=req.signal_id, scenario_id=req.scenario_id,
         account_id=req.account_id, strategy=req.strategy,
         owner=current_user,
         symbol=req.symbol, instrument_type=req.instrument_type,
@@ -100,6 +102,7 @@ def create_trade(
         ict_ifvg_bars=req.ict_ifvg_bars,
         ict_smt_present=req.ict_smt_present,
         ict_tdo_aligned=req.ict_tdo_aligned,
+        ict_cisd_present=req.ict_cisd_present,
         ict_htf_bias=req.ict_htf_bias,
         fees=req.fees,
         criteria_met_at_entry=req.criteria_met_at_entry,
@@ -112,6 +115,7 @@ def create_trade(
         qt_fvg_date=req.qt_fvg_date,
         qt_fvg_type=req.qt_fvg_type,
         qt_entry_type=req.qt_entry_type,
+        trade_location=req.trade_location,
     )
     db.add(trade)
     db.commit()
@@ -168,6 +172,8 @@ def trade_stats(
     metrics["by_rule_compliance"] = aggregate_by_rule_compliance(closed)
     metrics["by_criteria_met"] = aggregate_by_criteria_met(closed)
     metrics["be_outcome_breakdown"] = aggregate_be_outcome(closed)
+    metrics["by_location"] = aggregate_by_location(closed)
+    metrics.update(_news_and_holiday_breakdowns(closed))
     from api.services.trade_stats_extended import build_equity_curve
     from api.services.trade_stats_live import compute_drawdown, compute_tp_capture
     curve = build_equity_curve(closed)
@@ -192,6 +198,73 @@ def trade_stats(
         metrics["robustness"] = compute_edge_robustness(closed)
         metrics["expectancy_ci"] = compute_expectancy_ci(r_values)
     return metrics
+
+
+def _news_and_holiday_breakdowns(closed: list[TradeModel]) -> dict[str, Any]:
+    """by_news_day / by_market_holiday breakdowns — computed for every account
+    type. The trade data itself is what's scarce for live accounts, not the
+    lookup. Also reports the underlying hand-maintained tables' coverage
+    limit so the frontend can flag trades beyond it rather than silently
+    imply "confirmed no news"."""
+    from shared.economic_calendar import coverage_through as news_coverage_through
+    from shared.market_holidays import cme_coverage_through
+
+    from api.services.trade_stats_news import (
+        aggregate_by_market_holiday,
+        aggregate_by_news_day,
+        build_holiday_day_map,
+        build_news_day_map,
+    )
+
+    coverage = {
+        "news_data_coverage_through": news_coverage_through().isoformat(),
+        "holiday_data_coverage_through": cme_coverage_through().isoformat(),
+    }
+    open_dates = [t.open_time.date() for t in closed if t.open_time]
+    if not open_dates:
+        return {"by_news_day": {}, "by_market_holiday": {}, **coverage}
+    start, end = min(open_dates), max(open_dates)
+    return {
+        "by_news_day": aggregate_by_news_day(closed, build_news_day_map(start, end)),
+        "by_market_holiday": aggregate_by_market_holiday(closed, build_holiday_day_map(start, end)),
+        **coverage,
+    }
+
+
+@router.get("/trades/day-types", response_model=list[DayTypeResponse])
+def list_day_types(
+    _: Annotated[str, Depends(get_current_user)],
+    date_from: Annotated[date, Query(alias="from")],
+    date_to: Annotated[date, Query(alias="to")],
+) -> list[dict[str, Any]]:
+    """Per-day news/holiday info for the backtest journal calendar.
+
+    news_impact/market_status are collapsed flags for the grid's day-cell dot;
+    news_events/holiday_events carry the full entries for the day-sheet detail
+    view (a day can have more than one news event or holiday entry).
+    """
+    from api.services.trade_stats_news import (
+        build_holiday_day_map,
+        build_news_day_map,
+        holiday_events_by_date,
+        news_events_by_date,
+    )
+
+    news_days = build_news_day_map(date_from, date_to)
+    holiday_days = build_holiday_day_map(date_from, date_to)
+    news_events = news_events_by_date(date_from, date_to)
+    holiday_events = holiday_events_by_date(date_from, date_to)
+    days = {*news_days.keys(), *holiday_days.keys()}
+    return [
+        {
+            "date": d.isoformat(),
+            "news_impact": news_days.get(d),
+            "market_status": holiday_days.get(d),
+            "news_events": news_events.get(d, []),
+            "holiday_events": holiday_events.get(d, []),
+        }
+        for d in sorted(days)
+    ]
 
 
 @router.get("/trades/{trade_id}", response_model=TradeResponse)

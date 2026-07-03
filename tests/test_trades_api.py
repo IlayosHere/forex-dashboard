@@ -16,13 +16,13 @@ from tests.conftest import make_trade
 def _trade_payload(**overrides: object) -> dict:
     """Return a valid TradeCreateRequest body with optional overrides."""
     base: dict = {
-        "strategy": "fvg-impulse",
-        "symbol": "EURUSD",
+        "strategy": "mnq-daily",
+        "symbol": "MNQ",
         "direction": "BUY",
-        "entry_price": 1.08500,
-        "sl_price": 1.08200,
-        "tp_price": 1.09100,
-        "lot_size": 0.50,
+        "entry_price": 20000.0,
+        "sl_price": 19970.0,
+        "tp_price": 20060.0,
+        "lot_size": 1.0,
         "risk_pips": 30.0,
         "open_time": "2025-03-01T12:00:00Z",
     }
@@ -39,7 +39,7 @@ def test_create_trade_returns_201(client: TestClient) -> None:
     resp = client.post("/api/trades", json=_trade_payload())
     assert resp.status_code == 201
     data = resp.json()
-    assert data["strategy"] == "fvg-impulse"
+    assert data["strategy"] == "mnq-daily"
     assert data["status"] == "open"
     assert data["outcome"] is None
 
@@ -135,11 +135,11 @@ def test_update_trade_notes(client: TestClient, db: Session) -> None:
 
 
 def test_close_trade_auto_calculates_pnl(client: TestClient, db: Session) -> None:
-    trade = make_trade(db, entry_price=1.08000, sl_price=1.07700, risk_pips=30.0)
+    trade = make_trade(db, entry_price=20000.0, sl_price=19970.0, risk_pips=30.0)
     resp = client.put(
         f"/api/trades/{trade.id}",
         json={
-            "exit_price": 1.08300,
+            "exit_price": 20030.0,
             "status": "closed",
             "outcome": "win",
             "close_time": "2025-03-02T14:00:00Z",
@@ -147,7 +147,7 @@ def test_close_trade_auto_calculates_pnl(client: TestClient, db: Session) -> Non
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["pnl_pips"] == 30.0
+    assert data["pnl_points"] == 30.0
     assert data["pnl_usd"] is not None
     assert data["rr_achieved"] == 1.0
 
@@ -204,7 +204,7 @@ def test_stats_reflects_closed_trades(client: TestClient, db: Session) -> None:
     data = resp.json()
     assert data["wins"] == 1
     assert data["losses"] == 1
-    assert data["total_pnl_pips"] == 10.0
+    assert data["total_pnl_points"] == 10.0
 
 
 # ---------------------------------------------------------------------------
@@ -221,17 +221,17 @@ def test_close_trade_requires_exit_price(client: TestClient, db: Session) -> Non
 
 
 def test_close_trade_with_exit_price_calculates_pnl(client: TestClient, db: Session) -> None:
-    """Closing a trade with an exit_price must populate pnl_pips and pnl_usd."""
+    """Closing a trade with an exit_price must populate pnl_points and pnl_usd."""
     from tests.conftest import TEST_USER
     trade = make_trade(db, owner=TEST_USER)
     resp = client.put(f"/api/trades/{trade.id}", json={
         "status": "closed",
-        "exit_price": 1.09100,
+        "exit_price": 20100.0,
         "outcome": "win",
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["pnl_pips"] is not None
+    assert data["pnl_points"] is not None
     assert data["pnl_usd"] is not None
 
 
@@ -242,7 +242,7 @@ def test_reopen_closed_trade_returns_422(client: TestClient, db: Session) -> Non
         db,
         owner=TEST_USER,
         status="closed",
-        exit_price=1.09100,
+        exit_price=20300.0,
         pnl_pips=60.0,
         pnl_usd=300.0,
     )

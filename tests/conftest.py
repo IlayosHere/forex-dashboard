@@ -23,6 +23,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite://")
 from api.auth import get_current_user, reset_login_rate_limits
 from api.db import Base, get_db
 from api.models import AccountModel, TradeModel
+from api import models_premarket  # noqa: F401 — registers premarket tables on Base.metadata
 
 TEST_USER = "testuser"
 TEST_USER_2 = "otheruser"
@@ -111,7 +112,7 @@ def sample_account(db: Session) -> AccountModel:
         id=str(uuid.uuid4()),
         name="Test Demo",
         account_type="demo",
-        instrument_type="forex",
+        instrument_type="futures",
         status="active",
         prop_firm=None,
         phase=None,
@@ -128,24 +129,24 @@ def make_trade(
     db: Session,
     *,
     owner: str = TEST_USER,
-    strategy: str = "fvg-impulse",
-    symbol: str = "EURUSD",
+    strategy: str = "mnq-daily",
+    symbol: str = "MNQ",
     direction: str = "BUY",
-    entry_price: float = 1.08500,
+    entry_price: float = 20000.0,
     exit_price: float | None = None,
-    sl_price: float = 1.08200,
-    tp_price: float | None = 1.09100,
-    lot_size: float = 0.50,
+    sl_price: float = 19950.0,
+    tp_price: float | None = 20100.0,
+    lot_size: float = 1.0,
     status: str = "open",
     outcome: str | None = None,
     pnl_pips: float | None = None,
     pnl_usd: float | None = None,
     rr_achieved: float | None = None,
-    risk_pips: float = 30.0,
+    risk_pips: float = 50.0,
     open_time: datetime | None = None,
     close_time: datetime | None = None,
     account_id: str | None = None,
-    instrument_type: str = "forex",
+    instrument_type: str = "futures",
     rule_followed: bool | None = None,
     criteria_met_at_entry: bool | None = None,
 ) -> TradeModel:

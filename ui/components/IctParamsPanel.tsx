@@ -1,5 +1,7 @@
 "use client";
 
+import { Combobox } from "@/components/ui/combobox";
+
 import type { Trade } from "@/lib/types";
 
 export interface IctParamsState {
@@ -10,6 +12,7 @@ export interface IctParamsState {
   ict_ifvg_bars: string;
   ict_smt_present: string;
   ict_tdo_aligned: string;
+  ict_cisd_present: string;
   ict_htf_bias: string;
 }
 
@@ -22,6 +25,7 @@ export function ictParamsFromTrade(trade: Trade): IctParamsState {
     ict_ifvg_bars: trade.ict_ifvg_bars != null ? String(trade.ict_ifvg_bars) : "",
     ict_smt_present: trade.ict_smt_present === null ? "" : String(trade.ict_smt_present),
     ict_tdo_aligned: trade.ict_tdo_aligned === null ? "" : String(trade.ict_tdo_aligned),
+    ict_cisd_present: trade.ict_cisd_present === null ? "" : String(trade.ict_cisd_present),
     ict_htf_bias: trade.ict_htf_bias ?? "",
   };
 }
@@ -31,10 +35,19 @@ interface IctParamsPanelProps {
   onChange: <K extends keyof IctParamsState>(key: K, value: string) => void;
 }
 
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
-
 const LABEL_CLASS = "block text-xs text-text-muted mb-1";
+
+const SETUP_TYPE_OPTIONS = [
+  { value: "liquidity_sweep", label: "Liquidity Sweep" },
+  { value: "unmitigated_fvg", label: "Unmitigated FVG" },
+  { value: "continuation", label: "Continuation" },
+  { value: "other", label: "Other" },
+];
+
+const YES_NO_OPTIONS = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
 
 const SETUP_DETAIL_OPTIONS: Record<string, { value: string; label: string }[]> = {
   liquidity_sweep: [
@@ -135,46 +148,45 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
 
       <div>
         <label className={LABEL_CLASS}>Setup Type</label>
-        <select className={SELECT_CLASS} value={params.ict_setup_type} onChange={(e) => handleSetupTypeChange(e.target.value)}>
-          <option value="">Select setup type</option>
-          <option value="liquidity_sweep">Liquidity Sweep</option>
-          <option value="unmitigated_fvg">Unmitigated FVG</option>
-          <option value="continuation">Continuation</option>
-          <option value="other">Other</option>
-        </select>
+        <Combobox
+          options={SETUP_TYPE_OPTIONS}
+          value={params.ict_setup_type || null}
+          onChange={(v) => handleSetupTypeChange(v ?? "")}
+          placeholder="Select setup type"
+          filterable={false}
+        />
       </div>
 
       {params.ict_setup_type && (
         <div>
           <label className={LABEL_CLASS}>{setupDetailLabel}</label>
-          <select className={SELECT_CLASS} value={params.ict_setup_detail} onChange={(e) => onChange("ict_setup_detail", e.target.value)}>
-            <option value="">Select...</option>
-            {setupDetailOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <Combobox
+            options={setupDetailOptions}
+            value={params.ict_setup_detail || null}
+            onChange={(v) => onChange("ict_setup_detail", v ?? "")}
+          />
         </div>
       )}
 
       <div>
         <label className={LABEL_CLASS}>TP Target</label>
-        <select className={SELECT_CLASS} value={params.ict_tp_target} onChange={(e) => onChange("ict_tp_target", e.target.value)}>
-          <option value="">Select target</option>
-          {TP_TARGET_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          options={TP_TARGET_OPTIONS}
+          value={params.ict_tp_target || null}
+          onChange={(v) => onChange("ict_tp_target", v ?? "")}
+          placeholder="Select target"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={LABEL_CLASS}>IFVG Entry Timeframe</label>
-          <select className={SELECT_CLASS} value={params.ict_ifvg_timeframe} onChange={(e) => onChange("ict_ifvg_timeframe", e.target.value)}>
-            <option value="">Select TF</option>
-            {IFVG_TF_OPTIONS.map((tf) => (
-              <option key={tf} value={tf}>{tf.toUpperCase()}</option>
-            ))}
-          </select>
+          <Combobox
+            options={IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
+            value={params.ict_ifvg_timeframe || null}
+            onChange={(v) => onChange("ict_ifvg_timeframe", v ?? "")}
+            placeholder="Select TF"
+          />
         </div>
         <div>
           <label className={LABEL_CLASS}>Bars to IFVG</label>
@@ -192,30 +204,45 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
 
       <div>
         <label className={LABEL_CLASS}>HTF Bias</label>
-        <select className={SELECT_CLASS} value={params.ict_htf_bias} onChange={(e) => onChange("ict_htf_bias", e.target.value)}>
-          <option value="">Select bias</option>
-          {HTF_BIAS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <Combobox
+          options={HTF_BIAS_OPTIONS}
+          value={params.ict_htf_bias || null}
+          onChange={(v) => onChange("ict_htf_bias", v ?? "")}
+          placeholder="Select bias"
+          filterable={false}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={LABEL_CLASS}>SMT Present</label>
-          <select className={SELECT_CLASS} value={params.ict_smt_present} onChange={(e) => onChange("ict_smt_present", e.target.value)}>
-            <option value="">Select</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <Combobox
+            options={YES_NO_OPTIONS}
+            value={params.ict_smt_present || null}
+            onChange={(v) => onChange("ict_smt_present", v ?? "")}
+            placeholder="Select"
+            filterable={false}
+          />
         </div>
         <div>
           <label className={LABEL_CLASS}>TDO Aligned</label>
-          <select className={SELECT_CLASS} value={params.ict_tdo_aligned} onChange={(e) => onChange("ict_tdo_aligned", e.target.value)}>
-            <option value="">Select</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <Combobox
+            options={YES_NO_OPTIONS}
+            value={params.ict_tdo_aligned || null}
+            onChange={(v) => onChange("ict_tdo_aligned", v ?? "")}
+            placeholder="Select"
+            filterable={false}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLASS}>CISD Present</label>
+          <Combobox
+            options={YES_NO_OPTIONS}
+            value={params.ict_cisd_present || null}
+            onChange={(v) => onChange("ict_cisd_present", v ?? "")}
+            placeholder="Select"
+            filterable={false}
+          />
         </div>
       </div>
 

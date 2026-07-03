@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AccountBadge } from "@/components/AccountBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TradeInfoPanel } from "@/components/TradeInfoPanel";
+import { LinkedScenarioCard } from "@/components/LinkedScenarioCard";
 import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
 import { TradeCloseActions } from "@/components/TradeCloseActions";
@@ -14,7 +15,7 @@ import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
 import { TradeFeelingsPanel } from "@/components/TradeFeelingsPanel";
 
-import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome } from "@/lib/types";
+import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome, TradeLocation } from "@/lib/types";
 import type { TradeEditFields } from "@/components/TradeInfoPanel";
 import type { IctParamsState } from "@/components/IctParamsPanel";
 
@@ -44,6 +45,7 @@ interface EditableFields {
   feelingDuring: TradingFeeling | null;
   feelingAfter: TradingFeeling | null;
   beOutcome: BeOutcome | null;
+  tradeLocation: TradeLocation;
 }
 
 type EditAction =
@@ -66,6 +68,7 @@ const INITIAL_EDITABLE: EditableFields = {
   feelingDuring: null,
   feelingAfter: null,
   beOutcome: null,
+  tradeLocation: "home",
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -107,7 +110,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [ictParams, setIctParams] = useState<IctParamsState>({
     ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
     ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
-    ict_tdo_aligned: "", ict_htf_bias: "",
+    ict_tdo_aligned: "", ict_cisd_present: "", ict_htf_bias: "",
   });
   const [qtParams, setQtParams] = useState({
     qt_fvg_quarter: "",
@@ -148,6 +151,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             feelingDuring: t.feeling_during,
             feelingAfter: t.feeling_after,
             beOutcome: t.be_outcome,
+            tradeLocation: (t.trade_location ?? "home") as TradeLocation,
           },
         });
       })
@@ -163,8 +167,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const tradeAccount = trade.account_id ? accounts.find((a) => a.id === trade.account_id) : null;
   const tradeAccountType: AccountType = tradeAccount?.account_type ?? "demo";
   const instrumentType = trade.instrument_type ?? getInstrumentType(trade.strategy);
-  const unitLabel = getUnitLabel(instrumentType);
-  const sizeLabel = getSizeLabel(instrumentType);
+  const unitLabel = getUnitLabel();
+  const sizeLabel = getSizeLabel();
   const isBuy = trade.direction === "BUY";
 
   const FEELING_FIELD_MAP = {
@@ -231,6 +235,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         ict_ifvg_bars: ictParams.ict_ifvg_bars ? parseInt(ictParams.ict_ifvg_bars, 10) : null,
         ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
         ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
+        ict_cisd_present: ictParams.ict_cisd_present === "" ? null : ictParams.ict_cisd_present === "true",
         ict_htf_bias: ictParams.ict_htf_bias || null,
         feeling_before: editable.feelingBefore,
         feeling_during: editable.feelingDuring,
@@ -253,6 +258,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         rule_followed: editable.ruleFollowed,
         criteria_met_at_entry: editable.criteriaMetAtEntry,
         be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
+        trade_location: editable.tradeLocation,
         ...ictUpdate,
         ...qtUpdate,
       };
@@ -318,6 +324,8 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         </div>
       </div>
 
+      {trade.scenario_id && <LinkedScenarioCard scenarioId={trade.scenario_id} />}
+
       {/* Single-column stacked cards */}
       <div className="space-y-4">
         {/* Trade Numbers */}
@@ -382,6 +390,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           criteriaMetAtEntry={editable.criteriaMetAtEntry}
           isBreakeven={trade.outcome === "breakeven"}
           beOutcome={editable.beOutcome}
+          tradeLocation={editable.tradeLocation}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
           onConfidenceChange={(v) => dispatch({ type: "SET_FIELD", field: "confidence", value: v })}
           onTagsChange={(v) => dispatch({ type: "SET_FIELD", field: "tags", value: v })}
@@ -390,6 +399,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
           onCriteriaMetChange={(v) => dispatch({ type: "SET_FIELD", field: "criteriaMetAtEntry", value: v })}
           onBeOutcomeChange={(v) => dispatch({ type: "SET_FIELD", field: "beOutcome", value: v })}
+          onTradeLocationChange={(v) => dispatch({ type: "SET_FIELD", field: "tradeLocation", value: v })}
         />
 
         {/* Rule Compliance */}

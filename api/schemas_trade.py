@@ -29,8 +29,10 @@ from shared.ict_taxonomy import (
     SETUP_DETAIL_MAP,
     SETUP_TYPES,
     TP_TARGETS,
+    validate_setup_detail,
 )
 from shared.qt_taxonomy import QT_ENTRY_TYPES, QT_FVG_TYPES, QT_QUARTERS, QT_TP_TARGETS
+from shared.trade_location import TRADE_LOCATION_VALUES
 
 
 def _validate_feeling(v: str | None) -> str | None:
@@ -40,34 +42,21 @@ def _validate_feeling(v: str | None) -> str | None:
     return v
 
 
-def _validate_ict_detail_for_type(
-    setup_type: str | None, setup_detail: str | None,
-) -> None:
-    """Cross-validate that ict_setup_detail belongs to ict_setup_type's allowed list."""
-    if setup_type is None or setup_detail is None:
-        return
-    allowed = SETUP_DETAIL_MAP.get(setup_type, [])
-    if allowed and setup_detail not in allowed:
-        raise ValueError(
-            f"ict_setup_detail '{setup_detail}' is not valid for "
-            f"ict_setup_type '{setup_type}'. Must be one of {allowed}",
-        )
-
-
 class TradeCreateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     signal_id: str | None = None
+    scenario_id: str | None = None
     account_id: str | None = None
     strategy: str
     symbol: str
-    instrument_type: str = "forex"
+    instrument_type: str = "futures"
     direction: str
     entry_price: float = Field(gt=0)
     sl_price: float = Field(gt=0)
     tp_price: float | None = None
-    lot_size: float = Field(default=1.0, gt=0)
-    risk_pips: float | None = Field(default=None, gt=0)
+    lot_size: float = Field(default=1.0, gt=0, alias="contracts")
+    risk_pips: float | None = Field(default=None, gt=0, alias="risk_points")
     open_time: datetime
     tags: list[str] = Field(default_factory=list)
     notes: str = ""
@@ -84,6 +73,7 @@ class TradeCreateRequest(BaseModel):
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
@@ -103,6 +93,9 @@ class TradeCreateRequest(BaseModel):
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
 
+    # Trade location — live trades only; None for backtest
+    trade_location: str = "home"
+
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str) -> str:
@@ -119,8 +112,8 @@ class TradeCreateRequest(BaseModel):
         'futures' is the canonical value for new trades.
         'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
         """
-        if v not in ("forex", "futures", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex or futures")
+        if v not in ("futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be futures, futures_mnq, or futures_mes")
         return v
 
     @field_validator("ict_setup_type")
@@ -203,14 +196,21 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
         return v
 
+    @field_validator("trade_location")
+    @classmethod
+    def validate_trade_location(cls, v: str) -> str:
+        if v not in TRADE_LOCATION_VALUES:
+            raise ValueError(f"trade_location must be one of {TRADE_LOCATION_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
-        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
         return self
 
 
 class TradeUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     instrument_type: str | None = None
     direction: str | None = None
@@ -218,8 +218,8 @@ class TradeUpdateRequest(BaseModel):
     exit_price: float | None = Field(default=None, gt=0)
     sl_price: float | None = Field(default=None, gt=0)
     tp_price: float | None = None
-    lot_size: float | None = Field(default=None, gt=0)
-    risk_pips: float | None = Field(default=None, gt=0)
+    lot_size: float | None = Field(default=None, gt=0, alias="contracts")
+    risk_pips: float | None = Field(default=None, gt=0, alias="risk_points")
     status: str | None = None
     outcome: str | None = None
     open_time: datetime | None = None
@@ -240,6 +240,7 @@ class TradeUpdateRequest(BaseModel):
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = Field(default=None, ge=0)
     criteria_met_at_entry: bool | None = None
@@ -259,6 +260,9 @@ class TradeUpdateRequest(BaseModel):
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
 
+    # Trade location — live trades only; None leaves existing value unchanged
+    trade_location: str | None = None
+
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str | None) -> str | None:
@@ -275,8 +279,8 @@ class TradeUpdateRequest(BaseModel):
         'futures' is the canonical value for new trades.
         'futures_mnq' / 'futures_mes' are kept for backward compat with existing DB rows.
         """
-        if v is not None and v not in ("forex", "futures", "futures_mnq", "futures_mes"):
-            raise ValueError("instrument_type must be forex or futures")
+        if v is not None and v not in ("futures", "futures_mnq", "futures_mes"):
+            raise ValueError("instrument_type must be futures, futures_mnq, or futures_mes")
         return v
 
     @field_validator("status")
@@ -375,9 +379,16 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"qt_entry_type must be one of {QT_ENTRY_TYPES}")
         return v
 
+    @field_validator("trade_location")
+    @classmethod
+    def validate_trade_location(cls, v: str | None) -> str | None:
+        if v is not None and v not in TRADE_LOCATION_VALUES:
+            raise ValueError(f"trade_location must be one of {TRADE_LOCATION_VALUES}")
+        return v
+
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
-        _validate_ict_detail_for_type(self.ict_setup_type, self.ict_setup_detail)
+        validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
         return self
 
 
@@ -386,6 +397,7 @@ class TradeResponse(BaseModel):
 
     id: str
     signal_id: str | None
+    scenario_id: str | None
     account_id: str | None = None
     # NOT an ORM column — TradeModel has no account_name field.
     # This field must be populated explicitly via trade_to_response().
@@ -400,13 +412,13 @@ class TradeResponse(BaseModel):
     exit_price: float | None
     sl_price: float
     tp_price: float | None
-    lot_size: float
+    lot_size: float = Field(alias="contracts")
     status: str
     outcome: str | None
-    pnl_pips: float | None
+    pnl_pips: float | None = Field(alias="pnl_points")
     pnl_usd: float | None
     rr_achieved: float | None
-    risk_pips: float
+    risk_pips: float = Field(alias="risk_points")
     open_time: datetime
     close_time: datetime | None
     tags: list[str]
@@ -424,6 +436,7 @@ class TradeResponse(BaseModel):
     ict_ifvg_bars: int | None = None
     ict_smt_present: bool | None = None
     ict_tdo_aligned: bool | None = None
+    ict_cisd_present: bool | None = None
     ict_htf_bias: str | None = None
     fees: float | None = None
     criteria_met_at_entry: bool | None = None
@@ -436,6 +449,7 @@ class TradeResponse(BaseModel):
     qt_fvg_date: str | None = None
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
+    trade_location: str | None = None
     created_at: datetime
     updated_at: datetime
 

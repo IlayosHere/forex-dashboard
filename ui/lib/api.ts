@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -265,6 +265,18 @@ export async function fetchCalendar(week: "current" | "next" = "current"): Promi
   return res.json() as Promise<CalendarEvent[]>;
 }
 
+export async function fetchMarketHolidays(week: "current" | "next" = "current"): Promise<MarketClosure[]> {
+  const res = await authFetch(`${BASE_URL}/api/market-holidays?week=${week}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch market holidays: ${res.status}`);
+  return res.json() as Promise<MarketClosure[]>;
+}
+
+export async function fetchDayTypes(from: string, to: string): Promise<DayType[]> {
+  const res = await authFetch(`${BASE_URL}/api/trades/day-types?from=${from}&to=${to}`);
+  if (!res.ok) throw new Error(`Failed to fetch day types: ${res.status}`);
+  return res.json() as Promise<DayType[]>;
+}
+
 // ---------------------------------------------------------------------------
 // Mistakes Tracker
 // ---------------------------------------------------------------------------
@@ -333,6 +345,83 @@ export async function upsertSession(date: string, body: SessionUpsertRequest): P
   });
   if (!res.ok) throw new Error(`Failed to save session: ${res.status}`);
   return res.json() as Promise<TradingSession>;
+}
+
+export async function fetchPremarketPlan(date: string): Promise<PremarketPlan | null> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/${date}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to fetch premarket plan: ${res.status}`);
+  return res.json() as Promise<PremarketPlan>;
+}
+
+export async function upsertPremarketPlan(date: string, body: PlanUpsertRequest): Promise<PremarketPlan> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/${date}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to save premarket plan: ${res.status}`);
+  return res.json() as Promise<PremarketPlan>;
+}
+
+export async function createPlanScenario(date: string, body: ScenarioCreateRequest): Promise<PlanScenario> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/${date}/scenarios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to add scenario: ${res.status}`);
+  return res.json() as Promise<PlanScenario>;
+}
+
+export async function updatePlanScenario(scenarioId: string, body: ScenarioUpdateRequest): Promise<PlanScenario> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/scenarios/${scenarioId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to update scenario: ${res.status}`);
+  return res.json() as Promise<PlanScenario>;
+}
+
+export async function fetchPlanScenario(scenarioId: string): Promise<PlanScenario | null> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/scenarios/${scenarioId}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to fetch scenario: ${res.status}`);
+  return res.json() as Promise<PlanScenario>;
+}
+
+export async function deletePlanScenario(scenarioId: string): Promise<void> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/scenarios/${scenarioId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Failed to delete scenario: ${res.status}`);
+}
+
+export async function addPlanCheckpoint(date: string, body: CheckpointCreateRequest): Promise<PremarketPlan> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/${date}/checkpoint`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to add checkpoint: ${res.status}`);
+  return res.json() as Promise<PremarketPlan>;
+}
+
+export async function upsertPlanReview(date: string, body: ReviewUpsertRequest): Promise<PlanReview> {
+  const res = await authFetch(`${BASE_URL}/api/premarket/${date}/review`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Failed to save review: ${res.status}`);
+  return res.json() as Promise<PlanReview>;
+}
+
+export async function fetchPremarketMonth(from: string, to: string): Promise<PremarketDaySummary[]> {
+  const res = await authFetch(`${BASE_URL}/api/premarket?from=${from}&to=${to}`);
+  if (!res.ok) throw new Error(`Failed to fetch premarket month summary: ${res.status}`);
+  return res.json() as Promise<PremarketDaySummary[]>;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import {
@@ -10,14 +10,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { SessionJournalPanel } from "@/components/SessionJournalPanel";
+import { DaySummaryCard } from "@/components/DaySummaryCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StarRating } from "@/components/StarRating";
 
-import type { Trade } from "@/lib/types";
+import type { DayType, Trade } from "@/lib/types";
 
 import { fetchTrades } from "@/lib/api";
-import { useSession } from "@/lib/useSession";
 
 export interface CalendarDaySheetProps {
   date: string | null;
@@ -27,6 +26,60 @@ export interface CalendarDaySheetProps {
   accountType?: "live" | "backtest";
   strategy?: string;
   showMoney?: boolean;
+  dayType?: DayType;
+}
+
+const NEWS_IMPACT_LABEL: Record<string, string> = { high: "High", medium: "Medium" };
+
+const HOLIDAY_BADGE_LABEL: Record<string, string> = {
+  full_close: "CLOSED",
+  early_close: "EARLY CLOSE",
+  thin_volume: "THIN VOLUME",
+};
+
+// Compact rows sized for the 400px day sheet, not the wide live-calendar table —
+// the live CalendarEventRow/CalendarClosureRow grid (4px_52px_52px_1fr_72px_72px_80px,
+// ~400px of fixed columns for time/previous/forecast/actual) doesn't fit here and
+// squeezes the actual label text to nothing. These entries are schedule-derived,
+// not live released data, so there's no time/forecast/actual to show anyway —
+// just the label and a badge.
+function DayContextRow({ label, badge }: { label: string; badge: string }) {
+  return (
+    <div
+      role="row"
+      className="flex items-center gap-2 px-3 py-1.5 text-xs border-l-2 border-l-text-dim border-dashed bg-surface-raised/40"
+    >
+      <span className="text-text-muted truncate flex-1">{label}</span>
+      <span className="text-[9px] uppercase tracking-widest text-text-dim border border-border-light px-1.5 py-0.5 rounded shrink-0">
+        {badge}
+      </span>
+    </div>
+  );
+}
+
+function DayContextSection({ dayType }: { dayType: DayType }) {
+  if (dayType.news_events.length === 0 && dayType.holiday_events.length === 0) return null;
+  return (
+    <div className="mb-3 pb-3 border-b border-[#1e1e1e]">
+      <div className="text-[10px] uppercase tracking-widest text-text-dim mb-1.5">
+        Day Context
+      </div>
+      {dayType.holiday_events.map((h, i) => (
+        <DayContextRow
+          key={`holiday-${i}`}
+          label={h.label}
+          badge={HOLIDAY_BADGE_LABEL[h.closure_type] ?? h.closure_type}
+        />
+      ))}
+      {dayType.news_events.map((n, i) => (
+        <DayContextRow
+          key={`news-${i}`}
+          label={n.name}
+          badge={NEWS_IMPACT_LABEL[n.impact] ?? n.impact}
+        />
+      ))}
+    </div>
+  );
 }
 
 // MNQ times are stored as ET (logged by the user in NY time, stored without conversion).
@@ -138,13 +191,14 @@ function SkeletonRows() {
   );
 }
 
-export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType, strategy, showMoney = false }: CalendarDaySheetProps) {
+export function CalendarDaySheet({ date, onClose, instrumentType, accountId, accountType, strategy, showMoney = false, dayType }: CalendarDaySheetProps) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isMnq = instrumentType?.startsWith("futures") === true;
-  const { session, saving: sessionSaving, save: saveSession } = useSession(isMnq ? date : null);
+  const pathname = usePathname();
+  const calendarSearchParams = useSearchParams();
+  const calendarUrl = `${pathname}?${calendarSearchParams.toString()}`;
 
   useEffect(() => {
     if (!date) return;
@@ -192,15 +246,12 @@ export function CalendarDaySheet({ date, onClose, instrumentType, accountId, acc
         </SheetHeader>
 
         <div className="px-4 py-3">
-          {/* Session journal (MNQ only) */}
-          {isMnq && date && (
-            <SessionJournalPanel
-              session={session}
-              saving={sessionSaving}
-              onSave={saveSession}
-              onSaved={onClose}
-            />
+          {/* Day summary launcher — instrument-agnostic, the plan isn't scoped to futures */}
+          {date && (
+            <DaySummaryCard date={date} backHref={calendarUrl} backLabel="Back to Calendar" />
           )}
+
+          {dayType && <DayContextSection dayType={dayType} />}
 
           {loading && <SkeletonRows />}
 

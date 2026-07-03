@@ -245,6 +245,131 @@ def migrate_add_life_entries_table() -> None:
     logger.info("Created table life_entries")
 
 
+def migrate_add_premarket_plans_table() -> None:
+    """Create premarket_plans table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "premarket_plans" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS premarket_plans ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  owner VARCHAR NOT NULL,"
+            "  date DATE NOT NULL,"
+            "  weekly_dealing_range VARCHAR,"
+            "  weekly_dol VARCHAR,"
+            "  weekly_opening_gap VARCHAR,"
+            "  daily_bias VARCHAR,"
+            "  daily_bias_signals JSON NOT NULL,"
+            "  h4_pd_array VARCHAR,"
+            "  h4_pd_location VARCHAR,"
+            "  h1_zone VARCHAR,"
+            "  h1_structure VARCHAR,"
+            "  ltf_notes VARCHAR,"
+            "  narrative VARCHAR NOT NULL,"
+            "  checkpoints JSON NOT NULL,"
+            "  created_at DATETIME NOT NULL,"
+            "  updated_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_premarket_plans_owner ON premarket_plans (owner)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_premarket_plans_owner_date ON premarket_plans (owner, date)"
+        ))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_premarket_plan_owner_date ON premarket_plans (owner, date)"
+        ))
+    logger.info("Created table premarket_plans")
+
+
+def migrate_add_plan_scenarios_table() -> None:
+    """Create plan_scenarios table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "plan_scenarios" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS plan_scenarios ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  plan_id VARCHAR NOT NULL REFERENCES premarket_plans(id) ON DELETE CASCADE,"
+            "  reaction_setup_type VARCHAR,"
+            "  reaction_setup_detail VARCHAR,"
+            "  target_level_type VARCHAR,"
+            "  target_level_detail VARCHAR,"
+            "  notes VARCHAR NOT NULL,"
+            "  outcome_status VARCHAR,"
+            "  created_at DATETIME NOT NULL,"
+            "  updated_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_plan_scenarios_plan_id ON plan_scenarios (plan_id)"
+        ))
+    logger.info("Created table plan_scenarios")
+
+
+def migrate_add_plan_reviews_table() -> None:
+    """Create plan_reviews table if it does not exist yet."""
+    inspector = inspect(engine)
+    if "plan_reviews" in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS plan_reviews ("
+            "  id VARCHAR PRIMARY KEY,"
+            "  plan_id VARCHAR NOT NULL UNIQUE REFERENCES premarket_plans(id) ON DELETE CASCADE,"
+            "  bias_correct VARCHAR,"
+            "  execution_grade VARCHAR,"
+            "  emotion_tags JSON NOT NULL,"
+            "  review_notes VARCHAR NOT NULL,"
+            "  created_at DATETIME NOT NULL,"
+            "  updated_at DATETIME NOT NULL"
+            ")"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_plan_reviews_plan_id ON plan_reviews (plan_id)"
+        ))
+    logger.info("Created table plan_reviews")
+
+
+def migrate_add_trades_scenario_id_column() -> None:
+    """Add scenario_id column to trades table if it does not exist yet.
+
+    No FK constraint — mirrors signal_id (see migrate_drop_signals_fk). Safe to run at
+    startup today since this branch has never deployed; once it ships, this specific
+    ALTER must be pre-applied manually on prod first (see CLAUDE.md migration-safety rule).
+    """
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
+    if "scenario_id" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE trades ADD COLUMN scenario_id VARCHAR"))
+    logger.info("Added scenario_id column to trades")
+
+
+def migrate_add_trade_location_column() -> None:
+    """Add trade_location column to trades table if it does not exist yet.
+
+    Values: 'home' | 'phone' | 'pc_outside' — nullable (None for backtest/legacy trades).
+    Safe at startup for new installs. On prod, pre-apply the ALTER manually via
+    /prod-connect before deploying (see CLAUDE.md §Production Migration Safety).
+    """
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
+    if "trade_location" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE trades ADD COLUMN trade_location VARCHAR"))
+    logger.info("Added trade_location column to trades")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -259,3 +384,8 @@ def run_all() -> None:
     migrate_add_rules_table()
     migrate_add_rule_mistake_links_table()
     migrate_add_life_entries_table()
+    migrate_add_premarket_plans_table()
+    migrate_add_plan_scenarios_table()
+    migrate_add_plan_reviews_table()
+    migrate_add_trades_scenario_id_column()
+    migrate_add_trade_location_column()

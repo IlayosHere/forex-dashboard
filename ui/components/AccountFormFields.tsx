@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 
 import type { AccountType, AccountStatus, InstrumentType } from "@/lib/types";
 
@@ -31,12 +32,16 @@ interface SegmentOption<T extends string> {
 
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull";
-const SELECT_CLASS =
-  "bg-surface-input border border-border text-sm text-text-primary rounded px-3 py-1.5 outline-none focus:border-bull w-full h-8 cursor-pointer transition-colors";
 const SEGMENT_ACTIVE_CLASS = "bg-bull/20 text-bull ring-1 ring-inset ring-bull/40";
 
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "passed", label: "Passed" },
+  { value: "failed", label: "Failed" },
+  { value: "closed", label: "Closed" },
+];
+
 const INSTRUMENT_OPTIONS: SegmentOption<InstrumentType>[] = [
-  { value: "forex",    label: "FX" },
   { value: "futures",  label: "Futures" },
 ];
 
@@ -94,21 +99,6 @@ export function AccountFormFields({
 }: AccountFormFieldsProps) {
   const isFunded = form.account_type === "funded";
 
-  const isFuturesInstrument = form.instrument_type === "futures" || form.instrument_type === "futures_mnq" || form.instrument_type === "futures_mes";
-
-  const accountTypeOptions = ACCOUNT_TYPE_OPTIONS.map((opt) =>
-    opt.value === "funded" && !isFuturesInstrument
-      ? { ...opt, disabled: true, disabledReason: "Funded accounts require Futures instrument" }
-      : opt
-  );
-
-  function handleInstrumentChange(it: InstrumentType) {
-    onChange("instrument_type", it);
-    if (it === "forex" && form.account_type === "funded") {
-      onChange("account_type", "demo");
-    }
-  }
-
   return (
     <>
       <div className="space-y-2">
@@ -130,7 +120,7 @@ export function AccountFormFields({
                 <SegmentedControl
                   value={form.instrument_type}
                   options={INSTRUMENT_OPTIONS}
-                  onChange={handleInstrumentChange}
+                  onChange={(v) => onChange("instrument_type", v)}
                 />
               </div>
             </div>
@@ -138,7 +128,7 @@ export function AccountFormFields({
               <label className="label">Type</label>
               <SegmentedControl
                 value={form.account_type}
-                options={accountTypeOptions}
+                options={ACCOUNT_TYPE_OPTIONS}
                 onChange={(v) => onChange("account_type", v)}
               />
             </div>
@@ -147,16 +137,12 @@ export function AccountFormFields({
 
         <div className="space-y-1">
           <label className="label">Status</label>
-          <select
-            className={SELECT_CLASS}
+          <Combobox
+            options={STATUS_OPTIONS}
             value={form.status}
-            onChange={(e) => onChange("status", e.target.value as AccountStatus)}
-          >
-            <option value="active">Active</option>
-            <option value="passed">Passed</option>
-            <option value="failed">Failed</option>
-            <option value="closed">Closed</option>
-          </select>
+            onChange={(v) => onChange("status", (v ?? "active") as AccountStatus)}
+            filterable={false}
+          />
         </div>
 
         <div className="space-y-1">

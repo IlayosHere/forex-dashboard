@@ -14,24 +14,41 @@ local dev (`signals.db`, SQLite) and production (Cloud SQL Postgres).
 | Connection name | — | `project-2f1c7228-98f9-4373-a13:europe-west1:forex-db` |
 | Access | direct file | Cloud SQL Auth Proxy on `127.0.0.1:5433` (port **5433** — not 5432, which conflicts with local Postgres) |
 | Password | — | Secret Manager secret `db_password` |
-| gcloud binary | — | `"C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"` — NOT in PATH, always use full path |
-| cloud-sql-proxy | — | `scripts/cloud-sql-proxy.exe` — checked into repo, NOT in PATH |
 
-Cloud SQL has `ipv4_enabled=false` (private IP only: `10.41.216.3`). From a
-laptop, the proxy **cannot** reach the private IP. You must **temporarily enable
-public IP** via gcloud, then disable it when done. See "How to connect to prod".
+This project is worked on from both a Mac and a Windows machine. gcloud binary
+and proxy binary paths differ by OS — see OS detection below. Neither is on
+PATH on either machine, so always use the resolved `$GCLOUD`/`$PROXY` vars,
+never bare `gcloud` or a bare proxy invocation.
 
-`psql` and `pg_dump` are **not installed** on this machine. All Postgres
+Cloud SQL `forex-db` has only public IP — no private IP/PSC — so it's always
+reachable from a laptop via the proxy, no enable/disable step needed. See "How
+to connect to prod" and the "Public IP is permanently enabled" note in
+`/prod-connect` for why.
+
+`psql` and `pg_dump` are **not installed** on either machine. All Postgres
 interaction must go through Python (psycopg2) or `scripts/migrate_to_postgres.py`.
 
 Migrations live in `migrations/NNN_name.sql`, numbered, one-way, applied manually.
 `migrations/README.md` is the changelog.
 
-## Environment constants
+## OS detection — run this first, every time
+
+```bash
+UNAME=$(uname -s 2>/dev/null || echo "Unknown")
+if [ "$UNAME" = "Darwin" ]; then
+  PLATFORM="mac"
+  GCLOUD="/opt/homebrew/bin/gcloud"
+  PROXY="scripts/cloud-sql-proxy.darwin.arm64"
+else
+  PLATFORM="windows"
+  GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
+  PROXY="scripts/cloud-sql-proxy.exe"
+fi
+```
+
+## Environment constants (same on both platforms)
 
 ```
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
-PROXY="scripts/cloud-sql-proxy.exe"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 INSTANCE="forex-db"
 CONNECTION="project-2f1c7228-98f9-4373-a13:europe-west1:forex-db"
@@ -42,18 +59,29 @@ PG_USER="forex"
 PG_DB="forex"
 ```
 
-## Prerequisites (one-time setup)
+## Prerequisites (one-time setup, per machine)
 
-Both of these must be run at least once. They are separate — `auth login` is for
-gcloud commands; `application-default login` is for the proxy (ADC).
+Both of these must be run at least once **on each machine you work from** —
+auth does not carry over between Mac and Windows. `auth login` is for gcloud
+commands; `application-default login` is for the proxy (ADC).
 
 ```bash
 "$GCLOUD" auth login
 "$GCLOUD" auth application-default login
 "$GCLOUD" config set project "$PROJECT"
 # Verify proxy binary exists
-ls scripts/cloud-sql-proxy.exe
+ls "$PROXY"
 ```
+
+On Mac, gcloud is installed via `brew install --cask google-cloud-sdk`, and the
+proxy binary is downloaded directly from Google (not in Homebrew):
+```bash
+curl -L -o scripts/cloud-sql-proxy.darwin.arm64 \
+  "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.22.1/cloud-sql-proxy.darwin.arm64"
+chmod +x scripts/cloud-sql-proxy.darwin.arm64
+```
+(For Intel Macs, substitute `darwin.amd64` for `darwin.arm64` in both the
+filename and the download URL.)
 
 ## Arguments — `$ARGUMENTS` decides the mode
 
@@ -73,27 +101,37 @@ Default if no arg: show this menu and `status`.
 
 ## How to connect to prod
 
-Bash background jobs (`&`) die between Claude tool calls. Use PowerShell
-`Start-Process` to keep the proxy alive across calls.
+Public IP is **permanently enabled** on `forex-db` — no private IP/PSC exists
+as a fallback (Terraform-declared: `infra/terraform/cloud_sql.tf`,
+`ipv4_enabled = true`, `authorized_networks = 0.0.0.0/0`, relying on SSL).
+There's no enable/disable dance anymore — never run `--assign-ip`,
+`--no-assign-ip`, or change `--authorized-networks`. Just start the proxy.
+
+Plain bash background jobs (`&`) die between Claude tool calls. The proxy must
+be launched detached at the OS level so it survives across calls — `nohup` +
+`disown` on Mac, PowerShell `Start-Process` on Windows. Run the OS detection
+block first (above) to set `$GCLOUD`/`$PROXY`, then:
 
 ```bash
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 INSTANCE="forex-db"
 CONNECTION="project-2f1c7228-98f9-4373-a13:europe-west1:forex-db"
+```
 
-# 1. Enable public IP (required — private IP is unreachable from laptop)
-"$GCLOUD" sql instances patch "$INSTANCE" --assign-ip --project="$PROJECT" --quiet
+**Mac** — start the proxy:
+```bash
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+nohup "$PROXY" "$CONNECTION" --port 5433 \
+  > /tmp/cloud-sql-proxy-stdout.log 2> /tmp/cloud-sql-proxy-stderr.log < /dev/null &
+disown
+sleep 5
+cat /tmp/cloud-sql-proxy-stdout.log
+cat /tmp/cloud-sql-proxy-stderr.log 2>/dev/null
+```
 
-# 2. Authorize your current public IP
-MY_IP=$(curl -s https://ifconfig.me)
-"$GCLOUD" sql instances patch "$INSTANCE" \
-  --authorized-networks="$MY_IP/32" --project="$PROJECT" --quiet
-
-# 3. Kill any stale proxy
+**Windows** — start the proxy:
+```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
-
-# 4. Start proxy via PowerShell (survives between tool calls)
 powershell.exe -Command "
 \$outlog = \"\$env:TEMP\proxy-stdout.log\"
 \$errlog = \"\$env:TEMP\proxy-stderr.log\"
@@ -104,24 +142,27 @@ Start-Process -FilePath 'scripts/cloud-sql-proxy.exe' \
   -RedirectStandardError \$errlog \
   -WindowStyle Hidden"
 sleep 5
-
-# 5. Verify proxy is listening
 powershell.exe -Command "Get-Content \"\$env:TEMP\proxy-stdout.log\""
 powershell.exe -Command "Get-Content \"\$env:TEMP\proxy-stderr.log\" -ErrorAction SilentlyContinue"
+```
 
-# 6. Fetch password
+```bash
+# Fetch password (same on both platforms)
 DB_PASSWORD=$("$GCLOUD" secrets versions access latest \
   --secret=db_password --project="$PROJECT")
 export DB_PASSWORD
 ```
 
-When done with prod:
+When done with prod, only the proxy needs killing:
 
+**Mac:**
 ```bash
-# Kill proxy
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+```
+
+**Windows:**
+```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
-# Disable public IP
-"$GCLOUD" sql instances patch "$INSTANCE" --no-assign-ip --project="$PROJECT" --quiet
 ```
 
 Never put the DB password in command history.
@@ -223,7 +264,8 @@ print(f"Dump written to {path}")
 - Cloud SQL has `deletion_protection=true`. Don't try to drop the instance.
 - Backups dir (`backups/`) must be gitignored. Check before dumping.
 - Port is **5433**, not 5432.
-- Always close the prod connection when done (kill proxy, remove public IP).
+- Always close the prod connection when done (kill the proxy — public IP
+  itself stays permanently enabled, never try to disable it).
 
 ## Typical flows
 

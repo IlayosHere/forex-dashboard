@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { strategies } from "@/lib/strategies";
+import { Combobox } from "@/components/ui/combobox";
 import type { Account, InstrumentType } from "@/lib/types";
 
 export interface TradeFilterValues {
@@ -23,8 +24,7 @@ interface TradeFiltersProps {
   instrumentType: InstrumentType;
 }
 
-const selectClass =
-  "bg-[#1e1e1e] border border-[#2a2a2a] text-sm text-[#e0e0e0] rounded px-3 py-1.5 outline-none focus:border-[#26a69a] cursor-pointer transition-colors";
+const comboClass = "w-auto h-8";
 const dateClass =
   "bg-[#1e1e1e] border border-[#2a2a2a] text-sm text-[#e0e0e0] rounded px-3 py-1.5 outline-none focus:border-[#26a69a] w-36 cursor-pointer transition-colors";
 
@@ -44,72 +44,66 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
 
   return (
     <div className="flex flex-wrap items-center gap-2 py-3">
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        options={[{ value: "", label: "All Accounts" }, ...accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.account_type})` }))]}
         value={values.account_id}
-        onChange={(e) => set("account_id", e.target.value)}
-      >
-        <option value="">All Accounts</option>
-        {accounts.map((a) => (
-          <option key={a.id} value={a.id}>{a.name} ({a.account_type})</option>
-        ))}
-      </select>
+        onChange={(v) => set("account_id", v ?? "")}
+      />
 
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        options={[{ value: "", label: "All Strategies" }, ...scopedStrategies.map((s) => ({ value: s.slug, label: s.label }))]}
         value={values.strategy}
-        onChange={(e) => set("strategy", e.target.value)}
-      >
-        <option value="">All Strategies</option>
-        {scopedStrategies.map((s) => (
-          <option key={s.slug} value={s.slug}>{s.label}</option>
-        ))}
-      </select>
+        onChange={(v) => set("strategy", v ?? "")}
+      />
 
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        options={[{ value: "", label: "All Pairs" }, ...symbols.map((s) => ({ value: s, label: s }))]}
         value={values.symbol}
-        onChange={(e) => set("symbol", e.target.value)}
-      >
-        <option value="">All Pairs</option>
-        {symbols.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
+        onChange={(v) => set("symbol", v ?? "")}
+      />
 
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        filterable={false}
+        options={[
+          { value: "", label: "All Status" },
+          { value: "open", label: "Open" },
+          { value: "closed", label: "Closed" },
+          { value: "breakeven", label: "Breakeven" },
+          { value: "cancelled", label: "Cancelled" },
+        ]}
         value={values.status}
-        onChange={(e) => set("status", e.target.value)}
-      >
-        <option value="">All Status</option>
-        <option value="open">Open</option>
-        <option value="closed">Closed</option>
-        <option value="breakeven">Breakeven</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
+        onChange={(v) => set("status", v ?? "")}
+      />
 
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        filterable={false}
+        options={[
+          { value: "", label: "All Outcomes" },
+          { value: "win", label: "Win" },
+          { value: "loss", label: "Loss" },
+          { value: "breakeven", label: "Breakeven" },
+        ]}
         value={values.outcome}
-        onChange={(e) => set("outcome", e.target.value)}
-      >
-        <option value="">All Outcomes</option>
-        <option value="win">Win</option>
-        <option value="loss">Loss</option>
-        <option value="breakeven">Breakeven</option>
-      </select>
+        onChange={(v) => set("outcome", v ?? "")}
+      />
 
-      <select
-        className={selectClass}
+      <Combobox
+        className={comboClass}
+        filterable={false}
+        options={[
+          { value: "", label: "All" },
+          { value: "true", label: "Followed Rules" },
+          { value: "false", label: "Had Mistakes" },
+          { value: "null", label: "Not Reviewed" },
+        ]}
         value={values.rule_followed}
-        onChange={(e) => set("rule_followed", e.target.value)}
-      >
-        <option value="">All</option>
-        <option value="true">Followed Rules</option>
-        <option value="false">Had Mistakes</option>
-        <option value="null">Not Reviewed</option>
-      </select>
+        onChange={(v) => set("rule_followed", v ?? "")}
+      />
 
       <input
         type="date"

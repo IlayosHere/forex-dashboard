@@ -17,13 +17,14 @@ function makeEmptyForm(): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "",
     symbol: "",
     direction: "BUY",
     entry_price: "",
     sl_price: "",
     tp_price: "",
-    lot_size: "",
+    contracts: "",
     open_time: nowNYDatetime(),
     tags: [],
     notes: "",
@@ -37,6 +38,7 @@ function makeEmptyForm(): TradeFormData {
     ict_ifvg_bars: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_cisd_present: null,
     ict_htf_bias: null,
     fees: "",
     criteria_met_at_entry: null,
@@ -45,6 +47,7 @@ function makeEmptyForm(): TradeFormData {
     qt_fvg_date: "",
     qt_fvg_type: "",
     qt_entry_type: "",
+    trade_location: "home",
   };
 }
 
@@ -52,6 +55,7 @@ function NewTradeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signalId = searchParams.get("signal");
+  const scenarioId = searchParams.get("scenario");
   const strategyParam = searchParams.get("strategy");
   const accountTypeParam = searchParams.get("account_type");
 
@@ -63,9 +67,10 @@ function NewTradeContent() {
         account_id: "",
         strategy: strategyParam,
         symbol: meta?.defaultSymbol ?? "",
+        scenario_id: scenarioId,
       };
     }
-    return makeEmptyForm();
+    return { ...makeEmptyForm(), scenario_id: scenarioId };
   });
 
   // Auto-select account when account_type param is set and only one qualifies
@@ -102,13 +107,14 @@ function NewTradeContent() {
       const body: TradeCreateRequest = {
         account_id: data.account_id || null,
         signal_id: data.signal_id || null,
+        scenario_id: data.scenario_id || null,
         strategy: data.strategy,
         symbol: data.symbol,
         direction: data.direction as "BUY" | "SELL",
         entry_price: parseFloat(data.entry_price),
         sl_price: parseFloat(data.sl_price),
         tp_price: data.tp_price ? parseFloat(data.tp_price) : null,
-        lot_size: parseFloat(data.lot_size),
+        contracts: parseFloat(data.contracts),
         open_time: nyDatetimeToUtcISO(data.open_time),
         tags: data.tags,
         notes: data.notes,
@@ -124,6 +130,7 @@ function NewTradeContent() {
         ict_ifvg_bars: data.ict_ifvg_bars ?? null,
         ict_smt_present: data.ict_smt_present,
         ict_tdo_aligned: data.ict_tdo_aligned,
+        ict_cisd_present: data.ict_cisd_present,
         ict_htf_bias: data.ict_htf_bias || null,
         fees: data.fees ? parseFloat(data.fees) : null,
         criteria_met_at_entry: data.criteria_met_at_entry ?? null,
@@ -132,6 +139,7 @@ function NewTradeContent() {
         qt_fvg_date: data.qt_fvg_date || null,
         qt_fvg_type: data.qt_fvg_type || null,
         qt_entry_type: data.qt_entry_type || null,
+        trade_location: (data.trade_location || "home") as import("@/lib/types").TradeLocation,
       };
       const trade = await createTrade(body);
       router.push(`/journal/${trade.id}`);

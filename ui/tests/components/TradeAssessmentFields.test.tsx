@@ -21,13 +21,14 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
   return {
     account_id: "",
     signal_id: null,
+    scenario_id: null,
     strategy: "fvg-impulse",
-    symbol: "EURUSD",
+    symbol: "MNQ",
     direction: "BUY",
     entry_price: "1.1",
     sl_price: "1.09",
     tp_price: "1.12",
-    lot_size: "0.1",
+    contracts: "1",
     open_time: "2026-04-10T14:00",
     tags: [],
     notes: "",
@@ -41,6 +42,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     ict_ifvg_bars: null,
     ict_smt_present: null,
     ict_tdo_aligned: null,
+    ict_cisd_present: null,
     ict_htf_bias: null,
     fees: "",
     criteria_met_at_entry: null,
@@ -49,6 +51,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     qt_fvg_date: "",
     qt_fvg_type: "",
     qt_entry_type: "",
+    trade_location: "home",
     ...overrides,
   };
 }

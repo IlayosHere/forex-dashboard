@@ -37,8 +37,8 @@ export function TradeResultPanel({ trade, unitLabel, isBacktest = false, showMon
           <>
             <div className="flex justify-between">
               <span className="label">P&L</span>
-              <span className="price font-bold" style={{ color: pnlColor(trade.pnl_pips) }}>
-                {trade.pnl_pips != null ? `${trade.pnl_pips > 0 ? "+" : ""}${trade.pnl_pips} ${unitLabel}` : "\u2014"}
+              <span className="price font-bold" style={{ color: pnlColor(trade.pnl_points) }}>
+                {trade.pnl_points != null ? `${trade.pnl_points > 0 ? "+" : ""}${trade.pnl_points} ${unitLabel}` : "\u2014"}
                 {showMoney && trade.pnl_usd != null && (
                   <span className="text-xs ml-2">({trade.pnl_usd >= 0 ? "+$" : "-$"}{Math.abs(trade.pnl_usd).toFixed(2)})</span>
                 )}

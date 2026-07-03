@@ -10,9 +10,10 @@ interface IctBooleanFlagsProps {
 const FLAG_LABELS: Record<string, string> = {
   smt_present: "SMT Present",
   tdo_aligned: "TDO Aligned",
+  cisd_present: "CISD Present",
 };
 
-const FLAG_KEYS = ["smt_present", "tdo_aligned"] as const;
+const FLAG_KEYS = ["smt_present", "tdo_aligned", "cisd_present"] as const;
 
 function formatWinRate(value: number | null): string {
   if (value === null) return "—";
@@ -128,7 +129,7 @@ export function IctBooleanFlags({ booleanFlags, loading }: IctBooleanFlagsProps)
   }
 
   return (
-    <div className={`flex gap-3 ${dim}`}>
+    <div className={`flex flex-wrap gap-3 ${dim}`}>
       {FLAG_KEYS.map((key) => {
         const comparison = booleanFlags[key];
         if (!comparison) return null;

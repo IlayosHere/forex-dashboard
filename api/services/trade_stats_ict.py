@@ -111,14 +111,19 @@ def aggregate_boolean_flags(trades: list[TradeModel]) -> dict[str, dict[str, dic
     smt_f: list[TradeModel] = []
     tdo_t: list[TradeModel] = []
     tdo_f: list[TradeModel] = []
+    cisd_t: list[TradeModel] = []
+    cisd_f: list[TradeModel] = []
     for trade in trades:
         if trade.ict_smt_present is not None:
             (smt_t if trade.ict_smt_present else smt_f).append(trade)
         if trade.ict_tdo_aligned is not None:
             (tdo_t if trade.ict_tdo_aligned else tdo_f).append(trade)
+        if trade.ict_cisd_present is not None:
+            (cisd_t if trade.ict_cisd_present else cisd_f).append(trade)
     return {
         "smt_present": {"true": _bucket_stats(smt_t), "false": _bucket_stats(smt_f)},
         "tdo_aligned":  {"true": _bucket_stats(tdo_t), "false": _bucket_stats(tdo_f)},
+        "cisd_present": {"true": _bucket_stats(cisd_t), "false": _bucket_stats(cisd_f)},
     }
 
 

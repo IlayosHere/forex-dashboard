@@ -13,7 +13,7 @@ export interface TradeEditFields {
   exit_price: number | null;
   sl_price: number;
   tp_price: number | null;
-  lot_size: number;
+  contracts: number;
   open_time: string;
 }
 
@@ -34,12 +34,12 @@ export function TradeInfoPanel({
 }: TradeInfoPanelProps) {
   const [editing, setEditing] = useState(false);
   const [direction, setDirection] = useState<"BUY" | "SELL">(trade.direction);
-  const fp = (v: number) => formatPrice(v, trade.symbol);
+  const fp = (v: number) => formatPrice(v);
   const [entry, setEntry] = useState(fp(trade.entry_price));
   const [exitPrice, setExitPrice] = useState(trade.exit_price != null ? fp(trade.exit_price) : "");
   const [sl, setSl] = useState(fp(trade.sl_price));
   const [tp, setTp] = useState(trade.tp_price != null ? fp(trade.tp_price) : "");
-  const [lotSize, setLotSize] = useState(String(trade.lot_size));
+  const [lotSize, setLotSize] = useState(String(trade.contracts));
   const [openTime, setOpenTime] = useState(utcISOToNYDatetime(trade.open_time));
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +52,7 @@ export function TradeInfoPanel({
     setExitPrice(trade.exit_price != null ? fp(trade.exit_price) : "");
     setSl(fp(trade.sl_price));
     setTp(trade.tp_price != null ? fp(trade.tp_price) : "");
-    setLotSize(String(trade.lot_size));
+    setLotSize(String(trade.contracts));
     setOpenTime(utcISOToNYDatetime(trade.open_time));
     setError(null);
   };
@@ -72,7 +72,7 @@ export function TradeInfoPanel({
   const handleSave = () => {
     const e = parseFloat(entry);
     const s = parseFloat(sl);
-    const l = isBacktest ? trade.lot_size : parseFloat(lotSize);
+    const l = isBacktest ? trade.contracts : parseFloat(lotSize);
     if (isNaN(e) || isNaN(s) || (!isBacktest && isNaN(l))) {
       setError(isBacktest ? "Entry and SL must be valid numbers" : "Entry, SL, and lot size must be valid numbers");
       return;
@@ -92,7 +92,7 @@ export function TradeInfoPanel({
       return;
     }
     setError(null);
-    onSave({ direction, entry_price: e, exit_price: ep, sl_price: s, tp_price: t, lot_size: l, open_time: nyDatetimeToUtcISO(openTime) });
+    onSave({ direction, entry_price: e, exit_price: ep, sl_price: s, tp_price: t, contracts: l, open_time: nyDatetimeToUtcISO(openTime) });
     setEditing(false);
   };
 
@@ -122,7 +122,7 @@ export function TradeInfoPanel({
         <PriceRow label="SL" value={trade.sl_price} editValue={sl} editing={editing} onChange={setSl} format={fp} />
         <PriceRow label="TP" value={trade.tp_price} editValue={tp} editing={editing} onChange={setTp} placeholder="\u2014" format={fp} />
         {!isBacktest && (
-          <PriceRow label={sizeFieldLabel} value={trade.lot_size} editValue={lotSize} editing={editing} onChange={setLotSize} />
+          <PriceRow label={sizeFieldLabel} value={trade.contracts} editValue={lotSize} editing={editing} onChange={setLotSize} />
         )}
         {(isClosed || editing) && (
           <PriceRow label="Exit" value={trade.exit_price} editValue={exitPrice} editing={editing} onChange={setExitPrice} placeholder="\u2014" format={fp} />
@@ -130,7 +130,7 @@ export function TradeInfoPanel({
         {!editing && (
           <div className="flex justify-between">
             <span className="label">Risk</span>
-            <span className="price text-text-primary">{trade.risk_pips} {unitLabel}</span>
+            <span className="price text-text-primary">{trade.risk_points} {unitLabel}</span>
           </div>
         )}
         {editing && (

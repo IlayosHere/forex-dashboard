@@ -6,10 +6,22 @@ You are running the full SQLite-to-Postgres data sync for the forex dashboard.
 This skill handles the entire workflow: open tunnel → check schema → migrate
 data → verify row counts → close tunnel. No arguments needed.
 
-## Environment constants
+## OS detection — run this first, every time
+
+```bash
+UNAME=$(uname -s 2>/dev/null || echo "Unknown")
+if [ "$UNAME" = "Darwin" ]; then
+  GCLOUD="/opt/homebrew/bin/gcloud"
+  PROXY="scripts/cloud-sql-proxy.darwin.arm64"
+else
+  GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
+  PROXY="scripts/cloud-sql-proxy.exe"
+fi
+```
+
+## Environment constants (same on both platforms)
 
 ```
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 INSTANCE="forex-db"
 CONNECTION="project-2f1c7228-98f9-4373-a13:europe-west1:forex-db"
@@ -29,24 +41,31 @@ The `users` table is NOT synced — it is managed via the AUTH_USERS secret.
 
 ### Step 1: Open prod connection
 
+Public IP is permanently enabled on this instance (Terraform-declared, no
+private IP/PSC fallback — see `/prod-connect`). Never run `--assign-ip` or
+touch `--authorized-networks`. Run the OS detection block above first to set
+`$GCLOUD`/`$PROXY`, then just start the proxy:
+
 ```bash
-GCLOUD="C:/Users/Ilay/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd"
 PROJECT="project-2f1c7228-98f9-4373-a13"
 INSTANCE="forex-db"
 CONNECTION="project-2f1c7228-98f9-4373-a13:europe-west1:forex-db"
+```
 
-# Enable public IP (private IP is unreachable from a laptop)
-"$GCLOUD" sql instances patch "$INSTANCE" --assign-ip --project="$PROJECT" --quiet
+**Mac** — kill stale proxy, start fresh (detached via `nohup`+`disown`, survives between tool calls):
+```bash
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+nohup "$PROXY" "$CONNECTION" --port 5433 \
+  > /tmp/cloud-sql-proxy-stdout.log 2> /tmp/cloud-sql-proxy-stderr.log < /dev/null &
+disown
+sleep 5
+cat /tmp/cloud-sql-proxy-stdout.log
+cat /tmp/cloud-sql-proxy-stderr.log 2>/dev/null
+```
 
-# Authorize current IP
-MY_IP=$(curl -s https://ifconfig.me)
-"$GCLOUD" sql instances patch "$INSTANCE" \
-  --authorized-networks="$MY_IP/32" --project="$PROJECT" --quiet
-
-# Kill any stale proxy
+**Windows** — kill stale proxy, start fresh (PowerShell `Start-Process` — bash `&` dies between tool calls):
+```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
-
-# Start proxy (PowerShell Start-Process — bash & dies between tool calls)
 powershell.exe -Command "
 \$outlog = \"\$env:TEMP\proxy-stdout.log\"
 \$errlog = \"\$env:TEMP\proxy-stderr.log\"
@@ -57,20 +76,17 @@ Start-Process -FilePath 'scripts/cloud-sql-proxy.exe' \
   -RedirectStandardError \$errlog \
   -WindowStyle Hidden"
 sleep 5
-
-# Verify proxy started
 powershell.exe -Command "Get-Content \"\$env:TEMP\proxy-stdout.log\""
 powershell.exe -Command "Get-Content \"\$env:TEMP\proxy-stderr.log\" -ErrorAction SilentlyContinue"
+```
 
-# Fetch password
+```bash
+# Fetch password (same on both platforms)
 DB_PASSWORD=$("$GCLOUD" secrets versions access latest \
   --secret=db_password --project="$PROJECT")
 export DB_PASSWORD
 echo "Prod connection open."
 ```
-
-If the proxy stderr contains "instance does not have IP of type PUBLIC", the
-patch hasn't propagated — wait 10 seconds and re-run Steps 3–4.
 
 ### Step 2: Pre-flight schema check
 
@@ -178,12 +194,20 @@ if not all_ok:
 
 ### Step 5: Close prod connection
 
-Always run this, even if earlier steps failed.
+Always run this, even if earlier steps failed. Only the proxy needs killing —
+public IP stays permanently enabled (see `/prod-connect`), never run
+`--no-assign-ip`.
 
+**Mac:**
+```bash
+pkill -f "cloud-sql-proxy.darwin.arm64" 2>/dev/null; true
+echo "Prod connection closed."
+```
+
+**Windows:**
 ```bash
 powershell.exe -Command "Get-Process cloud-sql-proxy -ErrorAction SilentlyContinue | Stop-Process -Force"
-"$GCLOUD" sql instances patch "$INSTANCE" --no-assign-ip --project="$PROJECT" --quiet
-echo "Prod connection closed. Public IP disabled."
+echo "Prod connection closed."
 ```
 
 ### Step 6: Ask about API restart
@@ -217,7 +241,7 @@ SYNC COMPLETE
   Schema fixes:  [columns added, or "none"]
   Rows migrated: signals=N, accounts=N, trades=N
   Row counts:    [OK / MISMATCH per table]
-  Connection:    closed (public IP disabled)
+  Connection:    closed (proxy stopped)
   API restart:   [yes / no / skipped]
 ```
 
@@ -227,4 +251,5 @@ SYNC COMPLETE
 - Upsert is idempotent — re-running this skill is always safe.
 - Always run Step 5 (close connection), even on failure.
 - Port is **5433**, never 5432.
-- gcloud binary is `gcloud.cmd` at full path — never bare `gcloud`.
+- Run the OS detection block first and use `$GCLOUD`/`$PROXY` — never bare
+  `gcloud`, on either platform.

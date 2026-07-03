@@ -40,7 +40,7 @@ export function AccountCard({
   onDeleteConfirm,
   onDeleteCancel,
 }: AccountCardProps) {
-  const instrumentLabel = account.instrument_type?.startsWith("futures") ? "Futures" : "FX";
+  const instrumentLabel = "Futures";
 
   return (
     <div className="bg-card border border-border rounded p-4">

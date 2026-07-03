@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StarRating } from "@/components/StarRating";
 import { TagInput } from "@/components/TagInput";
@@ -19,6 +20,12 @@ interface TradeAssessmentFieldsProps {
 
 const INPUT_CLASS =
   "bg-surface-input border-border text-text-primary focus-visible:ring-1 focus-visible:ring-offset-0 ring-bull price";
+
+const LOCATION_OPTIONS = [
+  { value: "home", label: "Home" },
+  { value: "phone", label: "Phone" },
+  { value: "pc_outside", label: "PC Outside" },
+] as const;
 
 export function TradeAssessmentFields({ form, onChange, isBacktest = false }: TradeAssessmentFieldsProps) {
   return (
@@ -46,6 +53,26 @@ export function TradeAssessmentFields({ form, onChange, isBacktest = false }: Tr
           <label htmlFor="criteria_met" className="label cursor-pointer select-none">
             Setup criteria fully met at entry bar close
           </label>
+        </div>
+      )}
+
+      {!isBacktest && (
+        <div className="space-y-1">
+          <label className="label">Traded from</label>
+          <div className="flex gap-1">
+            {LOCATION_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                type="button"
+                variant={form.trade_location === opt.value ? "default" : "outline"}
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => onChange("trade_location", opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
 

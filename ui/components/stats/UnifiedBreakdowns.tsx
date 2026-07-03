@@ -9,6 +9,8 @@ import {
   ALL_TABS,
   buildRows,
   buildSmtTdoSections,
+  MIN_BUCKET_SAMPLE,
+  NEWS_HOLIDAY_TABS,
 } from "@/components/stats/unifiedBreakdownsHelpers";
 import type { UnifiedRow, SmtTdoSection, UnifiedTabKey } from "@/components/stats/unifiedBreakdownsHelpers";
 
@@ -21,6 +23,7 @@ interface UnifiedBreakdownsProps {
   ictStats: IctStatsResponse | null;
   loading: boolean;
   showMoney?: boolean;
+  isBacktest?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -178,10 +181,36 @@ function TabBar({
 }
 
 // ---------------------------------------------------------------------------
+// News/holiday caption — framing differs between backtest (strategy-design
+// question) and live (small, emotionally-loaded real-money sample); both get
+// the data-coverage caveat since the underlying tables aren't unlimited.
+// ---------------------------------------------------------------------------
+
+function newsHolidayCaption(tab: UnifiedTabKey, isBacktest: boolean, stats: TradeStats | null): string {
+  const coverage = tab === "news_day"
+    ? stats?.news_data_coverage_through
+    : stats?.holiday_data_coverage_through;
+  const framing = isBacktest
+    ? "Retrospective check: would avoiding these days have helped your tested strategy?"
+    : `Small live sample — treat as directional, not conclusive. Buckets below ${MIN_BUCKET_SAMPLE} trades show no rate metrics.`;
+  const coverageNote = coverage ? ` Data verified through ${coverage}.` : "";
+  return `${framing}${coverageNote}`;
+}
+
+function BreakdownCaption({ tab, isBacktest, stats }: { tab: UnifiedTabKey; isBacktest: boolean; stats: TradeStats | null }) {
+  if (!NEWS_HOLIDAY_TABS.has(tab)) return null;
+  return (
+    <p className="text-[11px] text-text-dim mb-3 -mt-1">
+      {newsHolidayCaption(tab, isBacktest, stats)}
+    </p>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
-export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true }: UnifiedBreakdownsProps) {
+export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true, isBacktest = false }: UnifiedBreakdownsProps) {
   const [activeTab, setActiveTab] = useState<UnifiedTabKey>("session");
 
   const rows = useMemo(
@@ -195,6 +224,7 @@ export function UnifiedBreakdowns({ stats, ictStats, loading, showMoney = true }
   return (
     <div className={`bg-card border border-border rounded-lg p-4 ${dim}`}>
       <TabBar activeTab={activeTab} hasIct={ictStats !== null} onSelect={setActiveTab} />
+      <BreakdownCaption tab={activeTab} isBacktest={isBacktest} stats={stats} />
       {isSmtTdo && ictStats ? (
         <SmtTdoTab ictStats={ictStats} showMoney={showMoney} />
       ) : (
