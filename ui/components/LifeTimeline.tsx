@@ -8,6 +8,8 @@ import type { LifeEntry } from "@/lib/types";
 
 interface LifeTimelineProps {
   entries: LifeEntry[];
+  activeTag?: string;
+  onTagClick?: (tag: string) => void;
 }
 
 function groupByDay(entries: LifeEntry[]): [string, LifeEntry[]][] {
@@ -25,7 +27,7 @@ function formatDayLabel(isoDate: string): string {
   return d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
 }
 
-export function LifeTimeline({ entries }: LifeTimelineProps) {
+export function LifeTimeline({ entries, activeTag, onTagClick }: LifeTimelineProps) {
   const router = useRouter();
   const groups = groupByDay(entries);
 
@@ -33,11 +35,15 @@ export function LifeTimeline({ entries }: LifeTimelineProps) {
     return (
       <div className="text-center py-8 space-y-1">
         <p className="text-text-muted text-sm">
-          No entries yet — write your first one above.
+          {activeTag
+            ? <>No entries tagged <span className="text-[#26a69a]">{activeTag}</span>.</>
+            : "No entries yet — write your first one above."}
         </p>
-        <p className="text-text-dim text-xs">
-          Add a mood and it&apos;ll appear on your calendar heatmap.
-        </p>
+        {!activeTag && (
+          <p className="text-text-dim text-xs">
+            Add a mood and it&apos;ll appear on your calendar heatmap.
+          </p>
+        )}
       </div>
     );
   }
@@ -60,6 +66,8 @@ export function LifeTimeline({ entries }: LifeTimelineProps) {
                 key={entry.id}
                 entry={entry}
                 onClick={() => router.push(`/life/${entry.id}`)}
+                activeTag={activeTag}
+                onTagClick={onTagClick}
               />
             ))}
           </div>
