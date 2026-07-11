@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import Text, cast, func, select
 from sqlalchemy.orm import Session
 
 from api.auth import get_current_user
@@ -78,7 +78,10 @@ def list_entries(
     if mood:
         stmt = stmt.where(LifeEntryModel.mood.in_(mood))
     if tag:
-        stmt = stmt.where(LifeEntryModel.tags.contains(tag))
+        # Cast JSON to text and search for the quoted tag so Postgres doesn't
+        # reject the ~~ operator (json ~~ text is undefined in PG; text ~~ text works).
+        # Wrapping in quotes prevents false positives from substring matches.
+        stmt = stmt.where(cast(LifeEntryModel.tags, Text).contains(f'"{tag}"'))
     return list(db.scalars(stmt))
 
 
