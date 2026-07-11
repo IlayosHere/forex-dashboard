@@ -6,13 +6,15 @@ import type { LifeEntry } from "@/lib/types";
 interface LifeEntryCardProps {
   entry: LifeEntry;
   onClick: () => void;
+  activeTag?: string;
+  onTagClick?: (tag: string) => void;
 }
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function LifeEntryCard({ entry, onClick }: LifeEntryCardProps) {
+export function LifeEntryCard({ entry, onClick, activeTag, onTagClick }: LifeEntryCardProps) {
   const moodCfg = entry.mood ? MOOD_CONFIG[entry.mood] : null;
   const accentColor = moodCfg?.color ?? "transparent";
   const showLabel = entry.tags.length === 0;
@@ -36,14 +38,29 @@ export function LifeEntryCard({ entry, onClick }: LifeEntryCardProps) {
               {moodCfg.emoji}{showLabel ? ` ${moodCfg.label}` : ""}
             </span>
           )}
-          {entry.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] bg-elevated text-text-muted rounded-full px-2 py-0.5"
-            >
-              {tag}
-            </span>
-          ))}
+          {entry.tags.map((tag) =>
+            onTagClick ? (
+              <button
+                key={tag}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onTagClick(tag); }}
+                className={`text-[10px] rounded-full px-2 py-0.5 border cursor-pointer transition-all duration-100 ${
+                  tag === activeTag
+                    ? "bg-[#26a69a]/15 border-[#26a69a]/50 text-[#26a69a]"
+                    : "bg-elevated border-transparent text-text-muted hover:bg-[#2a2a2a] hover:text-[#e0e0e0] hover:border-[#333333]"
+                }`}
+              >
+                {tag}
+              </button>
+            ) : (
+              <span
+                key={tag}
+                className="text-[10px] bg-elevated text-text-muted rounded-full px-2 py-0.5"
+              >
+                {tag}
+              </span>
+            )
+          )}
         </div>
       )}
     </div>

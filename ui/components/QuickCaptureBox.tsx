@@ -12,9 +12,11 @@ import type { LifeEntry, LifeMood } from "@/lib/types";
 
 interface QuickCaptureBoxProps {
   onCreated: (entry: LifeEntry) => void;
+  knownTags?: string[];
+  onTagsChanged?: () => void;
 }
 
-export function QuickCaptureBox({ onCreated }: QuickCaptureBoxProps) {
+export function QuickCaptureBox({ onCreated, knownTags, onTagsChanged }: QuickCaptureBoxProps) {
   const [body, setBody] = useState("");
   const [mood, setMood] = useState<LifeMood | null>(null);
   const [tags, setTags] = useState<string[]>([]);
@@ -30,6 +32,7 @@ export function QuickCaptureBox({ onCreated }: QuickCaptureBoxProps) {
     try {
       const entry = await createLifeEntry({ body: trimmed, mood, tags });
       onCreated(entry);
+      onTagsChanged?.();
       setBody("");
       setMood(null);
       setTags([]);
@@ -71,7 +74,7 @@ export function QuickCaptureBox({ onCreated }: QuickCaptureBoxProps) {
           }`}
         >
           <LifeMoodPicker value={mood} onChange={setMood} disabled={saving} />
-          <TagInput tags={tags} onChange={setTags} />
+          <TagInput tags={tags} onChange={setTags} suggestions={knownTags} />
         </div>
         {error && <p className="text-[#ef5350] text-xs">{error}</p>}
         <div className="flex justify-end">
