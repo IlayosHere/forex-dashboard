@@ -255,6 +255,23 @@ def aggregate_by_location(closed: list[TradeModel]) -> dict[str, dict]:
     return {k: {**v, "name": TRADE_LOCATION_LABELS.get(k, k)} for k, v in raw.items()}
 
 
+_FEELING_BUCKET: dict[str | None, str] = {
+    None: "unreviewed",
+}
+
+
+def aggregate_by_feeling_before(closed: list[TradeModel]) -> dict[str, dict]:
+    """Group closed trades by feeling_before value.
+
+    Trades with feeling_before=None map to an 'unreviewed' bucket.
+    """
+    def key_fn(t: TradeModel) -> str:
+        return t.feeling_before if t.feeling_before is not None else "unreviewed"
+
+    raw = aggregate_dimension(closed, key_fn)
+    return {k: {**v, "name": k.replace("_", " ").title()} for k, v in raw.items()}
+
+
 def aggregate_be_outcome(closed: list[TradeModel]) -> dict[str, int]:
     """Count BE trades by be_outcome value.
 

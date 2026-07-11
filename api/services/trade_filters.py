@@ -54,6 +54,7 @@ class StatsFilterParams:
         exclude_account_type: str | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
+        feeling_before: str | None = Query(default=None),
     ) -> None:
         self.strategy = strategy
         self.symbol = symbol
@@ -63,3 +64,4 @@ class StatsFilterParams:
         self.exclude_account_type = exclude_account_type
         self.date_from = date_from
         self.date_to = date_to
+        self.feeling_before = feeling_before

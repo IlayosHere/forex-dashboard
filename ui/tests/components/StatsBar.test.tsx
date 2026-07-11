@@ -216,8 +216,8 @@ describe("StatsBar — backtest mode", () => {
     const stats = {
       ...MOCK_STATS,
       by_criteria_met: {
-        met: { total: 7, wins: 5, losses: 2, win_rate: 71.4, total_pnl_usd: 350, avg_rr: 1.8 },
-        not_met: { total: 3, wins: 1, losses: 2, win_rate: 33.3, total_pnl_usd: -50, avg_rr: 0.6 },
+        met: { total: 7, wins: 5, losses: 2, win_rate: 71.4, total_pnl_points: 0, total_pnl_usd: 350, avg_pnl_usd: 50, avg_rr: 1.8, name: "met" },
+        not_met: { total: 3, wins: 1, losses: 2, win_rate: 33.3, total_pnl_points: 0, total_pnl_usd: -50, avg_pnl_usd: -16.7, avg_rr: 0.6, name: "not_met" },
       },
     };
     render(<StatsBar stats={stats} loading={false} mode="backtest" />);

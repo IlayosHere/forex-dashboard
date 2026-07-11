@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint, MistakeStat } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -112,7 +112,9 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   return res.json() as Promise<TradeStats>;
 }
 
-export type StatsFiltersParam = Omit<TradeFilters, "status" | "outcome" | "limit" | "offset">;
+export type StatsFiltersParam = Omit<TradeFilters, "status" | "outcome" | "limit" | "offset"> & {
+  feeling_before?: string;
+};
 
 function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
   const params = new URLSearchParams();
@@ -124,6 +126,7 @@ function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
   if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
+  if (filters.feeling_before) params.set("feeling_before", filters.feeling_before);
   return params;
 }
 
@@ -172,6 +175,14 @@ export async function fetchIctStats(filters: StatsFiltersParam = {}): Promise<Ic
   const res = await authFetch(`${BASE_URL}/api/trades/stats/ict${iqs ? `?${iqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch ICT stats: ${res.status}`);
   return res.json() as Promise<IctStatsResponse>;
+}
+
+export async function fetchMistakeStats(filters: StatsFiltersParam = {}): Promise<MistakeStat[]> {
+  const params = buildStatsParams(filters);
+  const mqs = params.toString();
+  const res = await authFetch(`${BASE_URL}/api/trades/stats/mistakes${mqs ? `?${mqs}` : ""}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to fetch mistake stats: ${res.status}`);
+  return res.json() as Promise<MistakeStat[]>;
 }
 
 // ---------------------------------------------------------------------------
