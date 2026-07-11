@@ -14,6 +14,7 @@ export interface StatsContext {
   customFrom: string;
   customTo: string;
   backtestMode: boolean;
+  feelingBefore: string;
 }
 
 export interface UseStatsContextResult {
@@ -36,6 +37,7 @@ const DEFAULTS: StatsContext = {
   customFrom: "",
   customTo: "",
   backtestMode: false,
+  feelingBefore: "",
 };
 
 const PRESET_LABELS: Record<PresetKey, string> = {
@@ -124,6 +126,7 @@ export function useStatsContext(): UseStatsContextResult {
     } else if (!context.accountId) {
       f.exclude_account_type = "backtest";
     }
+    if (context.feelingBefore) f.feeling_before = context.feelingBefore;
     return f;
   }, [context]);
 
@@ -131,7 +134,8 @@ export function useStatsContext(): UseStatsContextResult {
     && context.accountId === ""
     && context.strategy === ""
     && context.preset === DEFAULTS.preset
-    && !context.customFrom && !context.customTo;
+    && !context.customFrom && !context.customTo
+    && !context.feelingBefore;
 
   const ribbonText = useMemo(() => {
     const inst = INSTRUMENT_LABELS[context.instrumentType] ?? "All instruments";

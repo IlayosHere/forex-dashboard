@@ -12,6 +12,9 @@ export type UnifiedTabKey =
   | "smt_tdo"
   | "confidence"
   | "rating"
+  | "criteria_met"
+  | "feeling_before"
+  | "location"
   | "news_day"
   | "market_holiday";
 
@@ -30,6 +33,7 @@ export interface TabDef {
   key: UnifiedTabKey;
   label: string;
   requiresIct: boolean;
+  liveOnly?: boolean;
 }
 
 // News/holiday tagging works for live trades too (the lookup is account-type-
@@ -49,6 +53,9 @@ export const ALL_TABS: TabDef[] = [
   { key: "smt_tdo", label: "SMT/TDO", requiresIct: true },
   { key: "confidence", label: "Confidence", requiresIct: false },
   { key: "rating", label: "Rating", requiresIct: false },
+  { key: "criteria_met", label: "Criteria Met", requiresIct: false },
+  { key: "feeling_before", label: "Feeling", requiresIct: false },
+  { key: "location", label: "Location", requiresIct: false, liveOnly: true },
   { key: "news_day", label: "News Day", requiresIct: false },
   { key: "market_holiday", label: "Market Holiday", requiresIct: false },
 ];
@@ -171,16 +178,22 @@ type StatsTabKey =
   | "day_of_week"
   | "confidence"
   | "rating"
+  | "criteria_met"
+  | "feeling_before"
+  | "location"
   | "news_day"
   | "market_holiday";
 
 function buildStatsRows(tab: StatsTabKey, stats: TradeStats): UnifiedRow[] {
-  const pnlTabs = new Set<StatsTabKey>(["session", "day_of_week"]);
+  const pnlTabs = new Set<StatsTabKey>(["session", "day_of_week", "location", "feeling_before"]);
   const source =
     tab === "session" ? stats.by_session
     : tab === "day_of_week" ? stats.by_day_of_week
     : tab === "confidence" ? stats.by_confidence
     : tab === "rating" ? stats.by_rating
+    : tab === "criteria_met" ? (stats.by_criteria_met ?? {})
+    : tab === "feeling_before" ? (stats.by_feeling_before ?? {})
+    : tab === "location" ? (stats.by_location ?? {})
     : tab === "news_day" ? stats.by_news_day
     : stats.by_market_holiday;
   const buildRow = NEWS_HOLIDAY_TABS.has(tab) ? fromBreakdownEntryWithFloor : fromBreakdownEntry;
@@ -205,7 +218,9 @@ export function buildRows(
   ict: IctStatsResponse | null
 ): UnifiedRow[] {
   const statsTabs = new Set<UnifiedTabKey>([
-    "session", "day_of_week", "confidence", "rating", "news_day", "market_holiday",
+    "session", "day_of_week", "confidence", "rating",
+    "criteria_met", "feeling_before", "location",
+    "news_day", "market_holiday",
   ]);
   if (statsTabs.has(tab)) {
     if (!stats) return [];

@@ -23,8 +23,10 @@ import { useEquityCurve } from "@/lib/useEquityCurve";
 import { useDailySummary } from "@/lib/useDailySummary";
 import { useIctStats } from "@/lib/useIctStats";
 import { useRollingExpectancy } from "@/lib/useRollingExpectancy";
+import { useMistakeStats } from "@/lib/useMistakeStats";
 import { useShowMoney } from "@/lib/useShowMoney";
 import { SMALL_SAMPLE_THRESHOLD } from "@/lib/statsHelpers";
+import { MistakesPanel } from "@/components/stats/MistakesPanel";
 
 export default function StatisticsPage() {
   const ctx = useStatsContext();
@@ -36,6 +38,7 @@ export default function StatisticsPage() {
   const { data: dailyData, loading: dailyLoading } = useDailySummary(ctx.apiFilters);
   const { data: ictData, loading: ictLoading } = useIctStats(ctx.apiFilters);
   const { data: rollingExpectancyData, loading: rollingExpectancyLoading } = useRollingExpectancy(ctx.apiFilters);
+  const { data: mistakeData, loading: mistakeLoading } = useMistakeStats(ctx.apiFilters);
 
   const isMnq = ctx.context.instrumentType?.startsWith("futures") === true;
   const isBacktest = ctx.context.backtestMode;
@@ -88,6 +91,16 @@ export default function StatisticsPage() {
         </>
       )}
 
+      {!isBacktest && (
+        <>
+          <section id="mistakes" className="mb-4">
+            <SectionHeader title="Costliest Mistakes" />
+            <MistakesPanel data={mistakeData} loading={mistakeLoading} showMoney={showMoney} />
+          </section>
+          <hr className="border-border/40" />
+        </>
+      )}
+
       <section id="edge" className="mb-4">
         <SectionHeader title={isBacktest ? "Edge Metrics — R-based" : "Edge Metrics"} />
         <EdgeMetrics stats={stats} loading={statsLoading} isBacktest={isBacktest} showMoney={showMoney} />
@@ -95,6 +108,9 @@ export default function StatisticsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
             <RollingExpectancyChart data={rollingExpectancyData} loading={rollingExpectancyLoading} />
             <LiveDrawdownPanel drawdown={stats?.live_drawdown} showMoney={showMoney} />
+            {stats?.r_distribution && stats.r_distribution.length > 0 && (
+              <RDistributionChart distribution={stats.r_distribution} />
+            )}
           </div>
         )}
         {isBacktest && (

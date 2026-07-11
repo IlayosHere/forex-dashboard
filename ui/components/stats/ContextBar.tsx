@@ -19,6 +19,20 @@ const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
+const FEELING_OPTIONS = [
+  { value: "", label: "All Feelings" },
+  { value: "calm", label: "Calm" },
+  { value: "focused", label: "Focused" },
+  { value: "confident", label: "Confident" },
+  { value: "anxious", label: "Anxious" },
+  { value: "impatient", label: "Impatient" },
+  { value: "fearful", label: "Fearful" },
+  { value: "greedy", label: "Greedy" },
+  { value: "distracted", label: "Distracted" },
+  { value: "revenge", label: "Revenge" },
+  { value: "tired", label: "Tired" },
+];
+
 const SELECT_CLS = "bg-surface-input border border-border rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-bull";
 
 function InstrumentPills({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -129,6 +143,16 @@ export function ContextBar({ ctx, accounts }: ContextBarProps) {
           className="w-auto h-7 text-xs px-2 py-1"
           options={[{ value: "", label: "All Strategies" }, ...strategies.map((s) => ({ value: s.slug, label: s.label }))]}
         />
+
+        {!context.backtestMode && (
+          <Combobox
+            value={context.feelingBefore}
+            onChange={(v) => setFilter("feelingBefore", v ?? "")}
+            aria-label="Filter by feeling before trade"
+            className="w-auto h-7 text-xs px-2 py-1"
+            options={FEELING_OPTIONS}
+          />
+        )}
 
         <PresetPills
           value={context.preset}

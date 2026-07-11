@@ -92,6 +92,9 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
             (AccountModel.account_type != exclude_acct_type)
             | (AccountModel.id.is_(None)),
         )
+    feeling = getattr(filters, "feeling_before", None)
+    if feeling is not None:
+        stmt = stmt.where(TradeModel.feeling_before == feeling)
     if filters.date_from is not None:
         stmt = stmt.where(
             TradeModel.open_time >= datetime.combine(

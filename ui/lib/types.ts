@@ -451,7 +451,9 @@ export interface TradeStats {
   by_confidence: Record<string, BreakdownEntry>;
   by_rating: Record<string, BreakdownEntry>;
   by_rule_compliance?: Record<string, ComplianceBucket>;
-  by_criteria_met?: Record<string, ComplianceBucket>;
+  by_criteria_met?: Record<string, BreakdownEntry>;
+  by_location?: Record<string, BreakdownEntry>;
+  by_feeling_before?: Record<string, BreakdownEntry>;
   be_outcome_breakdown?: { prevented_loss: number; missed_tp: number; unreviewed: number };
   by_news_day: Record<string, BreakdownEntry>;
   by_market_holiday: Record<string, BreakdownEntry>;
@@ -533,6 +535,21 @@ export interface DailySummaryPoint {
   pnl_r: number;
   compliant: number;
   mistakes: number;
+}
+
+// ---------------------------------------------------------------------------
+// Mistake Stats
+// ---------------------------------------------------------------------------
+
+export interface MistakeStat {
+  name: string;
+  count: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  avg_rr: number | null;
+  total_pnl_usd: number;
+  avg_pnl_usd: number | null;
 }
 
 // ---------------------------------------------------------------------------

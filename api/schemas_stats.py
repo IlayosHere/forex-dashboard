@@ -226,6 +226,8 @@ class TradeStatsResponse(BaseModel):
     be_outcome_breakdown: dict[str, int] = Field(default_factory=dict)
     # Location breakdown — live trades only (backtest/legacy trades have None → excluded)
     by_location: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # Feeling before breakdown — computed for all account types
+    by_feeling_before: dict[str, dict[str, Any]] = Field(default_factory=dict)
     # Backtest-mode robustness fields (populated only when account_type="backtest")
     r_distribution: list[RDistributionBin] = Field(default_factory=list)
     drawdown: DrawdownStats | None = None
@@ -243,6 +245,21 @@ class TradeStatsResponse(BaseModel):
     live_drawdown: DrawdownMetrics | None = None
     avg_tp_capture_pct: float | None = None
     tp_capture_sample_size: int = 0
+
+
+class MistakeStatResponse(BaseModel):
+    """Aggregated stats for a single mistake across linked trades."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    count: int
+    wins: int
+    losses: int
+    win_rate: float | None
+    avg_rr: float | None
+    total_pnl_usd: float
+    avg_pnl_usd: float | None
 
 
 class DailySummaryPoint(BaseModel):

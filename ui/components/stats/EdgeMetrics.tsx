@@ -135,48 +135,54 @@ function EdgeMarginCard({ stats }: { stats: TradeStats | null }) {
   );
 }
 
+function BeQualityCard({ stats }: { stats: TradeStats | null }) {
+  const bd = stats?.be_outcome_breakdown;
+  const beTotal = bd ? bd.prevented_loss + bd.missed_tp + bd.unreviewed : 0;
+  const savedPct = bd && beTotal > 0 ? Math.round((bd.prevented_loss / beTotal) * 100) : null;
+
+  return (
+    <MetricCard title="BE Quality">
+      <MetricRow
+        label="Saved Rate"
+        value={savedPct != null ? `${savedPct}%` : "—"}
+        color={savedPct != null ? (savedPct >= 50 ? COLOR_BULL : COLOR_BEAR) : undefined}
+        sub={beTotal > 0 ? `${beTotal} BE trade${beTotal !== 1 ? "s" : ""} total` : "no BE trades"}
+      />
+      {bd && beTotal > 0 && (
+        <>
+          <MetricRow
+            label="Prevented Loss"
+            value={String(bd.prevented_loss)}
+            color={COLOR_BULL}
+            sub="moved to BE, loss avoided"
+          />
+          <MetricRow
+            label="Missed TP"
+            value={String(bd.missed_tp)}
+            color={COLOR_BEAR}
+            sub="moved to BE, winner capped"
+          />
+          {bd.unreviewed > 0 && (
+            <MetricRow
+              label="Not Reviewed"
+              value={String(bd.unreviewed)}
+              sub="outcome not recorded"
+            />
+          )}
+        </>
+      )}
+    </MetricCard>
+  );
+}
+
 export function EdgeMetrics({ stats, loading, isBacktest, showMoney = true }: EdgeMetricsProps) {
   const dim = loading ? "opacity-50" : "";
 
   if (isBacktest) {
-    const bd = stats?.be_outcome_breakdown;
-    const beTotal = bd ? bd.prevented_loss + bd.missed_tp + bd.unreviewed : 0;
-    const savedPct = bd && beTotal > 0 ? Math.round((bd.prevented_loss / beTotal) * 100) : null;
-
     return (
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${dim}`}>
         <EdgeMarginCard stats={stats} />
-        <MetricCard title="BE Quality">
-          <MetricRow
-            label="Saved Rate"
-            value={savedPct != null ? `${savedPct}%` : "—"}
-            color={savedPct != null ? (savedPct >= 50 ? COLOR_BULL : COLOR_BEAR) : undefined}
-            sub={beTotal > 0 ? `${beTotal} BE trade${beTotal !== 1 ? "s" : ""} total` : "no BE trades"}
-          />
-          {bd && beTotal > 0 && (
-            <>
-              <MetricRow
-                label="Prevented Loss"
-                value={String(bd.prevented_loss)}
-                color={COLOR_BULL}
-                sub="moved to BE, loss avoided"
-              />
-              <MetricRow
-                label="Missed TP"
-                value={String(bd.missed_tp)}
-                color={COLOR_BEAR}
-                sub="moved to BE, winner capped"
-              />
-              {bd.unreviewed > 0 && (
-                <MetricRow
-                  label="Not Reviewed"
-                  value={String(bd.unreviewed)}
-                  sub="outcome not recorded"
-                />
-              )}
-            </>
-          )}
-        </MetricCard>
+        <BeQualityCard stats={stats} />
       </div>
     );
   }
@@ -238,6 +244,7 @@ export function EdgeMetrics({ stats, loading, isBacktest, showMoney = true }: Ed
         rateLabel="Compliance Rate"
         edgeLabel="when rule followed"
       />
+      <BeQualityCard stats={stats} />
     </div>
   );
 }
