@@ -54,7 +54,7 @@ export function QuickCaptureBox({ onCreated, knownTags, onTagsChanged }: QuickCa
   const hasBody = body.length > 0;
 
   return (
-    <div className="bg-surface-raised border border-border rounded-lg overflow-hidden focus-within:border-[#26a69a]/40 transition-colors">
+    <div className="bg-surface-raised border border-border rounded-lg focus-within:border-[#26a69a]/40 transition-colors">
       <div className="border-b border-border px-4 pt-3 pb-2">
         <textarea
           ref={textareaRef}
@@ -69,8 +69,8 @@ export function QuickCaptureBox({ onCreated, knownTags, onTagsChanged }: QuickCa
       </div>
       <div className="px-3 py-2 space-y-2">
         <div
-          className={`space-y-2 overflow-hidden transition-all duration-200 ${
-            hasBody ? "opacity-100 max-h-40" : "opacity-0 max-h-0"
+          className={`space-y-2 transition-all duration-200 ${
+            hasBody ? "opacity-100 max-h-40" : "opacity-0 max-h-0 pointer-events-none"
           }`}
         >
           <LifeMoodPicker value={mood} onChange={setMood} disabled={saving} />
