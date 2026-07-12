@@ -13,17 +13,18 @@ GET    /api/life/tags                 - all tags used by this user (autocomplete
 """
 from __future__ import annotations
 
+import json as _json
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import Text, cast, func, select
+from sqlalchemy import Text, cast, func, literal, select
 from sqlalchemy.orm import Session
 
 from api.auth import get_current_user
-from api.db import get_db
+from api.db import engine, get_db
 from api.models import LifeEntryModel
 from api.schemas_life import (
     LifeEntryCreateRequest,
@@ -78,10 +79,19 @@ def list_entries(
     if mood:
         stmt = stmt.where(LifeEntryModel.mood.in_(mood))
     if tag:
-        # Cast JSON to text and search for the quoted tag so Postgres doesn't
-        # reject the ~~ operator (json ~~ text is undefined in PG; text ~~ text works).
-        # Wrapping in quotes prevents false positives from substring matches.
-        stmt = stmt.where(cast(LifeEntryModel.tags, Text).contains(f'"{tag}"'))
+        # PostgreSQL stores JSON with ensure_ascii=True unicode escapes, so a TEXT
+        # LIKE search for the literal character fails. Use JSONB @> containment
+        # instead — it decodes escapes semantically. SQLite stores as literal UTF-8
+        # text so the TEXT LIKE path still works there.
+        if engine.dialect.name == "postgresql":
+            from sqlalchemy.dialects.postgresql import JSONB
+            stmt = stmt.where(
+                cast(LifeEntryModel.tags, JSONB).op("@>")(
+                    cast(literal(_json.dumps([tag])), JSONB)
+                )
+            )
+        else:
+            stmt = stmt.where(cast(LifeEntryModel.tags, Text).contains(f'"{tag}"'))
     return list(db.scalars(stmt))
 
 
