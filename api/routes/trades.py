@@ -117,6 +117,7 @@ def create_trade(
         qt_fvg_type=req.qt_fvg_type,
         qt_entry_type=req.qt_entry_type,
         trade_location=req.trade_location,
+        holding_time_minutes=req.holding_time_minutes,
     )
     db.add(trade)
     db.commit()

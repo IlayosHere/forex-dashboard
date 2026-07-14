@@ -96,6 +96,7 @@ class TradeModel(Base):
     # Timing
     open_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     close_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    holding_time_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Assessment
     tags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)

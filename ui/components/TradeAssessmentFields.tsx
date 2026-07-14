@@ -108,14 +108,27 @@ export function TradeAssessmentFields({ form, onChange, isBacktest = false }: Tr
           </div>
         )}
         <div className="space-y-1">
-          <label className="label">Screenshot URL</label>
+          <label className="label">Hold Time (min)</label>
           <Input
-            value={form.screenshot_url}
-            onChange={(e) => onChange("screenshot_url", e.target.value)}
-            placeholder="https://..."
+            type="number"
+            step="1"
+            min="1"
+            value={form.holding_time_minutes}
+            onChange={(e) => onChange("holding_time_minutes", e.target.value)}
+            placeholder="e.g. 45"
             className={INPUT_CLASS}
           />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="label">Screenshot URL</label>
+        <Input
+          value={form.screenshot_url}
+          onChange={(e) => onChange("screenshot_url", e.target.value)}
+          placeholder="https://..."
+          className={INPUT_CLASS}
+        />
       </div>
     </fieldset>
   );

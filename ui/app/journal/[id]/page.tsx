@@ -46,6 +46,7 @@ interface EditableFields {
   feelingAfter: TradingFeeling | null;
   beOutcome: BeOutcome | null;
   tradeLocation: TradeLocation;
+  holdingTimeMinutes: string;
 }
 
 type EditAction =
@@ -69,6 +70,7 @@ const INITIAL_EDITABLE: EditableFields = {
   feelingAfter: null,
   beOutcome: null,
   tradeLocation: "home",
+  holdingTimeMinutes: "",
 };
 
 function editableReducer(state: EditableFields, action: EditAction): EditableFields {
@@ -152,6 +154,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
             feelingAfter: t.feeling_after,
             beOutcome: t.be_outcome,
             tradeLocation: (t.trade_location ?? "home") as TradeLocation,
+            holdingTimeMinutes: t.holding_time_minutes != null ? String(t.holding_time_minutes) : "",
           },
         });
       })
@@ -259,6 +262,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
         criteria_met_at_entry: editable.criteriaMetAtEntry,
         be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
         trade_location: editable.tradeLocation,
+        holding_time_minutes: editable.holdingTimeMinutes ? parseInt(editable.holdingTimeMinutes, 10) : null,
         ...ictUpdate,
         ...qtUpdate,
       };
@@ -386,6 +390,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           notes={editable.notes}
           screenshotUrl={editable.screenshotUrl}
           fees={editable.fees}
+          holdingTimeMinutes={editable.holdingTimeMinutes}
           isBacktest={tradeAccountType === "backtest"}
           criteriaMetAtEntry={editable.criteriaMetAtEntry}
           isBreakeven={trade.outcome === "breakeven"}
@@ -397,6 +402,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onNotesChange={(v) => dispatch({ type: "SET_FIELD", field: "notes", value: v })}
           onScreenshotUrlChange={(v) => dispatch({ type: "SET_FIELD", field: "screenshotUrl", value: v })}
           onFeesChange={(v) => dispatch({ type: "SET_FIELD", field: "fees", value: v })}
+          onHoldingTimeChange={(v) => dispatch({ type: "SET_FIELD", field: "holdingTimeMinutes", value: v })}
           onCriteriaMetChange={(v) => dispatch({ type: "SET_FIELD", field: "criteriaMetAtEntry", value: v })}
           onBeOutcomeChange={(v) => dispatch({ type: "SET_FIELD", field: "beOutcome", value: v })}
           onTradeLocationChange={(v) => dispatch({ type: "SET_FIELD", field: "tradeLocation", value: v })}

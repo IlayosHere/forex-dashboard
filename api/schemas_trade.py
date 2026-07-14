@@ -96,6 +96,8 @@ class TradeCreateRequest(BaseModel):
     # Trade location — live trades only; None for backtest
     trade_location: str = "home"
 
+    holding_time_minutes: int | None = Field(default=None, ge=1)
+
     @field_validator("direction")
     @classmethod
     def validate_direction(cls, v: str) -> str:
@@ -262,6 +264,8 @@ class TradeUpdateRequest(BaseModel):
 
     # Trade location — live trades only; None leaves existing value unchanged
     trade_location: str | None = None
+
+    holding_time_minutes: int | None = Field(default=None, ge=1)
 
     @field_validator("direction")
     @classmethod
@@ -450,6 +454,7 @@ class TradeResponse(BaseModel):
     qt_fvg_type: str | None = None
     qt_entry_type: str | None = None
     trade_location: str | None = None
+    holding_time_minutes: int | None = None
     created_at: datetime
     updated_at: datetime
 

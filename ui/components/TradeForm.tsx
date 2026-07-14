@@ -48,6 +48,7 @@ export interface TradeFormData {
   qt_fvg_type: string;
   qt_entry_type: string;
   trade_location: string;
+  holding_time_minutes: string;
 }
 
 interface TradeFormProps {

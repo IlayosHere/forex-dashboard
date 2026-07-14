@@ -67,6 +67,7 @@ interface TradeAssessmentPanelProps {
   notes: string;
   screenshotUrl: string;
   fees: string;
+  holdingTimeMinutes: string;
   isBacktest?: boolean;
   criteriaMetAtEntry?: boolean | null;
   isBreakeven?: boolean;
@@ -78,6 +79,7 @@ interface TradeAssessmentPanelProps {
   onNotesChange: (v: string) => void;
   onScreenshotUrlChange: (v: string) => void;
   onFeesChange: (v: string) => void;
+  onHoldingTimeChange: (v: string) => void;
   onCriteriaMetChange?: (v: boolean | null) => void;
   onBeOutcomeChange?: (v: BeOutcome | null) => void;
   onTradeLocationChange?: (v: TradeLocation) => void;
@@ -93,6 +95,7 @@ export function TradeAssessmentPanel({
   notes,
   screenshotUrl,
   fees,
+  holdingTimeMinutes,
   isBacktest = false,
   criteriaMetAtEntry = null,
   isBreakeven = false,
@@ -104,6 +107,7 @@ export function TradeAssessmentPanel({
   onNotesChange,
   onScreenshotUrlChange,
   onFeesChange,
+  onHoldingTimeChange,
   onCriteriaMetChange,
   onBeOutcomeChange,
   onTradeLocationChange,
@@ -192,14 +196,27 @@ export function TradeAssessmentPanel({
           </div>
         )}
         <div className="space-y-1">
-          <label className="label">Screenshot URL</label>
+          <label className="label">Hold Time (min)</label>
           <Input
-            value={screenshotUrl}
-            onChange={(e) => onScreenshotUrlChange(e.target.value)}
-            placeholder="https://..."
+            type="number"
+            step="1"
+            min="1"
+            value={holdingTimeMinutes}
+            onChange={(e) => onHoldingTimeChange(e.target.value)}
+            placeholder="e.g. 45"
             className={INPUT_CLASS}
           />
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="label">Screenshot URL</label>
+        <Input
+          value={screenshotUrl}
+          onChange={(e) => onScreenshotUrlChange(e.target.value)}
+          placeholder="https://..."
+          className={INPUT_CLASS}
+        />
       </div>
     </div>
   );

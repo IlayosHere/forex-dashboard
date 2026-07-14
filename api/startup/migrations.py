@@ -370,6 +370,24 @@ def migrate_add_trade_location_column() -> None:
     logger.info("Added trade_location column to trades")
 
 
+def migrate_add_holding_time_minutes_column() -> None:
+    """Add holding_time_minutes column to trades table if it does not exist yet.
+
+    Nullable integer — the trader manually logs how many minutes they held the trade.
+    On prod Postgres, pre-apply the ALTER manually via /prod-connect before deploying
+    (see CLAUDE.md §Production Migration Safety).
+    """
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
+    if "holding_time_minutes" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE trades ADD COLUMN holding_time_minutes INTEGER"))
+    logger.info("Added holding_time_minutes column to trades")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -389,3 +407,4 @@ def run_all() -> None:
     migrate_add_plan_reviews_table()
     migrate_add_trades_scenario_id_column()
     migrate_add_trade_location_column()
+    migrate_add_holding_time_minutes_column()
