@@ -199,6 +199,7 @@ def trade_to_response(
         "qt_fvg_type": trade.qt_fvg_type,
         "qt_entry_type": trade.qt_entry_type,
         "trade_location": trade.trade_location,
+        "holding_time_minutes": trade.holding_time_minutes,
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
     }
