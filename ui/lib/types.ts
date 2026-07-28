@@ -92,6 +92,7 @@ export interface TradeCreateRequest {
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
   trade_location?: TradeLocation;
+  holding_time_minutes?: number | null;
 }
 
 export interface TradeUpdateRequest {
@@ -135,6 +136,7 @@ export interface TradeUpdateRequest {
   qt_fvg_type?: string | null;
   qt_entry_type?: string | null;
   trade_location?: TradeLocation | null;
+  holding_time_minutes?: number | null;
 }
 
 export interface Trade {
@@ -188,6 +190,7 @@ export interface Trade {
   qt_fvg_type: QtFvgType | null;
   qt_entry_type: QtEntryType | null;
   trade_location: TradeLocation | null;
+  holding_time_minutes: number | null;
   linked_mistakes: LinkedMistake[];
   created_at: string;
   updated_at: string;
