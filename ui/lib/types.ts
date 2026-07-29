@@ -555,6 +555,15 @@ export interface MistakeStat {
   avg_pnl_usd: number | null;
 }
 
+export interface MistakePeriodBucket {
+  period: string;          // "2026-W30" (week) or "2026-07" (month)
+  period_start: string;    // ISO date
+  period_end: string;      // ISO date
+  total_mistake_trades: number;
+  total_pnl_usd: number;
+  mistakes: MistakeStat[]; // sorted worst P&L first
+}
+
 // ---------------------------------------------------------------------------
 // Mistakes Tracker
 // ---------------------------------------------------------------------------

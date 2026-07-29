@@ -1,4 +1,4 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint, MistakeStat } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint, MistakeStat, MistakePeriodBucket } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
@@ -183,6 +183,21 @@ export async function fetchMistakeStats(filters: StatsFiltersParam = {}): Promis
   const res = await authFetch(`${BASE_URL}/api/trades/stats/mistakes${mqs ? `?${mqs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch mistake stats: ${res.status}`);
   return res.json() as Promise<MistakeStat[]>;
+}
+
+export async function fetchMistakeTimeseries(
+  filters: StatsFiltersParam = {},
+  granularity: "week" | "month" = "week",
+): Promise<MistakePeriodBucket[]> {
+  const params = buildStatsParams(filters);
+  params.set("granularity", granularity);
+  const tqs = params.toString();
+  const res = await authFetch(
+    `${BASE_URL}/api/trades/stats/mistakes/timeseries${tqs ? `?${tqs}` : ""}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`Failed to fetch mistake timeseries: ${res.status}`);
+  return res.json() as Promise<MistakePeriodBucket[]>;
 }
 
 // ---------------------------------------------------------------------------

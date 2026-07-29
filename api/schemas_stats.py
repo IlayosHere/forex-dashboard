@@ -262,6 +262,19 @@ class MistakeStatResponse(BaseModel):
     avg_pnl_usd: float | None
 
 
+class MistakePeriodBucket(BaseModel):
+    """Per-mistake breakdown bucketed into one weekly or monthly period."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    period: str
+    period_start: str
+    period_end: str
+    total_mistake_trades: int
+    total_pnl_usd: float
+    mistakes: list[MistakeStatResponse]
+
+
 class DailySummaryPoint(BaseModel):
     """Daily aggregated stats for calendar heatmap."""
 
