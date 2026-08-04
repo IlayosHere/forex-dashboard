@@ -6,6 +6,8 @@ import { IctExtendedFields } from "./IctExtendedFields";
 
 import type { TradeFormData } from "./TradeForm";
 
+import { IFVG_TIMEFRAMES } from "@/lib/ictConstants";
+
 interface IctTradeFieldsProps {
   form: TradeFormData;
   errors: Record<string, boolean>;
@@ -96,8 +98,6 @@ const TP_TARGET_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-const IFVG_TF_OPTIONS = ["30s","1m","2m","3m","4m","5m"];
-
 const SETUP_TYPE_OPTIONS = [
   { value: "liquidity_sweep", label: "Liquidity Sweep" },
   { value: "unmitigated_fvg", label: "Unmitigated FVG" },
@@ -174,7 +174,7 @@ export function IctTradeFields({ form, errors, onChange }: IctTradeFieldsProps) 
           <label className={LABEL_CLASS}>IFVG Entry Timeframe *</label>
           <Combobox
             className={errBorder(errors, "ict_ifvg_timeframe")}
-            options={IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
+            options={IFVG_TIMEFRAMES.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
             value={form.ict_ifvg_timeframe || null}
             onChange={(v) => onChange("ict_ifvg_timeframe", v ?? "")}
             placeholder="Select TF"

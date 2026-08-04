@@ -2,6 +2,7 @@
 
 import { Combobox } from "@/components/ui/combobox";
 
+import { IFVG_TIMEFRAMES } from "@/lib/ictConstants";
 import type { Trade } from "@/lib/types";
 
 export interface IctParamsState {
@@ -121,8 +122,6 @@ const TP_TARGET_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-export const IFVG_TF_OPTIONS = ["1m","2m","3m","4m","5m","6m","7m","8m","9m","10m","15m","other"];
-
 const HTF_BIAS_OPTIONS = [
   { value: "aligned", label: "Aligned" },
   { value: "counter", label: "Counter" },
@@ -182,7 +181,7 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
         <div>
           <label className={LABEL_CLASS}>IFVG Entry Timeframe</label>
           <Combobox
-            options={IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
+            options={IFVG_TIMEFRAMES.map((tf) => ({ value: tf, label: tf.toUpperCase() }))}
             value={params.ict_ifvg_timeframe || null}
             onChange={(v) => onChange("ict_ifvg_timeframe", v ?? "")}
             placeholder="Select TF"

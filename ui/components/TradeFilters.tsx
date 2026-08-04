@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { strategies } from "@/lib/strategies";
 import { Combobox } from "@/components/ui/combobox";
-import { IFVG_TF_OPTIONS } from "@/components/IctParamsPanel";
+import { IFVG_TIMEFRAMES } from "@/lib/ictConstants";
 import type { Account, InstrumentType } from "@/lib/types";
 
 export interface TradeFilterValues {
@@ -112,7 +112,7 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
         filterable={false}
         options={[
           { value: "", label: "All IFVG TF" },
-          ...IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() })),
+          ...IFVG_TIMEFRAMES.map((tf) => ({ value: tf, label: tf.toUpperCase() })),
         ]}
         value={values.ict_ifvg_timeframe}
         onChange={(v) => set("ict_ifvg_timeframe", v ?? "")}
