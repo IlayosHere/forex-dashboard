@@ -544,6 +544,14 @@ export interface DailySummaryPoint {
 // Mistake Stats
 // ---------------------------------------------------------------------------
 
+export interface MistakeTradeRef {
+  id: string;
+  date: string;
+  symbol: string;
+  outcome: string | null;
+  pnl_usd: number | null;
+}
+
 export interface MistakeStat {
   name: string;
   count: number;
@@ -553,6 +561,16 @@ export interface MistakeStat {
   avg_rr: number | null;
   total_pnl_usd: number;
   avg_pnl_usd: number | null;
+  trades: MistakeTradeRef[];
+}
+
+export interface MistakePeriodBucket {
+  period: string;          // "2026-W30" (week) or "2026-07" (month)
+  period_start: string;    // ISO date
+  period_end: string;      // ISO date
+  total_mistake_trades: number;
+  total_pnl_usd: number;
+  mistakes: MistakeStat[]; // sorted worst P&L first
 }
 
 // ---------------------------------------------------------------------------
