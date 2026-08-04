@@ -37,6 +37,7 @@ export interface TradeFilters {
   account_type?: string;
   instrument_type?: string;
   exclude_account_type?: string;
+  ict_ifvg_timeframe?: string;
   limit?: number;
   offset?: number;
 }
@@ -53,6 +54,7 @@ export async function fetchTrades(filters: TradeFilters = {}): Promise<Trade[]> 
   if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
+  if (filters.ict_ifvg_timeframe) params.set("ict_ifvg_timeframe", filters.ict_ifvg_timeframe);
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset !== undefined) params.set("offset", String(filters.offset));
   const qs = params.toString();
@@ -106,6 +108,7 @@ export async function fetchTradeStats(filters: Omit<TradeFilters, "status" | "ou
   if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
+  if (filters.ict_ifvg_timeframe) params.set("ict_ifvg_timeframe", filters.ict_ifvg_timeframe);
   const qs = params.toString();
   const res = await authFetch(`${BASE_URL}/api/trades/stats${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch trade stats: ${res.status}`);
@@ -126,6 +129,7 @@ function buildStatsParams(filters: StatsFiltersParam): URLSearchParams {
   if (filters.account_type) params.set("account_type", filters.account_type);
   if (filters.instrument_type) params.set("instrument_type", filters.instrument_type);
   if (filters.exclude_account_type) params.set("exclude_account_type", filters.exclude_account_type);
+  if (filters.ict_ifvg_timeframe) params.set("ict_ifvg_timeframe", filters.ict_ifvg_timeframe);
   if (filters.feeling_before) params.set("feeling_before", filters.feeling_before);
   return params;
 }

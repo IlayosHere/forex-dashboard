@@ -121,7 +121,7 @@ const TP_TARGET_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-const IFVG_TF_OPTIONS = ["1m","2m","3m","4m","5m","6m","7m","8m","9m","10m","15m","other"];
+export const IFVG_TF_OPTIONS = ["1m","2m","3m","4m","5m","6m","7m","8m","9m","10m","15m","other"];
 
 const HTF_BIAS_OPTIONS = [
   { value: "aligned", label: "Aligned" },
