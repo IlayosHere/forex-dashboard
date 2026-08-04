@@ -9,6 +9,7 @@ import { useAccounts } from "@/lib/useAccounts";
 import { StatsBar } from "@/components/StatsBar";
 import { AccountStatsStrip } from "@/components/AccountStatsStrip";
 import { DaySummaryCard } from "@/components/DaySummaryCard";
+import { TodayNewsStrip } from "@/components/TodayNewsStrip";
 import { TradeFilters, type TradeFilterValues } from "@/components/TradeFilters";
 import { TradeCard } from "@/components/TradeCard";
 import { Button } from "@/components/ui/button";
@@ -313,6 +314,11 @@ export default function JournalPage() {
           backLabel="Back to Journal"
         />
       )}
+
+      {/* Today's economic news (futures only; hidden in Backtest mode — backtest
+          trades aren't "today", so live news next to historical P&L is just noise) */}
+      {(instrumentType === "futures" || instrumentType === "futures_mnq" || instrumentType === "futures_mes") &&
+        !backtestMode && <TodayNewsStrip date={todayDate} />}
 
       {/* Account Stats */}
       {stats?.by_account && Object.keys(stats.by_account).length > 0 && (
