@@ -9,12 +9,18 @@ CORS is restricted to CORS_ORIGINS env var (default: localhost:3000).
 """
 from __future__ import annotations
 
+from dotenv import load_dotenv
+
+# Must run before any `api.*` import below — api.db and api.auth read env
+# vars (DATABASE_URL, JWT_SECRET, ...) at module import time, so loading
+# .env after those imports silently no-ops the override.
+load_dotenv()
+
 import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -34,8 +40,6 @@ from api.routes.stats import router as stats_router
 from api.routes.trades import router as trades_router
 from api.startup.migrations import run_all as run_migrations
 from api.startup.seed import seed_default_accounts, seed_users_from_env
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
