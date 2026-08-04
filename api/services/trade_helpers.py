@@ -95,6 +95,9 @@ def apply_trade_filters(stmt: Select, filters: TradeFilterParams | StatsFilterPa
     feeling = getattr(filters, "feeling_before", None)
     if feeling is not None:
         stmt = stmt.where(TradeModel.feeling_before == feeling)
+    ifvg_timeframe = getattr(filters, "ict_ifvg_timeframe", None)
+    if ifvg_timeframe is not None:
+        stmt = stmt.where(TradeModel.ict_ifvg_timeframe == ifvg_timeframe)
     if filters.date_from is not None:
         stmt = stmt.where(
             TradeModel.open_time >= datetime.combine(

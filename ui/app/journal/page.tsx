@@ -37,6 +37,7 @@ const emptyFilters: TradeFilterValues = {
   status: "",
   outcome: "",
   rule_followed: "",
+  ict_ifvg_timeframe: "",
   from: "",
   to: "",
 };
@@ -112,6 +113,7 @@ export default function JournalPage() {
     if (filters.rule_followed === "true") f.rule_followed = "true";
     else if (filters.rule_followed === "false") f.rule_followed = "false";
     else if (filters.rule_followed === "null") f.rule_followed = "null";
+    if (filters.ict_ifvg_timeframe) f.ict_ifvg_timeframe = filters.ict_ifvg_timeframe;
     if (filters.from) f.from = filters.from;
     if (filters.to) f.to = filters.to;
     if (backtestMode) {

@@ -25,6 +25,7 @@ class TradeFilterParams:
         account_type: str | None = Query(default=None),
         rule_followed: bool | None = Query(default=None),
         exclude_account_type: str | None = Query(default=None),
+        ict_ifvg_timeframe: str | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
     ) -> None:
@@ -37,6 +38,7 @@ class TradeFilterParams:
         self.account_type = account_type
         self.rule_followed = rule_followed
         self.exclude_account_type = exclude_account_type
+        self.ict_ifvg_timeframe = ict_ifvg_timeframe
         self.date_from = date_from
         self.date_to = date_to
 
@@ -52,6 +54,7 @@ class StatsFilterParams:
         account_id: str | None = Query(default=None),
         account_type: str | None = Query(default=None),
         exclude_account_type: str | None = Query(default=None),
+        ict_ifvg_timeframe: str | None = Query(default=None),
         date_from: date | None = Query(default=None, alias="from"),
         date_to: date | None = Query(default=None, alias="to"),
         feeling_before: str | None = Query(default=None),
@@ -62,6 +65,7 @@ class StatsFilterParams:
         self.account_id = account_id
         self.account_type = account_type
         self.exclude_account_type = exclude_account_type
+        self.ict_ifvg_timeframe = ict_ifvg_timeframe
         self.date_from = date_from
         self.date_to = date_to
         self.feeling_before = feeling_before

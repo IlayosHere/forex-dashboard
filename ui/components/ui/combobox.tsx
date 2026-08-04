@@ -61,7 +61,7 @@ export function Combobox({ options, value, onChange, placeholder = "Select…", 
         <ComboboxPrimitive.Positioner className="isolate z-50" sideOffset={4} align="start">
           <ComboboxPrimitive.Popup
             data-slot="combobox-content"
-            className="bg-surface-input border border-border rounded shadow-lg py-1 max-h-72 overflow-y-auto z-50 outline-none flex flex-col w-(--anchor-width)"
+            className="bg-surface-input border border-border rounded shadow-lg py-1 max-h-72 overflow-y-auto z-50 outline-none flex flex-col min-w-(--anchor-width) w-max max-w-[min(24rem,90vw)]"
           >
             {showFilter && (
               <ComboboxPrimitive.Input

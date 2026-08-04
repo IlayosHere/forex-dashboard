@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { strategies } from "@/lib/strategies";
 import { Combobox } from "@/components/ui/combobox";
+import { IFVG_TF_OPTIONS } from "@/components/IctParamsPanel";
 import type { Account, InstrumentType } from "@/lib/types";
 
 export interface TradeFilterValues {
@@ -12,6 +13,7 @@ export interface TradeFilterValues {
   status: string;
   outcome: string;
   rule_followed: string;
+  ict_ifvg_timeframe: string;
   from: string;
   to: string;
 }
@@ -24,7 +26,7 @@ interface TradeFiltersProps {
   instrumentType: InstrumentType;
 }
 
-const comboClass = "w-auto h-8";
+const comboClass = "w-auto min-w-36 max-w-56 h-8";
 const dateClass =
   "bg-[#1e1e1e] border border-[#2a2a2a] text-sm text-[#e0e0e0] rounded px-3 py-1.5 outline-none focus:border-[#26a69a] w-36 cursor-pointer transition-colors";
 
@@ -105,6 +107,17 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
         onChange={(v) => set("rule_followed", v ?? "")}
       />
 
+      <Combobox
+        className={comboClass}
+        filterable={false}
+        options={[
+          { value: "", label: "All IFVG TF" },
+          ...IFVG_TF_OPTIONS.map((tf) => ({ value: tf, label: tf.toUpperCase() })),
+        ]}
+        value={values.ict_ifvg_timeframe}
+        onChange={(v) => set("ict_ifvg_timeframe", v ?? "")}
+      />
+
       <input
         type="date"
         className={dateClass}
@@ -125,7 +138,7 @@ export function TradeFilters({ values, onChange, symbols, accounts, instrumentTy
           type="button"
           className="text-xs text-[#777777] hover:text-[#e0e0e0] cursor-pointer transition-colors"
           onClick={() =>
-            onChange({ account_id: "", strategy: "", symbol: "", status: "", outcome: "", rule_followed: "", from: "", to: "" })
+            onChange({ account_id: "", strategy: "", symbol: "", status: "", outcome: "", rule_followed: "", ict_ifvg_timeframe: "", from: "", to: "" })
           }
         >
           Clear all
