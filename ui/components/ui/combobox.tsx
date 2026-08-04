@@ -27,17 +27,31 @@ interface ComboboxProps {
  * for long option lists. Built on @base-ui/react's Combobox primitive so
  * keyboard nav (arrows/Home/End/Escape) and type-ahead come for free.
  */
+// `filter` is deliberately omitted from ComboboxRoot's public prop types, but
+// the underlying implementation still accepts it (passed through via `...other`
+// in ComboboxRoot.js) and `null` disables its internal filtering outright —
+// see @base-ui/react's combobox/root/AriaCombobox.js: `if (filterProp === null)
+// return () => true`. We need this because Base UI's default filtering derives
+// a "query" from the selected item's label even when no search <Input> is
+// rendered, and its heuristic for bypassing that filter on reopen (matching
+// the query back to the selection) has an edge case that can collapse the
+// popup to a single stale item after a selection is made once.
+const ComboboxRootWithFilter = ComboboxPrimitive.Root as React.ComponentType<
+  React.ComponentProps<typeof ComboboxPrimitive.Root> & { filter?: null }
+>
+
 export function Combobox({ options, value, onChange, placeholder = "Select…", className, filterable, "aria-label": ariaLabel }: ComboboxProps) {
   const showFilter = filterable ?? options.length > 8
   const selected = options.find((o) => o.value === value) ?? null
 
   return (
-    <ComboboxPrimitive.Root
+    <ComboboxRootWithFilter
       items={options}
       value={selected}
       onValueChange={(item) => onChange(item ? (item as ComboboxOption).value : null)}
       isItemEqualToValue={(a, b) => (a as ComboboxOption)?.value === (b as ComboboxOption)?.value}
       itemToStringLabel={(item) => (item as ComboboxOption)?.label ?? ""}
+      filter={showFilter ? undefined : null}
     >
       <ComboboxPrimitive.Trigger
         data-slot="combobox-trigger"
@@ -95,6 +109,6 @@ export function Combobox({ options, value, onChange, placeholder = "Select…", 
           </ComboboxPrimitive.Popup>
         </ComboboxPrimitive.Positioner>
       </ComboboxPrimitive.Portal>
-    </ComboboxPrimitive.Root>
+    </ComboboxRootWithFilter>
   )
 }
