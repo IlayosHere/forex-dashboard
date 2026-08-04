@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 import type { MistakePeriodBucket, MistakeStat } from "@/lib/types";
 import type { StatsFiltersParam } from "@/lib/api";
@@ -71,6 +72,32 @@ function PnlCell({ v, showMoney }: { v: number; showMoney: boolean }) {
   return <span className={`text-xs tabular-nums ${color}`}>{v >= 0 ? "+" : ""}{v.toFixed(1)}R</span>;
 }
 
+function formatTradeDate(iso: string): string {
+  if (!iso) return "—";
+  const d = toUtcDate(iso);
+  return `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCDate()}`;
+}
+
+function TradeRow({ id, date, symbol, pnl_usd, showMoney }: {
+  id: string; date: string; symbol: string; pnl_usd: number | null; showMoney: boolean;
+}) {
+  return (
+    <Link
+      href={`/journal/${id}`}
+      className="flex items-center justify-between px-2 py-1 rounded hover:bg-[#1a1a1a] transition-colors group"
+    >
+      <span className="text-xs text-text-muted group-hover:text-text-primary transition-colors">
+        {formatTradeDate(date)} · {symbol}
+      </span>
+      {pnl_usd !== null ? (
+        <PnlCell v={pnl_usd} showMoney={showMoney} />
+      ) : (
+        <span className="text-xs text-text-dim">—</span>
+      )}
+    </Link>
+  );
+}
+
 // Deliberately no bull/bear here — those colors are reserved for real P&L.
 // Rising mistake frequency lights up the "warning" token; improvement gets no
 // reward color, only a neutral muted tone (see CalendarDayCell's BIAS_GLYPH
@@ -89,8 +116,18 @@ function TrendCell({ current, previous }: { current: number; previous: number })
 export function MistakeReviewPanel({ showMoney, filters = {} }: MistakeReviewPanelProps) {
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [offset, setOffset] = useState(0);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const { data, loading } = useMistakeTimeseries(filters, granularity);
+
+  function toggleExpanded(name: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
 
   const maxOffset = data.length > 0 ? data.length - 1 : 0;
   const clampedOffset = Math.min(offset, maxOffset);
@@ -101,6 +138,7 @@ export function MistakeReviewPanel({ showMoney, filters = {} }: MistakeReviewPan
   function handleGranularityChange(next: Granularity) {
     setGranularity(next);
     setOffset(0);
+    setExpanded(new Set());
   }
 
   function handlePrev() {
@@ -179,19 +217,44 @@ export function MistakeReviewPanel({ showMoney, filters = {} }: MistakeReviewPan
           {rows.map((row) => {
             const streak = computeStreak(data, index, row.name);
             const prevCount = countFor(prevBucket, row.name);
+            const isOpen = expanded.has(row.name);
+            const hasTrades = row.trades.length > 0;
             return (
-              <div key={row.name} className={`grid ${COL} items-center py-1.5 border-b border-b-[#1a1a1a]`}>
-                <span className="text-xs text-text-primary truncate pr-2 flex items-center gap-1.5">
-                  {row.name}
-                  {streak >= MIN_STREAK_FOR_BADGE && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/30 shrink-0">
-                      {streakLabel(streak, granularity)}
-                    </span>
-                  )}
-                </span>
-                <span className="text-xs text-text-muted text-right tabular-nums">{row.count}</span>
-                <div className="flex justify-end"><TrendCell current={row.count} previous={prevCount} /></div>
-                <div className="flex justify-end"><PnlCell v={row.total_pnl_usd} showMoney={showMoney} /></div>
+              <div key={row.name} className="border-b border-b-[#1a1a1a]">
+                <button
+                  type="button"
+                  onClick={() => hasTrades && toggleExpanded(row.name)}
+                  disabled={!hasTrades}
+                  aria-expanded={isOpen}
+                  className={`grid ${COL} items-center py-1.5 w-full text-left ${
+                    hasTrades ? "cursor-pointer hover:bg-[#161616]" : "cursor-default"
+                  } transition-colors`}
+                >
+                  <span className="text-xs text-text-primary truncate pr-2 flex items-center gap-1.5">
+                    {hasTrades && (
+                      <ChevronDown
+                        size={12}
+                        className={`shrink-0 text-text-dim transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
+                      />
+                    )}
+                    {row.name}
+                    {streak >= MIN_STREAK_FOR_BADGE && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/30 shrink-0">
+                        {streakLabel(streak, granularity)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs text-text-muted text-right tabular-nums">{row.count}</span>
+                  <div className="flex justify-end"><TrendCell current={row.count} previous={prevCount} /></div>
+                  <div className="flex justify-end"><PnlCell v={row.total_pnl_usd} showMoney={showMoney} /></div>
+                </button>
+                {isOpen && hasTrades && (
+                  <div className="pb-2 pl-5 pr-1 flex flex-col gap-0.5">
+                    {row.trades.map((t) => (
+                      <TradeRow key={t.id} id={t.id} date={t.date} symbol={t.symbol} pnl_usd={t.pnl_usd} showMoney={showMoney} />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

@@ -47,7 +47,7 @@ def aggregate_mistakes(
             buckets[mid] = {
                 "name": name_map.get(mid, mid),
                 "count": 0, "wins": 0, "losses": 0,
-                "_rr": [], "total_pnl_usd": 0.0,
+                "_rr": [], "total_pnl_usd": 0.0, "_trades": [],
             }
         b = buckets[mid]
         b["count"] += 1
@@ -58,16 +58,29 @@ def aggregate_mistakes(
         b["total_pnl_usd"] += trade.pnl_usd or 0.0
         if trade.rr_achieved is not None and trade.outcome in ("win", "loss"):
             b["_rr"].append(trade.rr_achieved)
+        b["_trades"].append(trade)
 
     result = [_finalize_bucket(b) for b in buckets.values()]
     result.sort(key=lambda x: x["total_pnl_usd"])
     return result
 
 
+def _trade_ref(trade: TradeModel) -> dict[str, Any]:
+    """Build a lightweight MistakeTradeRef dict from a trade."""
+    return {
+        "id": trade.id,
+        "date": trade.open_time.date().isoformat() if trade.open_time else "",
+        "symbol": trade.symbol,
+        "outcome": trade.outcome,
+        "pnl_usd": trade.pnl_usd,
+    }
+
+
 def _finalize_bucket(bucket: dict[str, Any]) -> dict[str, Any]:
     """Compute win_rate/avg_rr/avg_pnl_usd from a raw mistake bucket."""
     denom = bucket["wins"] + bucket["losses"]
     rr_list = bucket["_rr"]
+    trades = sorted(bucket["_trades"], key=lambda t: t.open_time or datetime.min, reverse=True)
     return {
         "name": bucket["name"],
         "count": bucket["count"],
@@ -80,6 +93,7 @@ def _finalize_bucket(bucket: dict[str, Any]) -> dict[str, Any]:
             round(bucket["total_pnl_usd"] / bucket["count"], 2)
             if bucket["count"] > 0 else None
         ),
+        "trades": [_trade_ref(t) for t in trades],
     }
 
 

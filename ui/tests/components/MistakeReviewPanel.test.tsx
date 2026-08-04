@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 import { MistakeReviewPanel } from "@/components/MistakeReviewPanel";
-import type { MistakePeriodBucket } from "@/lib/types";
+import type { MistakePeriodBucket, MistakeTradeRef } from "@/lib/types";
 
 vi.mock("@/lib/api", () => ({
   fetchMistakeTimeseries: vi.fn(),
@@ -22,8 +22,12 @@ function bucket(overrides: Partial<MistakePeriodBucket>): MistakePeriodBucket {
   };
 }
 
-function stat(name: string, count: number, total_pnl_usd = -100) {
-  return { name, count, wins: 0, losses: count, win_rate: 0, avg_rr: null, total_pnl_usd, avg_pnl_usd: null };
+function stat(name: string, count: number, total_pnl_usd = -100, trades: MistakeTradeRef[] = []) {
+  return { name, count, wins: 0, losses: count, win_rate: 0, avg_rr: null, total_pnl_usd, avg_pnl_usd: null, trades };
+}
+
+function tradeRef(overrides: Partial<MistakeTradeRef> = {}): MistakeTradeRef {
+  return { id: "trade-1", date: "2026-07-22", symbol: "MNQ", outcome: "loss", pnl_usd: -50, ...overrides };
 }
 
 afterEach(() => {
@@ -139,5 +143,44 @@ describe("MistakeReviewPanel — streak badge", () => {
     render(<MistakeReviewPanel showMoney={true} />);
     await screen.findByText("FOMO entry");
     expect(screen.queryByText(/↑ \d+ wks/)).not.toBeInTheDocument();
+  });
+});
+
+describe("MistakeReviewPanel — expand to trades", () => {
+  it("reveals a linked trade row when a mistake with trades is clicked", async () => {
+    vi.mocked(fetchMistakeTimeseries).mockResolvedValue([
+      bucket({
+        mistakes: [stat("FOMO entry", 1, -50, [tradeRef({ id: "trade-42", date: "2026-07-22", symbol: "MNQ" })])],
+      }),
+    ]);
+    render(<MistakeReviewPanel showMoney={true} />);
+    const row = await screen.findByText("FOMO entry");
+    fireEvent.click(row.closest("button")!);
+    const link = await screen.findByRole("link", { name: /Jul 22 · MNQ/ });
+    expect(link).toHaveAttribute("href", "/journal/trade-42");
+  });
+
+  it("is not clickable when a mistake has no linked trades", async () => {
+    vi.mocked(fetchMistakeTimeseries).mockResolvedValue([
+      bucket({ mistakes: [stat("Untracked mistake", 1, -50, [])] }),
+    ]);
+    render(<MistakeReviewPanel showMoney={true} />);
+    const row = await screen.findByText("Untracked mistake");
+    expect(row.closest("button")).toBeDisabled();
+  });
+
+  it("collapses the trade list on a second click", async () => {
+    vi.mocked(fetchMistakeTimeseries).mockResolvedValue([
+      bucket({
+        mistakes: [stat("FOMO entry", 1, -50, [tradeRef({ id: "trade-42" })])],
+      }),
+    ]);
+    render(<MistakeReviewPanel showMoney={true} />);
+    const row = await screen.findByText("FOMO entry");
+    const button = row.closest("button")!;
+    fireEvent.click(button);
+    await screen.findByRole("link");
+    fireEvent.click(button);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });

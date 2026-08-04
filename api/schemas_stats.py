@@ -247,6 +247,18 @@ class TradeStatsResponse(BaseModel):
     tp_capture_sample_size: int = 0
 
 
+class MistakeTradeRef(BaseModel):
+    """Lightweight reference to a single trade linked to a mistake."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    date: str
+    symbol: str
+    outcome: str | None
+    pnl_usd: float | None
+
+
 class MistakeStatResponse(BaseModel):
     """Aggregated stats for a single mistake across linked trades."""
 
@@ -260,6 +272,7 @@ class MistakeStatResponse(BaseModel):
     avg_rr: float | None
     total_pnl_usd: float
     avg_pnl_usd: float | None
+    trades: list[MistakeTradeRef]
 
 
 class MistakePeriodBucket(BaseModel):
