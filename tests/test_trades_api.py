@@ -250,6 +250,76 @@ def test_reopen_closed_trade_returns_422(client: TestClient, db: Session) -> Non
     assert resp.status_code == 422
 
 
+# ---------------------------------------------------------------------------
+# Edit-after-close: risk_pips staleness, open-trade preview, outcome drift
+# ---------------------------------------------------------------------------
+
+
+def test_edit_closed_trade_recalculates_risk_pips_and_rr(client: TestClient, db: Session) -> None:
+    """Correcting direction/entry/SL/exit after a wrong-direction close must
+    re-derive risk_pips from the new entry/SL, not keep the stale value from
+    creation — otherwise rr_achieved is computed against a distance that no
+    longer matches the trade."""
+    trade = make_trade(
+        db, direction="BUY", entry_price=20000.0, sl_price=19950.0,
+        risk_pips=50.0, status="closed", exit_price=20030.0,
+        outcome="win", pnl_pips=30.0, pnl_usd=60.0, rr_achieved=0.6,
+    )
+    resp = client.put(f"/api/trades/{trade.id}", json={
+        "direction": "SELL",
+        "entry_price": 20000.0,
+        "sl_price": 20010.0,
+        "exit_price": 19980.0,
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["risk_points"] == 10.0
+    assert data["pnl_points"] == 20.0
+    assert data["rr_achieved"] == 2.0
+
+
+def test_edit_open_trade_prices_populates_pnl_preview(client: TestClient, db: Session) -> None:
+    """Setting an exit_price via the edit form on a still-open trade must
+    populate pnl_points/rr_achieved immediately, not only once the trade is
+    formally closed via status."""
+    trade = make_trade(
+        db, direction="BUY", entry_price=20000.0, sl_price=19950.0,
+        risk_pips=50.0, status="open",
+    )
+    resp = client.put(f"/api/trades/{trade.id}", json={
+        "direction": "SELL",
+        "entry_price": 20000.0,
+        "sl_price": 20010.0,
+        "exit_price": 19980.0,
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "open"
+    assert data["pnl_points"] == 20.0
+    assert data["rr_achieved"] == 2.0
+
+
+def test_edit_closed_trade_flips_stale_outcome(client: TestClient, db: Session) -> None:
+    """If correcting prices/direction flips the P&L sign, the outcome badge
+    must follow — it shouldn't stay pinned to the outcome from the original,
+    mistaken close."""
+    trade = make_trade(
+        db, direction="BUY", entry_price=20000.0, sl_price=19950.0,
+        risk_pips=50.0, status="closed", exit_price=20030.0,
+        outcome="win", pnl_pips=30.0, pnl_usd=60.0, rr_achieved=0.6,
+    )
+    resp = client.put(f"/api/trades/{trade.id}", json={
+        "direction": "SELL",
+        "entry_price": 20000.0,
+        "sl_price": 19950.0,
+        "exit_price": 20030.0,
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["pnl_points"] == -30.0
+    assert data["outcome"] == "loss"
+
+
 def test_create_trade_and_retrieve(client: TestClient) -> None:
     """POST /api/trades then GET /api/trades/{id} returns the same trade."""
     resp = client.post("/api/trades", json=_trade_payload())
