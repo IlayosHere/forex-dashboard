@@ -14,12 +14,16 @@ interface TradeResultPanelProps {
   unitLabel: string;
   isBacktest?: boolean;
   showMoney?: boolean;
+  dirty?: boolean;
 }
 
-export function TradeResultPanel({ trade, unitLabel, isBacktest = false, showMoney = true }: TradeResultPanelProps) {
+export function TradeResultPanel({ trade, unitLabel, isBacktest = false, showMoney = true, dirty = false }: TradeResultPanelProps) {
   return (
-    <div className="border border-border rounded p-4 space-y-2 bg-card">
-      <span className="label">Result</span>
+    <div className={`border border-border rounded p-4 space-y-2 bg-card transition-opacity ${dirty ? "opacity-50" : ""}`}>
+      <div className="flex items-center justify-between">
+        <span className="label">P&amp;L Summary</span>
+        {dirty && <span className="text-[10px] text-text-muted italic">recalculates on save</span>}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
         <div className="flex justify-between items-center">

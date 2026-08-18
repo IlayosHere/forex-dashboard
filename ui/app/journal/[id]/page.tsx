@@ -1,96 +1,39 @@
 "use client";
 
-import { useEffect, useReducer, useState, use, Suspense } from "react";
+import { useEffect, useReducer, useRef, useState, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { AccountBadge } from "@/components/AccountBadge";
-import { StatusBadge } from "@/components/StatusBadge";
+import { TradeDetailHeader } from "@/components/TradeDetailHeader";
 import { TradeInfoPanel } from "@/components/TradeInfoPanel";
 import { LinkedScenarioCard } from "@/components/LinkedScenarioCard";
 import { TradeResultPanel } from "@/components/TradeResultPanel";
 import { TradeAssessmentPanel } from "@/components/TradeAssessmentPanel";
-import { TradeCloseActions } from "@/components/TradeCloseActions";
+import { TradeOutcomeFields } from "@/components/TradeOutcomeFields";
 import { TradeCompliancePanel } from "@/components/TradeCompliancePanel";
 import { IctParamsPanel, ictParamsFromTrade } from "@/components/IctParamsPanel";
 import { TradeFeelingsPanel } from "@/components/TradeFeelingsPanel";
 
-import type { Trade, AccountType, LinkedMistake, TradingFeeling, BeOutcome, TradeLocation } from "@/lib/types";
-import type { TradeEditFields } from "@/components/TradeInfoPanel";
+import type { Trade, AccountType, TradingFeeling } from "@/lib/types";
 import type { IctParamsState } from "@/components/IctParamsPanel";
+import type { TradeResult, QtParamsState } from "@/lib/tradeEditState";
 
 import { fetchTrade, updateTrade, deleteTrade } from "@/lib/api";
 import { useAccounts } from "@/lib/useAccounts";
 import { getInstrumentType, getUnitLabel, getSizeLabel } from "@/lib/strategies";
-import { formatDateTime } from "@/lib/dates";
+import { nowNYDatetime, utcISOToNYDatetime } from "@/lib/dates";
 import { useShowMoney } from "@/lib/useShowMoney";
+import { useUnsavedChangesGuard } from "@/lib/useUnsavedChangesGuard";
+import {
+  INITIAL_EDITABLE, editableReducer, buildTradeUpdatePayload, resultFromStatusOutcome,
+  validateResult, isFirstClose, snapshotForDirtyCheck, RESULT_LABELS,
+} from "@/lib/tradeEditState";
 
-/* ------------------------------------------------------------------ */
-/*  Editable state for assessment + close actions                      */
-/* ------------------------------------------------------------------ */
-
-interface EditableFields {
-  exitPrice: string;
-  fees: string;
-  tags: string[];
-  notes: string;
-  rating: number | null;
-  confidence: number | null;
-  screenshotUrl: string;
-  confirmDelete: boolean;
-  ruleFollowed: boolean | null;
-  criteriaMetAtEntry: boolean | null;
-  linkedMistakes: LinkedMistake[];
-  feelingBefore: TradingFeeling | null;
-  feelingDuring: TradingFeeling | null;
-  feelingAfter: TradingFeeling | null;
-  beOutcome: BeOutcome | null;
-  tradeLocation: TradeLocation;
-  holdingTimeMinutes: string;
-}
-
-type EditAction =
-  | { type: "SET_FIELD"; field: keyof EditableFields; value: EditableFields[keyof EditableFields] }
-  | { type: "LOAD"; payload: Omit<EditableFields, "confirmDelete"> };
-
-const INITIAL_EDITABLE: EditableFields = {
-  exitPrice: "",
-  fees: "",
-  tags: [],
-  notes: "",
-  rating: null,
-  confidence: null,
-  screenshotUrl: "",
-  confirmDelete: false,
-  ruleFollowed: null,
-  criteriaMetAtEntry: null,
-  linkedMistakes: [],
-  feelingBefore: null,
-  feelingDuring: null,
-  feelingAfter: null,
-  beOutcome: null,
-  tradeLocation: "home",
-  holdingTimeMinutes: "",
-};
-
-function editableReducer(state: EditableFields, action: EditAction): EditableFields {
-  switch (action.type) {
-    case "SET_FIELD":
-      return { ...state, [action.field]: action.value };
-    case "LOAD":
-      return { ...state, ...action.payload, confirmDelete: false };
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-const formatTime = (iso: string | null) => formatDateTime(iso);
-
-/* ------------------------------------------------------------------ */
-/*  Page                                                               */
-/* ------------------------------------------------------------------ */
+const FEELING_FIELD_MAP = {
+  feeling_before: "feelingBefore",
+  feeling_during: "feelingDuring",
+  feeling_after: "feelingAfter",
+} as const;
 
 interface TradeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -107,179 +50,119 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [justClosedAsBe, setJustClosedAsBe] = useState(false);
+  const [resultError, setResultError] = useState<string | null>(null);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const [ictParams, setIctParams] = useState<IctParamsState>({
     ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
     ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
     ict_tdo_aligned: "", ict_cisd_present: "", ict_htf_bias: "",
   });
-  const [qtParams, setQtParams] = useState({
-    qt_fvg_quarter: "",
-    qt_entry_quarter: "",
-    qt_fvg_date: "",
-    qt_fvg_type: "",
-    qt_entry_type: "",
+  const [qtParams, setQtParams] = useState<QtParamsState>({
+    qt_fvg_quarter: "", qt_entry_quarter: "", qt_fvg_date: "", qt_fvg_type: "", qt_entry_type: "",
   });
   const [showMoney] = useShowMoney();
   const { accounts } = useAccounts();
+  const initialSnapshot = useRef<string>("");
 
   useEffect(() => {
     fetchTrade(id)
       .then((t) => {
         setTrade(t);
-        setIctParams(ictParamsFromTrade(t));
-        setQtParams({
+        const icts = ictParamsFromTrade(t);
+        const qts: QtParamsState = {
           qt_fvg_quarter: t.qt_fvg_quarter ?? "",
           qt_entry_quarter: t.qt_entry_quarter ?? "",
           qt_fvg_date: t.qt_fvg_date ?? "",
           qt_fvg_type: t.qt_fvg_type ?? "",
           qt_entry_type: t.qt_entry_type ?? "",
-        });
-        dispatch({
-          type: "LOAD",
-          payload: {
-            exitPrice: t.exit_price != null ? String(t.exit_price) : "",
-            fees: t.fees != null ? String(t.fees) : "",
-            tags: t.tags,
-            notes: t.notes,
-            rating: t.rating,
-            confidence: t.confidence,
-            screenshotUrl: t.screenshot_url ?? "",
-            ruleFollowed: t.rule_followed,
-            criteriaMetAtEntry: t.criteria_met_at_entry,
-            linkedMistakes: t.linked_mistakes,
-            feelingBefore: t.feeling_before,
-            feelingDuring: t.feeling_during,
-            feelingAfter: t.feeling_after,
-            beOutcome: t.be_outcome,
-            tradeLocation: (t.trade_location ?? "home") as TradeLocation,
-            holdingTimeMinutes: t.holding_time_minutes != null ? String(t.holding_time_minutes) : "",
-          },
-        });
+        };
+        setIctParams(icts);
+        setQtParams(qts);
+        const payload = {
+          direction: t.direction,
+          entryPrice: String(t.entry_price),
+          slPrice: String(t.sl_price),
+          tpPrice: t.tp_price != null ? String(t.tp_price) : "",
+          contracts: String(t.contracts),
+          openTime: utcISOToNYDatetime(t.open_time),
+          status: t.status,
+          outcome: t.outcome,
+          exitPrice: t.exit_price != null ? String(t.exit_price) : "",
+          closeTime: t.close_time ? utcISOToNYDatetime(t.close_time) : "",
+          fees: t.fees != null ? String(t.fees) : "",
+          tags: t.tags,
+          notes: t.notes,
+          rating: t.rating,
+          confidence: t.confidence,
+          screenshotUrl: t.screenshot_url ?? "",
+          ruleFollowed: t.rule_followed,
+          criteriaMetAtEntry: t.criteria_met_at_entry,
+          linkedMistakes: t.linked_mistakes,
+          feelingBefore: t.feeling_before,
+          feelingDuring: t.feeling_during,
+          feelingAfter: t.feeling_after,
+          beOutcome: t.be_outcome,
+          tradeLocation: t.trade_location ?? "home",
+          holdingTimeMinutes: t.holding_time_minutes != null ? String(t.holding_time_minutes) : "",
+        };
+        dispatch({ type: "LOAD", payload });
+        initialSnapshot.current = snapshotForDirtyCheck({ ...payload, confirmDelete: false }, icts, qts);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, [id]);
 
+  const isDirty = trade != null && snapshotForDirtyCheck(editable, ictParams, qtParams) !== initialSnapshot.current;
+  useUnsavedChangesGuard(isDirty);
+
   if (loading) return <div className="p-6 text-muted-foreground text-sm">Loading...</div>;
   if (error || !trade) return <div className="p-6 text-bear text-sm">Error: {error ?? "Trade not found"}</div>;
 
-  const isOpen = trade.status === "open";
   const isQtMnq = trade.strategy === "qt-mnq";
   const tradeAccount = trade.account_id ? accounts.find((a) => a.id === trade.account_id) : null;
   const tradeAccountType: AccountType = tradeAccount?.account_type ?? "demo";
+  const isBacktest = tradeAccountType === "backtest";
   const instrumentType = trade.instrument_type ?? getInstrumentType(trade.strategy);
+  const includeIct = instrumentType === "futures_mnq" || instrumentType === "futures_mes";
   const unitLabel = getUnitLabel();
   const sizeLabel = getSizeLabel();
-  const isBuy = trade.direction === "BUY";
+  const priceDirty = editable.entryPrice !== String(trade.entry_price)
+    || editable.slPrice !== String(trade.sl_price)
+    || editable.exitPrice !== (trade.exit_price != null ? String(trade.exit_price) : "")
+    || editable.status !== trade.status
+    || editable.outcome !== trade.outcome;
 
-  const FEELING_FIELD_MAP = {
-    feeling_before: "feelingBefore",
-    feeling_during: "feelingDuring",
-    feeling_after:  "feelingAfter",
-  } as const;
-
-  function handleFeelingChange(
-    field: "feeling_before" | "feeling_during" | "feeling_after",
-    value: TradingFeeling | null,
-  ) {
+  function handleFeelingChange(field: "feeling_before" | "feeling_during" | "feeling_after", value: TradingFeeling | null) {
     dispatch({ type: "SET_FIELD", field: FEELING_FIELD_MAP[field], value });
   }
 
-  const closeTrade = async (outcome: "win" | "loss" | "breakeven") => {
-    const ep = parseFloat(editable.exitPrice);
-    if (!editable.exitPrice || !isFinite(ep) || ep <= 0) return;
-    setSaving(true);
-    try {
-      const status = outcome === "breakeven" ? "breakeven" : "closed";
-      const t = await updateTrade(id, { exit_price: ep, status, outcome, close_time: new Date().toISOString() });
-      setTrade(t);
-      dispatch({ type: "SET_FIELD", field: "exitPrice", value: t.exit_price != null ? String(t.exit_price) : "" });
-      if (outcome === "breakeven") setJustClosedAsBe(true);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to close trade");
-    } finally {
-      setSaving(false);
-    }
+  function confirmLeave(): boolean {
+    return !isDirty || window.confirm("You have unsaved changes. Leave without saving?");
+  }
+
+  const handleResultChange = (result: TradeResult) => {
+    dispatch({ type: "SET_RESULT", result, defaultCloseTime: nowNYDatetime() });
+    setResultError(null);
   };
 
-  const handleBeOutcomeQuickCapture = async (v: BeOutcome) => {
-    dispatch({ type: "SET_FIELD", field: "beOutcome", value: v });
-    setJustClosedAsBe(false);
-    try {
-      const t = await updateTrade(id, { be_outcome: v });
-      setTrade(t);
-    } catch {
-      // non-fatal — value is in local state, user can save via Save Changes
+  const handleSave = async () => {
+    const err = validateResult(editable);
+    if (err) {
+      setResultError(err);
+      return;
     }
-  };
-
-  const cancelTrade = async () => {
+    if (isFirstClose(trade.status, editable.status)) {
+      const result = resultFromStatusOutcome(editable);
+      if (!window.confirm(`This will close the trade as ${RESULT_LABELS[result]}. Continue?`)) return;
+    }
     setSaving(true);
     try {
-      const t = await updateTrade(id, { status: "cancelled" });
-      setTrade(t);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveAssessment = async () => {
-    setSaving(true);
-    try {
-      const ictUpdate = (instrumentType === "futures_mnq" || instrumentType === "futures_mes") ? {
-        ict_setup_type: ictParams.ict_setup_type || null,
-        ict_setup_detail: ictParams.ict_setup_detail || null,
-        ict_tp_target: ictParams.ict_tp_target || null,
-        ict_ifvg_timeframe: ictParams.ict_ifvg_timeframe || null,
-        ict_ifvg_bars: ictParams.ict_ifvg_bars ? parseInt(ictParams.ict_ifvg_bars, 10) : null,
-        ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",
-        ict_tdo_aligned: ictParams.ict_tdo_aligned === "" ? null : ictParams.ict_tdo_aligned === "true",
-        ict_cisd_present: ictParams.ict_cisd_present === "" ? null : ictParams.ict_cisd_present === "true",
-        ict_htf_bias: ictParams.ict_htf_bias || null,
-        feeling_before: editable.feelingBefore,
-        feeling_during: editable.feelingDuring,
-        feeling_after: editable.feelingAfter,
-      } : {};
-      const qtUpdate = isQtMnq ? {
-        qt_fvg_quarter: qtParams.qt_fvg_quarter || null,
-        qt_entry_quarter: qtParams.qt_entry_quarter || null,
-        qt_fvg_date: qtParams.qt_fvg_date || null,
-        qt_fvg_type: qtParams.qt_fvg_type || null,
-        qt_entry_type: qtParams.qt_entry_type || null,
-      } : {};
-      const payload = {
-        tags: editable.tags,
-        notes: editable.notes,
-        rating: editable.rating,
-        confidence: editable.confidence,
-        screenshot_url: editable.screenshotUrl || null,
-        fees: editable.fees ? parseFloat(editable.fees) : null,
-        rule_followed: editable.ruleFollowed,
-        criteria_met_at_entry: editable.criteriaMetAtEntry,
-        be_outcome: trade.outcome === "breakeven" ? editable.beOutcome : undefined,
-        trade_location: editable.tradeLocation,
-        holding_time_minutes: editable.holdingTimeMinutes ? parseInt(editable.holdingTimeMinutes, 10) : null,
-        ...ictUpdate,
-        ...qtUpdate,
-      };
+      const payload = buildTradeUpdatePayload({
+        editable, ictParams, qtParams, includeIct, includeQt: isQtMnq,
+        isBacktest, fallbackContracts: trade.contracts,
+      });
       await updateTrade(id, payload);
       router.push(backUrl);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveEdit = async (fields: TradeEditFields) => {
-    setSaving(true);
-    try {
-      const t = await updateTrade(id, { ...fields });
-      setTrade(t);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to save");
     } finally {
@@ -301,65 +184,45 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
 
   return (
     <div className="p-6 max-w-2xl">
-      {/* Back link */}
       <button
-        onClick={() => router.push(backUrl)}
+        onClick={() => confirmLeave() && router.push(backUrl)}
         className="text-xs text-text-muted hover:text-text-primary mb-4 inline-block cursor-pointer transition-colors"
       >
         &larr; {backLabel}
       </button>
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl font-bold text-text-primary">{trade.symbol}</span>
-          <span className={`text-sm font-semibold px-1.5 py-0.5 rounded ${isBuy ? "text-bull bg-bull/10" : "text-bear bg-bear/10"}`}>
-            {isBuy ? "\u25B2" : "\u25BC"} {trade.direction}
-          </span>
-          <span className="ml-auto">
-            <StatusBadge status={trade.status} outcome={trade.outcome} />
-          </span>
-        </div>
-        <div className="text-text-muted text-xs flex items-center gap-2">
-          <span>{trade.strategy} &middot; {formatTime(trade.open_time)}</span>
-          {trade.account_name && (
-            <AccountBadge name={trade.account_name} accountType={tradeAccountType} />
-          )}
-        </div>
-      </div>
+      <TradeDetailHeader trade={trade} accountType={tradeAccountType} />
 
       {trade.scenario_id && <LinkedScenarioCard scenarioId={trade.scenario_id} />}
 
-      {/* Single-column stacked cards */}
       <div className="space-y-4">
-        {/* Trade Numbers */}
         <TradeInfoPanel
           trade={trade}
+          value={editable}
           unitLabel={unitLabel}
           sizeLabel={sizeLabel}
-          saving={saving}
-          isBacktest={tradeAccountType === "backtest"}
-          onSave={saveEdit}
+          isBacktest={isBacktest}
+          onChange={(field, value) => dispatch({ type: "SET_FIELD", field, value })}
         />
 
-        {/* Result */}
-        <TradeResultPanel
-          trade={trade}
-          unitLabel={unitLabel}
-          isBacktest={tradeAccountType === "backtest"}
-          showMoney={showMoney}
+        <TradeOutcomeFields
+          value={editable}
+          wasTerminal={trade.status !== "open"}
+          error={resultError}
+          onResultChange={handleResultChange}
+          onFieldChange={(field, value) => dispatch({ type: "SET_FIELD", field, value })}
         />
 
-        {/* ICT Params (MNQ/MES) */}
-        {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
+        <TradeResultPanel trade={trade} unitLabel={unitLabel} isBacktest={isBacktest} showMoney={showMoney} dirty={priceDirty} />
+
+        {includeIct && (
           <IctParamsPanel
             params={ictParams}
             onChange={(key, value) => setIctParams((prev) => ({ ...prev, [key]: value }))}
           />
         )}
 
-        {/* Feelings (MNQ/MES) */}
-        {(instrumentType === "futures_mnq" || instrumentType === "futures_mes") && (
+        {includeIct && (
           <TradeFeelingsPanel
             feelingBefore={editable.feelingBefore}
             feelingDuring={editable.feelingDuring}
@@ -368,21 +231,6 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           />
         )}
 
-        {/* Close Trade (open trades only) + BE quick-capture strip */}
-        {(isOpen || justClosedAsBe) && (
-          <TradeCloseActions
-            exitPrice={editable.exitPrice}
-            saving={saving}
-            justClosedAsBe={justClosedAsBe}
-            onExitPriceChange={(v) => dispatch({ type: "SET_FIELD", field: "exitPrice", value: v })}
-            onClose={closeTrade}
-            onCancel={cancelTrade}
-            onBeOutcomeQuickCapture={handleBeOutcomeQuickCapture}
-            onBeOutcomeSkip={() => setJustClosedAsBe(false)}
-          />
-        )}
-
-        {/* Assessment */}
         <TradeAssessmentPanel
           rating={editable.rating}
           confidence={editable.confidence}
@@ -391,9 +239,9 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           screenshotUrl={editable.screenshotUrl}
           fees={editable.fees}
           holdingTimeMinutes={editable.holdingTimeMinutes}
-          isBacktest={tradeAccountType === "backtest"}
+          isBacktest={isBacktest}
           criteriaMetAtEntry={editable.criteriaMetAtEntry}
-          isBreakeven={trade.outcome === "breakeven"}
+          isBreakeven={editable.status === "breakeven"}
           beOutcome={editable.beOutcome}
           tradeLocation={editable.tradeLocation}
           onRatingChange={(v) => dispatch({ type: "SET_FIELD", field: "rating", value: v })}
@@ -408,7 +256,6 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onTradeLocationChange={(v) => dispatch({ type: "SET_FIELD", field: "tradeLocation", value: v })}
         />
 
-        {/* Rule Compliance */}
         <TradeCompliancePanel
           tradeId={id}
           ruleFollowed={editable.ruleFollowed}
@@ -417,12 +264,10 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
           onMistakesChange={(v) => dispatch({ type: "SET_FIELD", field: "linkedMistakes", value: v })}
         />
 
-        {/* Save assessment */}
-        <Button onClick={saveAssessment} disabled={saving} className="w-full">
+        <Button onClick={handleSave} disabled={saving} className="w-full">
           {saving ? "Saving..." : "Save Changes"}
         </Button>
 
-        {/* Delete */}
         <div className="pt-2">
           {editable.confirmDelete ? (
             <div className="flex items-center gap-2">
