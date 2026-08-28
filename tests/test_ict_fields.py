@@ -17,6 +17,7 @@ from shared.ict_taxonomy import (
     CONTINUATION_DETAILS,
     IFVG_TIMEFRAMES,
     LIQUIDITY_SWEEP_DETAILS,
+    TP_TARGET_DETAIL_MAP,
     TP_TARGETS,
     UNMITIGATED_FVG_DETAILS,
 )
@@ -223,5 +224,79 @@ def test_update_trade_ict_detail_wrong_for_type_returns_422(
             "ict_setup_type": "continuation",
             "ict_setup_detail": LIQUIDITY_SWEEP_DETAILS[0],
         },
+    )
+    assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Cross-field validator: ict_tp_target_detail must match ict_tp_target
+# ---------------------------------------------------------------------------
+
+
+def test_create_trade_tp_target_detail_valid_for_ith_passes(
+    client: TestClient,
+) -> None:
+    """A detail from TP_TARGET_DETAIL_MAP['ith'] is valid for tp_target='ith'."""
+    payload = _base_payload(
+        ict_tp_target="ith",
+        ict_tp_target_detail=TP_TARGET_DETAIL_MAP["ith"][0],
+    )
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["ict_tp_target"] == "ith"
+    assert data["ict_tp_target_detail"] == TP_TARGET_DETAIL_MAP["ith"][0]
+
+
+def test_create_trade_tp_target_detail_wrong_for_target_returns_422(
+    client: TestClient,
+) -> None:
+    """A detail valid only for unmitigated_fvg (e.g. '2h') is invalid for tp_target='ith'."""
+    payload = _base_payload(ict_tp_target="ith", ict_tp_target_detail="2h")
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 422
+
+
+def test_create_trade_tp_target_detail_valid_for_unmitigated_fvg_monthly_passes(
+    client: TestClient,
+) -> None:
+    """The newly added monthly FVG timeframe ('1M') is valid for unmitigated_fvg."""
+    payload = _base_payload(ict_tp_target="unmitigated_fvg", ict_tp_target_detail="1M")
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 201
+    assert resp.json()["ict_tp_target_detail"] == "1M"
+
+
+def test_create_trade_tp_target_detail_valid_for_data_release_passes(
+    client: TestClient,
+) -> None:
+    """A release-type detail is valid for tp_target='data_release_high'."""
+    payload = _base_payload(ict_tp_target="data_release_high", ict_tp_target_detail="cpi")
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["ict_tp_target"] == "data_release_high"
+    assert data["ict_tp_target_detail"] == "cpi"
+
+
+def test_create_trade_invalid_tp_target_detail_returns_422(
+    client: TestClient,
+) -> None:
+    """An unrecognised ict_tp_target_detail string must be rejected with 422."""
+    resp = client.post(
+        "/api/trades",
+        json=_base_payload(ict_tp_target="ith", ict_tp_target_detail="bad_detail"),
+    )
+    assert resp.status_code == 422
+
+
+def test_update_trade_tp_target_detail_wrong_for_target_returns_422(
+    client: TestClient, db: Session,
+) -> None:
+    """Cross-field validator fires on PUT when tp_target_detail does not match tp_target."""
+    trade = make_trade(db, instrument_type="futures_mnq")
+    resp = client.put(
+        f"/api/trades/{trade.id}",
+        json={"ict_tp_target": "itl", "ict_tp_target_detail": "1M"},
     )
     assert resp.status_code == 422

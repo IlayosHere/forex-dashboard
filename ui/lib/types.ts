@@ -13,17 +13,25 @@ export type IctLiquiditySweepDetail =
   | "1m_high" | "1m_low" | "5m_high" | "5m_low"
   | "15m_high" | "15m_low" | "1h_high" | "1h_low"
   | "4h_high" | "4h_low" | "other";
-export type IctUnmitigatedFvgDetail = "15m" | "30m" | "1h" | "2h" | "4h" | "other";
+export type IctUnmitigatedFvgDetail = "15m" | "30m" | "1h" | "2h" | "4h" | "1D" | "1W" | "1M" | "other";
 export type IctContinuationDetail = "3m" | "5m" | "15m" | "other";
 export type IctSetupDetail = IctLiquiditySweepDetail | IctUnmitigatedFvgDetail | IctContinuationDetail;
+
+// TP targets — real ICT draw-on-liquidity concepts only (no raw low-timeframe candle
+// highs/lows). ith/itl, unmitigated_fvg, and data_release_high/low take a further
+// IctTpTargetDetail sub-selection — see TP_TARGET_DETAIL_OPTIONS in IctTradeFields.tsx.
 export type IctTpTarget =
-  | "london_high" | "london_low" | "asia_high" | "asia_low"
-  | "data_high" | "data_low"
-  | "1m_high" | "1m_low" | "5m_high" | "5m_low" | "15m_high" | "15m_low"
-  | "1h_high" | "1h_low" | "4h_high" | "4h_low" | "1d_high" | "1d_low"
-  | "unmitigated_5m_fvg" | "unmitigated_15m_fvg" | "unmitigated_30m_fvg" | "unmitigated_1h_fvg" | "unmitigated_4h_fvg"
+  | "asia_high" | "asia_low" | "london_high" | "london_low"
+  | "prev_session_high" | "prev_session_low"
+  | "pdh" | "pdl" | "pwh" | "pwl" | "pmh" | "pml"
+  | "ith" | "itl"
+  | "nwog" | "ndog"
+  | "unmitigated_fvg"
+  | "data_release_high" | "data_release_low"
   | "ath"
   | "other";
+export type IctTpTargetDetail = "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "1D" | "1W" | "1M"
+  | "cpi" | "ppi" | "nfp" | "fomc" | "other";
 export type IctIfvgTimeframe = "30s" | "1m" | "2m" | "3m" | "4m" | "5m";
 
 // QT trade params — qt-mnq strategy only
@@ -74,6 +82,7 @@ export interface TradeCreateRequest {
   ict_setup_type?: string | null;
   ict_setup_detail?: string | null;
   ict_tp_target?: string | null;
+  ict_tp_target_detail?: string | null;
   ict_ifvg_timeframe?: string | null;
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
@@ -117,6 +126,7 @@ export interface TradeUpdateRequest {
   ict_setup_type?: string | null;
   ict_setup_detail?: string | null;
   ict_tp_target?: string | null;
+  ict_tp_target_detail?: string | null;
   ict_ifvg_timeframe?: string | null;
   ict_ifvg_bars?: number | null;
   ict_smt_present?: boolean | null;
@@ -171,6 +181,7 @@ export interface Trade {
   ict_setup_type: IctSetupType | null;
   ict_setup_detail: IctSetupDetail | null;
   ict_tp_target: IctTpTarget | null;
+  ict_tp_target_detail: IctTpTargetDetail | null;
   ict_ifvg_timeframe: IctIfvgTimeframe | null;
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;

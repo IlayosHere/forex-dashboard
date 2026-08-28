@@ -52,6 +52,7 @@ function makeForm(overrides: Partial<TradeFormData> = {}): TradeFormData {
     ict_setup_type: "",
     ict_setup_detail: "",
     ict_tp_target: "",
+    ict_tp_target_detail: "",
     ict_ifvg_timeframe: "",
     ict_ifvg_bars: null,
     ict_smt_present: null,

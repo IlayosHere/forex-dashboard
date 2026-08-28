@@ -47,6 +47,9 @@ UNMITIGATED_FVG_DETAILS: Final[list[str]] = [
     "1h",
     "2h",
     "4h",
+    "1D",
+    "1W",
+    "1M",
     "other",
 ]
 
@@ -58,34 +61,43 @@ CONTINUATION_DETAILS: Final[list[str]] = [
     "other",
 ]
 
-# TP targets — what price level / FVG is being targeted
+# TP targets — what price level / FVG is being targeted.
+# Deliberately excludes raw low-timeframe candle highs/lows (the old 1m/5m/15m_high/low
+# values) — those aren't real ICT draw-on-liquidity concepts, just noise. A swing high/low
+# formed on a given timeframe now lives under ith/itl + TP_TARGET_DETAIL_MAP instead.
 TP_TARGETS: Final[list[str]] = [
-    "london_high",
-    "london_low",
     "asia_high",
     "asia_low",
-    "data_high",
-    "data_low",
-    "1m_high",
-    "1m_low",
-    "5m_high",
-    "5m_low",
-    "15m_high",
-    "15m_low",
-    "1h_high",
-    "1h_low",
-    "4h_high",
-    "4h_low",
-    "1d_high",
-    "1d_low",
-    "unmitigated_5m_fvg",
-    "unmitigated_15m_fvg",
-    "unmitigated_30m_fvg",
-    "unmitigated_1h_fvg",
-    "unmitigated_4h_fvg",
+    "london_high",
+    "london_low",
+    "prev_session_high",   # previous NY session's high (session, not calendar day)
+    "prev_session_low",
+    "pdh",                  # previous day high
+    "pdl",                  # previous day low
+    "pwh",                  # previous week high
+    "pwl",                  # previous week low
+    "pmh",                  # previous month high
+    "pml",                  # previous month low
+    "ith",                  # intermediate term high (swing structure) — see TP_TARGET_DETAIL_MAP
+    "itl",                  # intermediate term low (swing structure) — see TP_TARGET_DETAIL_MAP
+    "nwog",                 # new week opening gap
+    "ndog",                 # new day opening gap
+    "unmitigated_fvg",      # see TP_TARGET_DETAIL_MAP for timeframe
+    "data_release_high",    # wick from a scheduled release (CPI/PPI/NFP/FOMC) — see TP_TARGET_DETAIL_MAP
+    "data_release_low",
     "ath",
     "other",
 ]
+
+# Detail values valid per tp_target, for the values above that need a sub-selection.
+# Any tp_target not listed here takes no detail (tp_target_detail must be None).
+TP_TARGET_DETAIL_MAP: Final[dict[str, list[str]]] = {
+    "ith": ["5m", "15m", "30m", "1h", "4h", "1D", "1W"],
+    "itl": ["5m", "15m", "30m", "1h", "4h", "1D", "1W"],
+    "unmitigated_fvg": ["5m", "15m", "30m", "1h", "2h", "4h", "1D", "1W", "1M"],
+    "data_release_high": ["cpi", "ppi", "nfp", "fomc", "other"],
+    "data_release_low": ["cpi", "ppi", "nfp", "fomc", "other"],
+}
 
 # Mapping from setup_type -> valid detail values (used for cross-validation)
 SETUP_DETAIL_MAP: Final[dict[str, list[str]]] = {
@@ -116,6 +128,11 @@ def validate_setup_detail(setup_type: str | None, setup_detail: str | None) -> N
     schemas (reaction_setup_type/reaction_setup_detail) — same taxonomy, same rule.
     """
     validate_detail_in_map(setup_type, setup_detail, SETUP_DETAIL_MAP)
+
+
+def validate_tp_target_detail(tp_target: str | None, tp_target_detail: str | None) -> None:
+    """Raise ValueError if tp_target_detail does not belong to tp_target's allowed list."""
+    validate_detail_in_map(tp_target, tp_target_detail, TP_TARGET_DETAIL_MAP)
 
 # HTF bias alignment
 HTF_BIAS_VALUES: Final[list[str]] = [

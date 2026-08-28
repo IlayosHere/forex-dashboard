@@ -10,8 +10,9 @@ import { QtTradeFields } from "@/components/QtTradeFields";
 
 import type { Account } from "@/lib/types";
 
-import { useAccounts } from "@/lib/useAccounts";
+import { TP_TARGET_DETAIL_OPTIONS } from "@/lib/ictConstants";
 import { strategies, getInstrumentType, isFutures as isFuturesHelper } from "@/lib/strategies";
+import { useAccounts } from "@/lib/useAccounts";
 
 export interface TradeFormData {
   account_id: string;
@@ -34,6 +35,7 @@ export interface TradeFormData {
   ict_setup_type: string;
   ict_setup_detail: string;
   ict_tp_target: string;
+  ict_tp_target_detail: string;
   ict_ifvg_timeframe: string;
   ict_ifvg_bars: number | null;
   ict_smt_present: boolean | null;
@@ -134,6 +136,7 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
         ict_setup_type: "",
         ict_setup_detail: "",
         ict_tp_target: "",
+        ict_tp_target_detail: "",
         ict_ifvg_timeframe: "",
         ict_ifvg_bars: null,
         ict_smt_present: null,
@@ -206,6 +209,8 @@ export function TradeForm({ initial, onSubmit, onCancel, loading, signalLabel, a
       if (!form.ict_setup_type) errs.ict_setup_type = true;
       if (form.ict_setup_type && form.ict_setup_type !== "other" && !form.ict_setup_detail) errs.ict_setup_detail = true;
       if (!form.ict_tp_target) errs.ict_tp_target = true;
+      const tpTargetDetailRequired = (TP_TARGET_DETAIL_OPTIONS[form.ict_tp_target] ?? []).length > 0;
+      if (tpTargetDetailRequired && !form.ict_tp_target_detail) errs.ict_tp_target_detail = true;
       if (!form.ict_ifvg_timeframe) errs.ict_ifvg_timeframe = true;
       if (form.ict_smt_present === null || form.ict_smt_present === undefined) errs.ict_smt_present = true;
       if (form.ict_tdo_aligned === null || form.ict_tdo_aligned === undefined) errs.ict_tdo_aligned = true;

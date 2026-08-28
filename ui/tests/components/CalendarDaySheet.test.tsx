@@ -79,6 +79,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     ict_setup_type: null,
     ict_setup_detail: null,
     ict_tp_target: null,
+    ict_tp_target_detail: null,
     ict_ifvg_timeframe: null,
     ict_ifvg_bars: null,
     ict_smt_present: null,

@@ -388,6 +388,27 @@ def migrate_add_holding_time_minutes_column() -> None:
     logger.info("Added holding_time_minutes column to trades")
 
 
+def migrate_add_ict_tp_target_detail_column() -> None:
+    """Add ict_tp_target_detail column to trades table if it does not exist yet.
+
+    Nullable — the timeframe/release-type detail paired with ict_tp_target (e.g. which
+    FVG timeframe, or which swing timeframe for ith/itl). On prod Postgres, pre-apply
+    the ALTER manually via /prod-connect before deploying (see CLAUDE.md
+    §Production Migration Safety), then backfill existing ict_tp_target values to the
+    new taxonomy before this code ships (old values validate against the new TP_TARGETS
+    list only on write, not on read, but should still be migrated for consistency).
+    """
+    inspector = inspect(engine)
+    if "trades" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
+    if "ict_tp_target_detail" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE trades ADD COLUMN ict_tp_target_detail VARCHAR"))
+    logger.info("Added ict_tp_target_detail column to trades")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -408,3 +429,4 @@ def run_all() -> None:
     migrate_add_trades_scenario_id_column()
     migrate_add_trade_location_column()
     migrate_add_holding_time_minutes_column()
+    migrate_add_ict_tp_target_detail_column()

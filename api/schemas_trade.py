@@ -28,8 +28,10 @@ from shared.ict_taxonomy import (
     IFVG_TIMEFRAMES,
     SETUP_DETAIL_MAP,
     SETUP_TYPES,
+    TP_TARGET_DETAIL_MAP,
     TP_TARGETS,
     validate_setup_detail,
+    validate_tp_target_detail,
 )
 from shared.qt_taxonomy import QT_ENTRY_TYPES, QT_FVG_TYPES, QT_QUARTERS, QT_TP_TARGETS
 from shared.trade_location import TRADE_LOCATION_VALUES
@@ -69,6 +71,7 @@ class TradeCreateRequest(BaseModel):
     ict_setup_type: str | None = None
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
+    ict_tp_target_detail: str | None = None
     ict_ifvg_timeframe: str | None = None
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
@@ -143,6 +146,17 @@ class TradeCreateRequest(BaseModel):
             raise ValueError(f"ict_tp_target must be one of {TP_TARGETS}")
         return v
 
+    @field_validator("ict_tp_target_detail")
+    @classmethod
+    def validate_ict_tp_target_detail(cls, v: str | None) -> str | None:
+        all_details = [d for details in TP_TARGET_DETAIL_MAP.values() for d in details]
+        if v is not None and v not in all_details:
+            raise ValueError(
+                f"ict_tp_target_detail '{v}' is not a recognised value. "
+                f"Valid values: {list(TP_TARGET_DETAIL_MAP.values())}",
+            )
+        return v
+
     @field_validator("ict_ifvg_timeframe")
     @classmethod
     def validate_ict_ifvg_timeframe(cls, v: str | None) -> str | None:
@@ -208,6 +222,7 @@ class TradeCreateRequest(BaseModel):
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeCreateRequest":
         validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
+        validate_tp_target_detail(self.ict_tp_target, self.ict_tp_target_detail)
         return self
 
 
@@ -238,6 +253,7 @@ class TradeUpdateRequest(BaseModel):
     ict_setup_type: str | None = None
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
+    ict_tp_target_detail: str | None = None
     ict_ifvg_timeframe: str | None = None
     ict_ifvg_bars: int | None = Field(default=None, ge=1, le=100)
     ict_smt_present: bool | None = None
@@ -328,6 +344,17 @@ class TradeUpdateRequest(BaseModel):
             raise ValueError(f"ict_tp_target must be one of {TP_TARGETS}")
         return v
 
+    @field_validator("ict_tp_target_detail")
+    @classmethod
+    def validate_ict_tp_target_detail(cls, v: str | None) -> str | None:
+        all_details = [d for details in TP_TARGET_DETAIL_MAP.values() for d in details]
+        if v is not None and v not in all_details:
+            raise ValueError(
+                f"ict_tp_target_detail '{v}' is not a recognised value. "
+                f"Valid values: {list(TP_TARGET_DETAIL_MAP.values())}",
+            )
+        return v
+
     @field_validator("ict_ifvg_timeframe")
     @classmethod
     def validate_ict_ifvg_timeframe(cls, v: str | None) -> str | None:
@@ -393,6 +420,7 @@ class TradeUpdateRequest(BaseModel):
     @model_validator(mode="after")
     def validate_ict_detail_matches_type(self) -> "TradeUpdateRequest":
         validate_setup_detail(self.ict_setup_type, self.ict_setup_detail)
+        validate_tp_target_detail(self.ict_tp_target, self.ict_tp_target_detail)
         return self
 
 
@@ -436,6 +464,7 @@ class TradeResponse(BaseModel):
     ict_setup_type: str | None = None
     ict_setup_detail: str | None = None
     ict_tp_target: str | None = None
+    ict_tp_target_detail: str | None = None
     ict_ifvg_timeframe: str | None = None
     ict_ifvg_bars: int | None = None
     ict_smt_present: bool | None = None

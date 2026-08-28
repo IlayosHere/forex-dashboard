@@ -153,6 +153,7 @@ export function buildTradeUpdatePayload({
     ict_setup_type: ictParams.ict_setup_type || null,
     ict_setup_detail: ictParams.ict_setup_detail || null,
     ict_tp_target: ictParams.ict_tp_target || null,
+    ict_tp_target_detail: ictParams.ict_tp_target_detail || null,
     ict_ifvg_timeframe: ictParams.ict_ifvg_timeframe || null,
     ict_ifvg_bars: ictParams.ict_ifvg_bars ? parseInt(ictParams.ict_ifvg_bars, 10) : null,
     ict_smt_present: ictParams.ict_smt_present === "" ? null : ictParams.ict_smt_present === "true",

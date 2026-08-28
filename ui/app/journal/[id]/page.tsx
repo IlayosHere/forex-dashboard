@@ -53,7 +53,7 @@ function TradeDetailContent({ params }: TradeDetailPageProps) {
   const [resultError, setResultError] = useState<string | null>(null);
   const [editable, dispatch] = useReducer(editableReducer, INITIAL_EDITABLE);
   const [ictParams, setIctParams] = useState<IctParamsState>({
-    ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "",
+    ict_setup_type: "", ict_setup_detail: "", ict_tp_target: "", ict_tp_target_detail: "",
     ict_ifvg_timeframe: "", ict_ifvg_bars: "", ict_smt_present: "",
     ict_tdo_aligned: "", ict_cisd_present: "", ict_htf_bias: "",
   });

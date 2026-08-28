@@ -184,6 +184,7 @@ def trade_to_response(
         "ict_setup_type": trade.ict_setup_type,
         "ict_setup_detail": trade.ict_setup_detail,
         "ict_tp_target": trade.ict_tp_target,
+        "ict_tp_target_detail": trade.ict_tp_target_detail,
         "ict_ifvg_timeframe": trade.ict_ifvg_timeframe,
         "ict_ifvg_bars": trade.ict_ifvg_bars,
         "ict_smt_present": trade.ict_smt_present,

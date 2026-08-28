@@ -2,13 +2,21 @@
 
 import { Combobox } from "@/components/ui/combobox";
 
-import { IFVG_TIMEFRAMES } from "@/lib/ictConstants";
+import {
+  IFVG_TIMEFRAMES,
+  SETUP_DETAIL_LABEL,
+  SETUP_DETAIL_OPTIONS,
+  TP_TARGET_DETAIL_LABEL,
+  TP_TARGET_DETAIL_OPTIONS,
+  TP_TARGET_OPTIONS,
+} from "@/lib/ictConstants";
 import type { Trade } from "@/lib/types";
 
 export interface IctParamsState {
   ict_setup_type: string;
   ict_setup_detail: string;
   ict_tp_target: string;
+  ict_tp_target_detail: string;
   ict_ifvg_timeframe: string;
   ict_ifvg_bars: string;
   ict_smt_present: string;
@@ -22,6 +30,7 @@ export function ictParamsFromTrade(trade: Trade): IctParamsState {
     ict_setup_type: trade.ict_setup_type ?? "",
     ict_setup_detail: trade.ict_setup_detail ?? "",
     ict_tp_target: trade.ict_tp_target ?? "",
+    ict_tp_target_detail: trade.ict_tp_target_detail ?? "",
     ict_ifvg_timeframe: trade.ict_ifvg_timeframe ?? "",
     ict_ifvg_bars: trade.ict_ifvg_bars != null ? String(trade.ict_ifvg_bars) : "",
     ict_smt_present: trade.ict_smt_present === null ? "" : String(trade.ict_smt_present),
@@ -50,78 +59,6 @@ const YES_NO_OPTIONS = [
   { value: "false", label: "No" },
 ];
 
-const SETUP_DETAIL_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  liquidity_sweep: [
-    { value: "london_high", label: "London High" },
-    { value: "london_low", label: "London Low" },
-    { value: "asia_high", label: "Asia High" },
-    { value: "asia_low", label: "Asia Low" },
-    { value: "data_high", label: "Data High" },
-    { value: "data_low", label: "Data Low" },
-    { value: "1m_high", label: "1M High" },
-    { value: "1m_low", label: "1M Low" },
-    { value: "5m_high", label: "5M High" },
-    { value: "5m_low", label: "5M Low" },
-    { value: "15m_high", label: "15M High" },
-    { value: "15m_low", label: "15M Low" },
-    { value: "1h_high", label: "1H High" },
-    { value: "1h_low", label: "1H Low" },
-    { value: "4h_high", label: "4H High" },
-    { value: "4h_low", label: "4H Low" },
-    { value: "1d_high", label: "1D High" },
-    { value: "1d_low", label: "1D Low" },
-    { value: "gap_fill", label: "Gap Fill" },
-    { value: "other", label: "Other" },
-  ],
-  unmitigated_fvg: [
-    { value: "15m", label: "15M FVG" },
-    { value: "30m", label: "30M FVG" },
-    { value: "1h", label: "1H FVG" },
-    { value: "4h", label: "4H FVG" },
-    { value: "other", label: "Other" },
-  ],
-  continuation: [
-    { value: "3m", label: "3M FVG" },
-    { value: "5m", label: "5M FVG" },
-    { value: "15m", label: "15M FVG" },
-    { value: "other", label: "Other" },
-  ],
-};
-
-const SETUP_DETAIL_LABEL: Record<string, string> = {
-  liquidity_sweep: "Liquidity Level Swept",
-  unmitigated_fvg: "FVG Timeframe",
-  continuation: "Continuation FVG Timeframe",
-};
-
-const TP_TARGET_OPTIONS = [
-  { value: "london_high", label: "London High" },
-  { value: "london_low", label: "London Low" },
-  { value: "asia_high", label: "Asia High" },
-  { value: "asia_low", label: "Asia Low" },
-  { value: "data_high", label: "Data High" },
-  { value: "data_low", label: "Data Low" },
-  { value: "1m_high", label: "1M High" },
-  { value: "1m_low", label: "1M Low" },
-  { value: "5m_high", label: "5M High" },
-  { value: "5m_low", label: "5M Low" },
-  { value: "15m_high", label: "15M High" },
-  { value: "15m_low", label: "15M Low" },
-  { value: "1h_high", label: "1H High" },
-  { value: "1h_low", label: "1H Low" },
-  { value: "4h_high", label: "4H High" },
-  { value: "4h_low", label: "4H Low" },
-  { value: "1d_high", label: "1D High" },
-  { value: "1d_low", label: "1D Low" },
-  { value: "unmitigated_5m_fvg", label: "Unmitigated 5M FVG" },
-  { value: "unmitigated_15m_fvg", label: "Unmitigated 15M FVG" },
-  { value: "unmitigated_30m_fvg", label: "Unmitigated 30M FVG" },
-  { value: "unmitigated_1h_fvg", label: "Unmitigated 1H FVG" },
-  { value: "unmitigated_4h_fvg", label: "Unmitigated 4H FVG" },
-  { value: "ath", label: "ATH" },
-  { value: "other", label: "Other" },
-];
-
 const HTF_BIAS_OPTIONS = [
   { value: "aligned", label: "Aligned" },
   { value: "counter", label: "Counter" },
@@ -139,6 +76,16 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
   const handleSetupTypeChange = (value: string) => {
     onChange("ict_setup_type", value);
     onChange("ict_setup_detail", "");
+  };
+
+  const tpTargetDetailOptions = params.ict_tp_target ? TP_TARGET_DETAIL_OPTIONS[params.ict_tp_target] ?? [] : [];
+  const tpTargetDetailLabel = params.ict_tp_target
+    ? TP_TARGET_DETAIL_LABEL[params.ict_tp_target] ?? "Target Detail"
+    : "Target Detail";
+
+  const handleTpTargetChange = (value: string) => {
+    onChange("ict_tp_target", value);
+    onChange("ict_tp_target_detail", "");
   };
 
   return (
@@ -172,10 +119,22 @@ export function IctParamsPanel({ params, onChange }: IctParamsPanelProps) {
         <Combobox
           options={TP_TARGET_OPTIONS}
           value={params.ict_tp_target || null}
-          onChange={(v) => onChange("ict_tp_target", v ?? "")}
+          onChange={(v) => handleTpTargetChange(v ?? "")}
           placeholder="Select target"
         />
       </div>
+
+      {tpTargetDetailOptions.length > 0 && (
+        <div>
+          <label className={LABEL_CLASS}>{tpTargetDetailLabel}</label>
+          <Combobox
+            options={tpTargetDetailOptions}
+            value={params.ict_tp_target_detail || null}
+            onChange={(v) => onChange("ict_tp_target_detail", v ?? "")}
+            filterable={false}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div>

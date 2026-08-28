@@ -28,7 +28,7 @@ _ALLOWED_UPDATE_FIELDS: frozenset[str] = frozenset({
     "sl_price", "tp_price", "lot_size", "risk_pips", "status",
     "outcome", "open_time", "close_time", "tags", "notes", "rating",
     "confidence", "rule_followed", "screenshot_url", "metadata",
-    "ict_setup_type", "ict_setup_detail", "ict_tp_target",
+    "ict_setup_type", "ict_setup_detail", "ict_tp_target", "ict_tp_target_detail",
     "ict_ifvg_timeframe", "ict_ifvg_bars", "ict_smt_present", "ict_tdo_aligned",
     "ict_cisd_present",
     "ict_htf_bias", "fees", "criteria_met_at_entry",

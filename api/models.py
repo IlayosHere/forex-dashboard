@@ -110,6 +110,7 @@ class TradeModel(Base):
     ict_setup_type: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_setup_detail: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_tp_target: Mapped[str | None] = mapped_column(String, nullable=True)
+    ict_tp_target_detail: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_ifvg_timeframe: Mapped[str | None] = mapped_column(String, nullable=True)
     ict_smt_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ict_tdo_aligned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
