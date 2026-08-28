@@ -69,6 +69,8 @@ export const TP_TARGET_OPTIONS: IctOption[] = [
   { value: "london_low", label: "London Low" },
   { value: "prev_session_high", label: "Prev Session High" },
   { value: "prev_session_low", label: "Prev Session Low" },
+  { value: "current_session_high", label: "Current Session High" },
+  { value: "current_session_low", label: "Current Session Low" },
   { value: "pdh", label: "PDH (Prev Day High)" },
   { value: "pdl", label: "PDL (Prev Day Low)" },
   { value: "pwh", label: "PWH (Prev Week High)" },

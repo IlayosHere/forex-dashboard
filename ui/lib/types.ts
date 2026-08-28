@@ -23,6 +23,7 @@ export type IctSetupDetail = IctLiquiditySweepDetail | IctUnmitigatedFvgDetail |
 export type IctTpTarget =
   | "asia_high" | "asia_low" | "london_high" | "london_low"
   | "prev_session_high" | "prev_session_low"
+  | "current_session_high" | "current_session_low"
   | "pdh" | "pdl" | "pwh" | "pwl" | "pmh" | "pml"
   | "ith" | "itl"
   | "nwog" | "ndog"

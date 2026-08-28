@@ -72,6 +72,8 @@ TP_TARGETS: Final[list[str]] = [
     "london_low",
     "prev_session_high",   # previous NY session's high (session, not calendar day)
     "prev_session_low",
+    "current_session_high",  # today's NY session high printed so far (already-formed, not projected)
+    "current_session_low",
     "pdh",                  # previous day high
     "pdl",                  # previous day low
     "pwh",                  # previous week high
