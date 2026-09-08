@@ -135,6 +135,7 @@ def upsert_plan(
     plan.h1_structure = req.h1_structure
     plan.ltf_notes = req.ltf_notes
     plan.narrative = req.narrative
+    plan.holiday_ack = req.holiday_ack
 
     db.commit()
     db.refresh(plan)

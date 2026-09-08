@@ -7,11 +7,12 @@ import { PreMarketSection } from "@/components/PreMarketSection";
 import { DuringSection } from "@/components/DuringSection";
 import { PostSessionSection } from "@/components/PostSessionSection";
 
-import type { ExecutionGrade, TradingFeeling } from "@/lib/types";
+import type { ExecutionGrade, HolidayAck, MarketClosure, TradingFeeling } from "@/lib/types";
 
+import { nowNYDatetime } from "@/lib/dates";
+import { useMarketHolidays } from "@/lib/useMarketHolidays";
 import { usePremarketPlan } from "@/lib/usePremarketPlan";
 import { useSession } from "@/lib/useSession";
-import { nowNYDatetime } from "@/lib/dates";
 
 interface DayWorkspaceProps {
   date: string;
@@ -48,6 +49,19 @@ function summarize(label: string, value: string | null): string {
   return value ? `${label}: ${value}` : `${label}: —`;
 }
 
+function holidayFlagLabel(closure: MarketClosure | null, holidayAck: HolidayAck): string | null {
+  if (!closure) return null;
+  if (closure.closure_type === "full_close") return "⛔ Market closed";
+  if (holidayAck === "stood_down") return "⚠ Thin volume · stood down";
+  if (holidayAck === "proceeded") return "⚠ Thin volume · trading anyway";
+  return "⚠ Thin volume — unacknowledged";
+}
+
+function needsForcedExpand(closure: MarketClosure | null, holidayAck: HolidayAck): boolean {
+  if (!closure) return false;
+  return closure.closure_type === "full_close" || holidayAck == null;
+}
+
 export function DayWorkspace({ date }: DayWorkspaceProps) {
   // Past days are read/review days, not write days — show the whole day at once
   // instead of an accordion, so plan-vs-mood can actually be compared in one view.
@@ -80,6 +94,15 @@ export function DayWorkspace({ date }: DayWorkspaceProps) {
     savePlan, addScenario, updateScenario, removeScenario, addCheckpoint, saveReview,
   } = usePremarketPlan(date);
   const { session, saving: sessionSaving, save: saveSession } = useSession(date);
+  const { closures } = useMarketHolidays({ week: "current" });
+  const closure = closures.find((c) => c.date === date) ?? null;
+  const holidayAck = plan?.holiday_ack ?? null;
+  const holidayFlagged = needsForcedExpand(closure, holidayAck);
+
+  useEffect(() => {
+    if (isPast) return;
+    if (holidayFlagged) setExpanded("pre");
+  }, [isPast, holidayFlagged]);
 
   function saveFeeling(field: "feeling_during" | "feeling_post", value: TradingFeeling | null) {
     void saveSession({
@@ -107,7 +130,10 @@ export function DayWorkspace({ date }: DayWorkspaceProps) {
   }
 
   const scenarioCount = plan?.scenarios.length ?? 0;
-  const preSummary = `${plan?.daily_bias ?? "no bias"} · ${scenarioCount} scenario${scenarioCount === 1 ? "" : "s"}`;
+  const holidayLabel = holidayFlagLabel(closure, holidayAck);
+  const preSummary = [holidayLabel, `${plan?.daily_bias ?? "no bias"} · ${scenarioCount} scenario${scenarioCount === 1 ? "" : "s"}`]
+    .filter(Boolean)
+    .join(" · ");
   const duringSummary = summarize("Mood", session?.feeling_during ?? null);
   const postSummary = `${summarize("Mood", session?.feeling_post ?? null)} · Followed plan: ${plan?.review?.execution_grade ?? "—"}`;
 
@@ -125,6 +151,7 @@ export function DayWorkspace({ date }: DayWorkspaceProps) {
           loading={planLoading}
           saving={planSaving}
           error={planError}
+          closure={closure}
           savePlan={savePlan}
           addScenario={addScenario}
           updateScenario={updateScenario}

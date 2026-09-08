@@ -409,6 +409,24 @@ def migrate_add_ict_tp_target_detail_column() -> None:
     logger.info("Added ict_tp_target_detail column to trades")
 
 
+def migrate_add_holiday_ack_column() -> None:
+    """Add holiday_ack column to premarket_plans table if it does not exist yet.
+
+    Nullable — the trader's response ("stood_down" | "proceeded") to a CME early-close/
+    thin-volume warning for that date. On prod Postgres, pre-apply the ALTER manually via
+    /prod-connect before deploying (see CLAUDE.md §Production Migration Safety).
+    """
+    inspector = inspect(engine)
+    if "premarket_plans" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("premarket_plans")}
+    if "holiday_ack" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE premarket_plans ADD COLUMN holiday_ack VARCHAR"))
+    logger.info("Added holiday_ack column to premarket_plans")
+
+
 def run_all() -> None:
     """Run all migrations in order. Called once at startup."""
     migrate_drop_signals_fk()
@@ -430,3 +448,4 @@ def run_all() -> None:
     migrate_add_trade_location_column()
     migrate_add_holding_time_minutes_column()
     migrate_add_ict_tp_target_detail_column()
+    migrate_add_holiday_ack_column()
