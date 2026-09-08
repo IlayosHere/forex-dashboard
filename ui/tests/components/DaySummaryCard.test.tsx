@@ -26,7 +26,7 @@ function makePlan(overrides: Partial<PremarketPlan> = {}): PremarketPlan {
     weekly_dealing_range: null, weekly_dol: null, weekly_opening_gap: null,
     daily_bias: "bullish", daily_bias_signals: {},
     h4_pd_array: null, h4_pd_location: null, h1_zone: null, h1_structure: null,
-    ltf_notes: null, narrative: "", checkpoints: [],
+    ltf_notes: null, narrative: "", checkpoints: [], holiday_ack: null,
     scenarios: [], review: null,
     created_at: "2026-06-22T10:00:00Z", updated_at: "2026-06-22T10:00:00Z",
     ...overrides,

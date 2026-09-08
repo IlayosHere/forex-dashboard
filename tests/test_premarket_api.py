@@ -78,6 +78,22 @@ def test_upsert_extra_fields_rejected(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
+def test_upsert_persists_holiday_ack(client: TestClient) -> None:
+    resp = client.put("/api/premarket/2026-09-07", json={"daily_bias": "bullish", "holiday_ack": "proceeded"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["holiday_ack"] == "proceeded"
+    assert data["daily_bias"] == "bullish"
+
+    refetched = client.get("/api/premarket/2026-09-07")
+    assert refetched.json()["holiday_ack"] == "proceeded"
+
+
+def test_upsert_invalid_holiday_ack_returns_422(client: TestClient) -> None:
+    resp = client.put("/api/premarket/2026-05-04", json={"holiday_ack": "yolo"})
+    assert resp.status_code == 422
+
+
 # --- POST /api/premarket/{date}/scenarios ---
 
 def test_create_scenario_requires_existing_plan(client: TestClient) -> None:

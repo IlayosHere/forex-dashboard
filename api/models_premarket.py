@@ -46,6 +46,10 @@ class PremarketPlanModel(Base):
     narrative: Mapped[str] = mapped_column(String, nullable=False, default="")
     checkpoints: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
 
+    # Trader's response to a CME early-close/thin-volume warning for this date
+    # (see shared/market_holidays.py) — "stood_down" | "proceeded" | None (not shown yet).
+    holiday_ack: Mapped[str | None] = mapped_column(String, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 

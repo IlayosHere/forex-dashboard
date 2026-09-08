@@ -245,11 +245,14 @@ export interface PremarketPlan {
   ltf_notes: string | null;
   narrative: string;
   checkpoints: Checkpoint[];
+  holiday_ack: HolidayAck;
   scenarios: PlanScenario[];
   review: PlanReview | null;
   created_at: string;
   updated_at: string;
 }
+
+export type HolidayAck = "stood_down" | "proceeded" | null;
 
 export interface Checkpoint {
   note: string;
@@ -268,6 +271,7 @@ export interface PlanUpsertRequest {
   h1_structure?: string | null;
   ltf_notes?: string | null;
   narrative?: string;
+  holiday_ack?: HolidayAck;
 }
 
 export interface ScenarioCreateRequest {

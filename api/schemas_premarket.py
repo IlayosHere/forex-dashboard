@@ -24,6 +24,9 @@ from shared.ict_taxonomy import (
     validate_setup_detail,
 )
 
+# Trader's response to a CME early-close/thin-volume warning for the plan's date.
+HOLIDAY_ACK_VALUES = ("stood_down", "proceeded")
+
 
 class PlanUpsertRequest(BaseModel):
     """Request body for creating or updating a pre-market plan."""
@@ -41,6 +44,14 @@ class PlanUpsertRequest(BaseModel):
     h1_structure: str | None = None
     ltf_notes: str | None = None
     narrative: str = ""
+    holiday_ack: str | None = None
+
+    @field_validator("holiday_ack")
+    @classmethod
+    def validate_holiday_ack(cls, v: str | None) -> str | None:
+        if v is not None and v not in HOLIDAY_ACK_VALUES:
+            raise ValueError(f"holiday_ack must be one of {HOLIDAY_ACK_VALUES}")
+        return v
 
     @field_validator("weekly_dealing_range")
     @classmethod
@@ -244,6 +255,7 @@ class PlanResponse(BaseModel):
     ltf_notes: str | None
     narrative: str
     checkpoints: list[dict[str, Any]]
+    holiday_ack: str | None
     scenarios: list[ScenarioResponse] = Field(default_factory=list)
     review: ReviewResponse | None = None
     created_at: datetime
