@@ -5,6 +5,7 @@ locals {
     "jwt_secret",
     "auth_users",
     "discord_webhook_url",
+    "life_password_hash",
   ])
 }
 
