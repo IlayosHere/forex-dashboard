@@ -34,7 +34,8 @@ output "cloud_sql_instance_connection_name" {
 }
 
 # NOTE: After `terraform apply`, seed the human-managed secrets with:
-#   gcloud secrets versions add jwt_secret          --data-file=<(openssl rand -hex 32)
-#   gcloud secrets versions add auth_users          --data-file=auth_users.json
-#   gcloud secrets versions add discord_webhook_url --data-file=<(echo -n "$URL")
+#   gcloud secrets versions add jwt_secret           --data-file=<(openssl rand -hex 32)
+#   gcloud secrets versions add auth_users           --data-file=auth_users.json
+#   gcloud secrets versions add discord_webhook_url  --data-file=<(echo -n "$URL")
+#   gcloud secrets versions add life_password_hash   --data-file=<(python3 -c "from passlib.hash import bcrypt; print(bcrypt.hash('ilayos'))")
 # The `database_url` and `db_password` secrets are populated by Terraform.

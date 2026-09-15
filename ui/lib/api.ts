@@ -1,7 +1,8 @@
-import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint, MistakeStat, MistakePeriodBucket } from "./types";
+import type { Trade, TradeStats, EquityCurvePoint, DailySummaryPoint, Account, TradeCreateRequest, TradeUpdateRequest, UserProfile, LoginResponse, CalendarEvent, MarketClosure, DayType, Mistake, LinkedMistake, TradingSession, SessionUpsertRequest, Rule, RuleCategory, RollingExpectancyPoint, RollingPfPoint, PremarketPlan, PlanUpsertRequest, PlanScenario, ScenarioCreateRequest, ScenarioUpdateRequest, CheckpointCreateRequest, PlanReview, ReviewUpsertRequest, PremarketDaySummary, LifeEntry, LifeEntryCreateRequest, LifeEntryUpdateRequest, LifeSummaryPoint, LifeUnlockResponse, MistakeStat, MistakePeriodBucket } from "./types";
 import type { IctStatsResponse } from "./ictTypes";
 
 import { clearToken, getToken } from "./auth";
+import { clearLifeUnlockToken, getLifeUnlockToken } from "./lifeLock";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -18,6 +19,23 @@ export async function authFetch(url: string, init: RequestInit = {}): Promise<Re
       window.location.href = "/login";
     }
     throw new Error("Session expired");
+  }
+  return res;
+}
+
+/** Like authFetch, but also proves the /life passphrase was unlocked. */
+export async function lifeFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const lifeToken = getLifeUnlockToken();
+  const headers = new Headers(init.headers);
+  if (lifeToken) {
+    headers.set("X-Life-Unlock", lifeToken);
+  }
+  const res = await authFetch(url, { ...init, headers });
+  if (res.status === 403) {
+    clearLifeUnlockToken();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("life-locked"));
+    }
   }
   return res;
 }
@@ -542,6 +560,19 @@ export async function deleteRuleCategory(id: string): Promise<void> {
 // Life Journal
 // ---------------------------------------------------------------------------
 
+export async function unlockLife(passphrase: string): Promise<LifeUnlockResponse> {
+  const res = await authFetch(`${BASE_URL}/api/life/unlock`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ passphrase }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `Failed to unlock: ${res.status}`);
+  }
+  return res.json() as Promise<LifeUnlockResponse>;
+}
+
 export interface LifeEntryFilters {
   from?: string;
   to?: string;
@@ -560,19 +591,19 @@ export async function fetchLifeEntries(filters: LifeEntryFilters = {}): Promise<
   params.set("limit", String(filters.limit ?? 50));
   if (filters.offset !== undefined) params.set("offset", String(filters.offset));
   const qs = params.toString();
-  const res = await authFetch(`${BASE_URL}/api/life/entries${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+  const res = await lifeFetch(`${BASE_URL}/api/life/entries${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch life entries: ${res.status}`);
   return res.json() as Promise<LifeEntry[]>;
 }
 
 export async function fetchLifeEntry(id: string): Promise<LifeEntry> {
-  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, { cache: "no-store" });
+  const res = await lifeFetch(`${BASE_URL}/api/life/entries/${id}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch life entry ${id}: ${res.status}`);
   return res.json() as Promise<LifeEntry>;
 }
 
 export async function createLifeEntry(body: LifeEntryCreateRequest): Promise<LifeEntry> {
-  const res = await authFetch(`${BASE_URL}/api/life/entries`, {
+  const res = await lifeFetch(`${BASE_URL}/api/life/entries`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -582,7 +613,7 @@ export async function createLifeEntry(body: LifeEntryCreateRequest): Promise<Lif
 }
 
 export async function updateLifeEntry(id: string, body: LifeEntryUpdateRequest): Promise<LifeEntry> {
-  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, {
+  const res = await lifeFetch(`${BASE_URL}/api/life/entries/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -592,7 +623,7 @@ export async function updateLifeEntry(id: string, body: LifeEntryUpdateRequest):
 }
 
 export async function deleteLifeEntry(id: string): Promise<void> {
-  const res = await authFetch(`${BASE_URL}/api/life/entries/${id}`, { method: "DELETE" });
+  const res = await lifeFetch(`${BASE_URL}/api/life/entries/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to delete life entry: ${res.status}`);
 }
 
@@ -601,13 +632,13 @@ export async function fetchLifeSummary(from?: string, to?: string): Promise<Life
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   const qs = params.toString();
-  const res = await authFetch(`${BASE_URL}/api/life/summary${qs ? `?${qs}` : ""}`, { cache: "no-store" });
+  const res = await lifeFetch(`${BASE_URL}/api/life/summary${qs ? `?${qs}` : ""}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch life summary: ${res.status}`);
   return res.json() as Promise<LifeSummaryPoint[]>;
 }
 
 export async function fetchLifeTags(): Promise<string[]> {
-  const res = await authFetch(`${BASE_URL}/api/life/tags`, { cache: "no-store" });
+  const res = await lifeFetch(`${BASE_URL}/api/life/tags`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to fetch life tags: ${res.status}`);
   return res.json() as Promise<string[]>;
 }

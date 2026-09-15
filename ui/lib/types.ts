@@ -667,3 +667,8 @@ export interface LifeSummaryPoint {
   count: number;
   dominant_mood: LifeMood | null;
 }
+
+export interface LifeUnlockResponse {
+  unlock_token: string;
+  expires_in_hours: number;
+}

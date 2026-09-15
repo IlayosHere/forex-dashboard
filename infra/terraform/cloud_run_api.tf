@@ -53,6 +53,16 @@ resource "google_cloud_run_v2_service" "forex_api" {
       }
 
       env {
+        name = "LIFE_PASSWORD_HASH"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.human_seeded["life_password_hash"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
         name  = "CORS_ORIGINS"
         value = var.cors_origins
       }

@@ -21,11 +21,13 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.auth import router as auth_router
 from api.db import Base, SessionLocal, engine
+from api.life_lock import require_life_unlock
+from api.life_lock import router as life_lock_router
 from api.routes.accounts import router as accounts_router
 from api.routes.calendar import router as calendar_router
 from api.routes.categories import router as categories_router
@@ -79,7 +81,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Life-Unlock"],
 )
 
 app.include_router(auth_router, prefix="/api", tags=["auth"])
@@ -94,4 +96,7 @@ app.include_router(sessions_router, prefix="/api", tags=["sessions"])
 app.include_router(premarket_router, prefix="/api", tags=["premarket"])
 app.include_router(rules_router, prefix="/api", tags=["rules"])
 app.include_router(categories_router, prefix="/api", tags=["rule-categories"])
-app.include_router(life_router, prefix="/api", tags=["life"])
+app.include_router(
+    life_router, prefix="/api", tags=["life"], dependencies=[Depends(require_life_unlock)],
+)
+app.include_router(life_lock_router, prefix="/api", tags=["life"])

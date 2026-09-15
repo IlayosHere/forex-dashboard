@@ -19,14 +19,21 @@ from sqlalchemy.orm import Session, sessionmaker
 os.environ.setdefault("JWT_SECRET", "a" * 32)
 # Force in-memory SQLite so the lifespan create_all does not write signals.db.
 os.environ.setdefault("DATABASE_URL", "sqlite://")
+# Bcrypt hash of TEST_LIFE_PASSPHRASE below — precomputed so tests don't pay
+# bcrypt's cost factor on every import.
+os.environ.setdefault(
+    "LIFE_PASSWORD_HASH", "$2b$12$z.E0qXXm6qvxqNu0/GVY.e8LHr.Pl36Jbf0CNJZwdnq7WfkqtjUZW",
+)
 
 from api.auth import get_current_user, reset_login_rate_limits
+from api.auth_rate_limit import reset_life_unlock_rate_limits
 from api.db import Base, get_db
 from api.models import AccountModel, TradeModel
 from api import models_premarket  # noqa: F401 — registers premarket tables on Base.metadata
 
 TEST_USER = "testuser"
 TEST_USER_2 = "otheruser"
+TEST_LIFE_PASSPHRASE = "testpass123"
 
 _TEST_ENGINE = create_engine(
     "sqlite://",
@@ -55,6 +62,7 @@ def _override_get_current_user() -> str:
 def _setup_tables() -> Generator[None, None, None]:
     """Create all tables before each test and drop them after."""
     reset_login_rate_limits()
+    reset_life_unlock_rate_limits()
     Base.metadata.create_all(bind=_TEST_ENGINE)
     yield
     Base.metadata.drop_all(bind=_TEST_ENGINE)
@@ -80,6 +88,15 @@ def client() -> Generator[TestClient, None, None]:
     with TestClient(app, raise_server_exceptions=True) as tc:
         yield tc
     app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def life_client(client: TestClient) -> TestClient:
+    """`client`, additionally unlocked for /life via the real unlock endpoint."""
+    res = client.post("/api/life/unlock", json={"passphrase": TEST_LIFE_PASSPHRASE})
+    assert res.status_code == 200, res.text
+    client.headers.update({"X-Life-Unlock": res.json()["unlock_token"]})
+    return client
 
 
 @pytest.fixture()
