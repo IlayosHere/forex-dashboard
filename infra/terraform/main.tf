@@ -25,8 +25,8 @@ locals {
   }
 
   # Cloud Run service names.
-  api_service_name    = "forex-api"
-  ui_service_name     = "forex-ui"
+  api_service_name = "forex-api"
+  ui_service_name  = "forex-ui"
   # Fully-composed DATABASE_URL. Stored as its own Secret Manager secret because
   # Cloud Run env `value_source.secret_key_ref` only supports whole-value secret
   # references — it cannot interpolate a partial secret (the password) into a
