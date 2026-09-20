@@ -17,6 +17,7 @@ from shared.ict_taxonomy import (
     CONTINUATION_DETAILS,
     IFVG_TIMEFRAMES,
     LIQUIDITY_SWEEP_DETAILS,
+    REJECTION_BLOCK_DETAILS,
     TP_TARGET_DETAIL_MAP,
     TP_TARGETS,
     UNMITIGATED_FVG_DETAILS,
@@ -138,6 +139,31 @@ def test_create_trade_ict_detail_valid_for_continuation_passes(
     resp = client.post("/api/trades", json=payload)
     assert resp.status_code == 201
     assert resp.json()["ict_setup_detail"] == CONTINUATION_DETAILS[0]
+
+
+def test_create_trade_ict_detail_valid_for_rejection_block_passes(
+    client: TestClient,
+) -> None:
+    """A detail from REJECTION_BLOCK_DETAILS is valid for rejection_block."""
+    payload = _base_payload(
+        ict_setup_type="rejection_block",
+        ict_setup_detail=REJECTION_BLOCK_DETAILS[0],
+    )
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 201
+    assert resp.json()["ict_setup_detail"] == REJECTION_BLOCK_DETAILS[0]
+
+
+def test_create_trade_ict_detail_wrong_for_rejection_block_returns_422(
+    client: TestClient,
+) -> None:
+    """A detail from LIQUIDITY_SWEEP_DETAILS is invalid for rejection_block."""
+    payload = _base_payload(
+        ict_setup_type="rejection_block",
+        ict_setup_detail=LIQUIDITY_SWEEP_DETAILS[0],
+    )
+    resp = client.post("/api/trades", json=payload)
+    assert resp.status_code == 422
 
 
 def test_create_trade_ict_setup_type_other_accepts_no_detail(

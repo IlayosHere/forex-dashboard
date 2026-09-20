@@ -64,6 +64,7 @@ const SETUP_TYPE_LABELS: Record<string, string> = {
   liquidity_sweep: "Liquidity Sweep",
   unmitigated_fvg: "Unmitigated FVG",
   continuation: "Continuation",
+  rejection_block: "Rejection Block",
   other: "Other",
 };
 

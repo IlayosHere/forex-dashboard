@@ -6,7 +6,7 @@ export type TradingFeeling =
   | "anxious" | "impatient" | "fearful" | "greedy" | "distracted" | "revenge" | "tired";
 
 // ICT trade params — MNQ only
-export type IctSetupType = "liquidity_sweep" | "unmitigated_fvg" | "continuation" | "other";
+export type IctSetupType = "liquidity_sweep" | "unmitigated_fvg" | "continuation" | "rejection_block" | "other";
 export type IctLiquiditySweepDetail =
   | "london_high" | "london_low" | "asia_high" | "asia_low"
   | "data_high" | "data_low"
@@ -15,7 +15,12 @@ export type IctLiquiditySweepDetail =
   | "4h_high" | "4h_low" | "other";
 export type IctUnmitigatedFvgDetail = "15m" | "30m" | "1h" | "2h" | "4h" | "1D" | "1W" | "1M" | "other";
 export type IctContinuationDetail = "3m" | "5m" | "15m" | "other";
-export type IctSetupDetail = IctLiquiditySweepDetail | IctUnmitigatedFvgDetail | IctContinuationDetail;
+export type IctRejectionBlockDetail = "5m" | "15m" | "other";
+export type IctSetupDetail =
+  | IctLiquiditySweepDetail
+  | IctUnmitigatedFvgDetail
+  | IctContinuationDetail
+  | IctRejectionBlockDetail;
 
 // TP targets — real ICT draw-on-liquidity concepts only (no raw low-timeframe candle
 // highs/lows). ith/itl, unmitigated_fvg, and data_release_high/low take a further
