@@ -36,6 +36,7 @@ const SETUP_TYPE_OPTIONS = [
   { value: "liquidity_sweep", label: "Liquidity Sweep" },
   { value: "unmitigated_fvg", label: "Unmitigated FVG" },
   { value: "continuation", label: "Continuation" },
+  { value: "rejection_block", label: "Rejection Block" },
   { value: "other", label: "Other" },
 ];
 

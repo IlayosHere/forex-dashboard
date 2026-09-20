@@ -108,12 +108,18 @@ const REACTION_DETAIL_OPTIONS: Record<string, { value: string; label: string }[]
     { value: "15m", label: "15M FVG" },
     { value: "other", label: "Other" },
   ],
+  rejection_block: [
+    { value: "5m", label: "5M" },
+    { value: "15m", label: "15M" },
+    { value: "other", label: "Other" },
+  ],
 };
 
 const REACTION_TYPE_OPTIONS = [
   { value: "liquidity_sweep", label: "Liquidity Sweep" },
   { value: "unmitigated_fvg", label: "Unmitigated FVG" },
   { value: "continuation", label: "Continuation (no area — expect a move from the open)" },
+  { value: "rejection_block", label: "Rejection Block" },
   { value: "other", label: "Other" },
 ];
 

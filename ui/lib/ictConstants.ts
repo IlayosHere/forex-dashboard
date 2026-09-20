@@ -52,12 +52,18 @@ export const SETUP_DETAIL_OPTIONS: Record<string, IctOption[]> = {
     { value: "15m", label: "15M FVG" },
     { value: "other", label: "Other" },
   ],
+  rejection_block: [
+    { value: "5m", label: "5M" },
+    { value: "15m", label: "15M" },
+    { value: "other", label: "Other" },
+  ],
 };
 
 export const SETUP_DETAIL_LABEL: Record<string, string> = {
   liquidity_sweep: "Liquidity Level Swept",
   unmitigated_fvg: "FVG Timeframe",
   continuation: "Continuation FVG Timeframe",
+  rejection_block: "Rejection Block Timeframe",
 };
 
 // Mirrors shared/ict_taxonomy.py::TP_TARGETS — real ICT draw-on-liquidity concepts only.

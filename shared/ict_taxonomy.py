@@ -12,6 +12,7 @@ SETUP_TYPES: Final[list[str]] = [
     "liquidity_sweep",
     "unmitigated_fvg",
     "continuation",
+    "rejection_block",
     "other",
 ]
 
@@ -56,6 +57,13 @@ UNMITIGATED_FVG_DETAILS: Final[list[str]] = [
 # For continuation: the timeframe the continuation FVG formed on
 CONTINUATION_DETAILS: Final[list[str]] = [
     "3m",
+    "5m",
+    "15m",
+    "other",
+]
+
+# For rejection_block: the timeframe the rejection block formed on
+REJECTION_BLOCK_DETAILS: Final[list[str]] = [
     "5m",
     "15m",
     "other",
@@ -106,6 +114,7 @@ SETUP_DETAIL_MAP: Final[dict[str, list[str]]] = {
     "liquidity_sweep": LIQUIDITY_SWEEP_DETAILS,
     "unmitigated_fvg": UNMITIGATED_FVG_DETAILS,
     "continuation": CONTINUATION_DETAILS,
+    "rejection_block": REJECTION_BLOCK_DETAILS,
     "other": [],  # no detail required for "other"
 }
 
