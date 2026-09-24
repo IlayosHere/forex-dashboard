@@ -38,7 +38,7 @@ export type IctTpTarget =
   | "other";
 export type IctTpTargetDetail = "5m" | "15m" | "30m" | "1h" | "2h" | "4h" | "1D" | "1W" | "1M"
   | "cpi" | "ppi" | "nfp" | "fomc" | "other";
-export type IctIfvgTimeframe = "30s" | "1m" | "2m" | "3m" | "4m" | "5m";
+export type IctIfvgTimeframe = "15s" | "30s" | "1m" | "2m" | "3m" | "4m" | "5m";
 
 // QT trade params — qt-mnq strategy only
 export type QtQuarter =
