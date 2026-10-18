@@ -35,6 +35,7 @@ from api.routes.life import router as life_router
 from api.routes.market_holidays import router as market_holidays_router
 from api.routes.mistakes import router as mistakes_router
 from api.routes.premarket import router as premarket_router
+from api.routes.research import router as research_router
 from api.routes.rules import router as rules_router
 from api.routes.trade_mistakes import router as trade_mistakes_router
 from api.routes.sessions import router as sessions_router
@@ -95,6 +96,7 @@ app.include_router(market_holidays_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api", tags=["sessions"])
 app.include_router(premarket_router, prefix="/api", tags=["premarket"])
 app.include_router(rules_router, prefix="/api", tags=["rules"])
+app.include_router(research_router, prefix="/api")
 app.include_router(categories_router, prefix="/api", tags=["rule-categories"])
 app.include_router(
     life_router, prefix="/api", tags=["life"], dependencies=[Depends(require_life_unlock)],

@@ -63,6 +63,16 @@ resource "google_cloud_run_v2_service" "forex_api" {
       }
 
       env {
+        name = "PROP_PIPELINE_GITHUB_TOKEN"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.prop_pipeline_github_token.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
         name  = "CORS_ORIGINS"
         value = var.cors_origins
       }
@@ -80,6 +90,7 @@ resource "google_cloud_run_v2_service" "forex_api" {
   depends_on = [
     google_project_service.enabled,
     google_secret_manager_secret_version.database_url,
+    google_secret_manager_secret_version.prop_pipeline_github_token_placeholder,
     google_project_iam_member.runtime,
   ]
 }
