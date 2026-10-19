@@ -4,6 +4,7 @@ import { IctBreakdowns } from "@/components/stats/IctBreakdowns";
 import { IctBooleanFlags } from "@/components/stats/IctBooleanFlags";
 import { IctComboMatrix } from "@/components/stats/IctComboMatrix";
 import { IctIfvgBarsMatrix } from "@/components/stats/IctIfvgBarsMatrix";
+import { TimeEdgeSection } from "@/components/stats/TimeEdgeSection";
 
 import type { IctStatsResponse } from "@/lib/ictTypes";
 
@@ -18,6 +19,7 @@ export function IctAnalysisSection({ ictStats, loading }: IctAnalysisSectionProp
       <p className="text-xs uppercase tracking-widest text-text-muted py-2 border-b border-border mb-3">
         ICT Analysis — MNQ Futures
       </p>
+      <TimeEdgeSection timeEdge={ictStats?.time_edge} loading={loading} />
       <IctBreakdowns data={ictStats} loading={loading} />
       <IctIfvgBarsMatrix rows={ictStats?.ifvg_bars_matrix ?? []} loading={loading} />
       <IctBooleanFlags booleanFlags={ictStats?.boolean_flags} loading={loading} />

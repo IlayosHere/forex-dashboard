@@ -54,4 +54,28 @@ export interface IctStatsResponse {
   boolean_flags: Record<string, IctBooleanComparison>;
   combo_matrix: IctComboEntry[];
   ifvg_bars_matrix: IctIfvgBarsRow[];
+  time_edge?: TimeEdgeStats | null;
+}
+
+export interface TimeMatrixCell {
+  row: string;
+  phase: string;
+  stats: IctBucketStats;
+}
+
+export interface TimeInsight {
+  kind: "strength" | "weakness";
+  dimension: string;
+  row: string;
+  phase: string;
+  stats: IctBucketStats;
+}
+
+export interface TimeEdgeStats {
+  by_ny_phase: Record<string, IctBucketStats>;
+  by_time_slice: Record<string, IctBucketStats>;
+  by_macro: Record<string, IctBucketStats>;
+  matrices: Record<string, TimeMatrixCell[]>;
+  insights: TimeInsight[];
+  min_sample: number;
 }

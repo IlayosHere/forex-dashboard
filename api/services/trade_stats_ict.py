@@ -41,7 +41,7 @@ def _expectancy_r(closed: list[TradeModel]) -> float | None:
     return round(wr * avg_w - (1 - wr) * avg_l, 2)
 
 
-def _bucket_stats(trades: list[TradeModel]) -> dict[str, Any]:
+def bucket_stats(trades: list[TradeModel]) -> dict[str, Any]:
     """Aggregate wins/losses/P&L/R:R/expectancy_r for a group of trades."""
     closed = [t for t in trades if t.status in _CLOSED_STATUSES]
     wins = sum(1 for t in closed if t.outcome == "win")
@@ -61,7 +61,7 @@ def _bucket_stats(trades: list[TradeModel]) -> dict[str, Any]:
     }
 
 
-def _zero_bucket() -> dict[str, Any]:
+def zero_bucket() -> dict[str, Any]:
     """Empty bucket for sessions/killzones with no trades."""
     return {
         "total": 0, "wins": 0, "losses": 0, "win_rate": None,
@@ -82,7 +82,7 @@ def aggregate_by_ict_field(trades: list[TradeModel], field: str) -> dict[str, di
         if value is None:
             continue
         buckets.setdefault(str(value), []).append(trade)
-    return {k: _bucket_stats(v) for k, v in buckets.items()}
+    return {k: bucket_stats(v) for k, v in buckets.items()}
 
 
 def aggregate_by_mnq_session(trades: list[TradeModel]) -> dict[str, dict[str, Any]]:
@@ -92,7 +92,7 @@ def aggregate_by_mnq_session(trades: list[TradeModel]) -> dict[str, dict[str, An
         if trade.open_time is None:
             continue
         buckets[classify_mnq_session(trade.open_time)].append(trade)
-    return {s: _bucket_stats(v) if v else _zero_bucket() for s, v in buckets.items()}
+    return {s: bucket_stats(v) if v else zero_bucket() for s, v in buckets.items()}
 
 
 def aggregate_by_killzone(trades: list[TradeModel]) -> dict[str, dict[str, Any]]:
@@ -102,7 +102,7 @@ def aggregate_by_killzone(trades: list[TradeModel]) -> dict[str, dict[str, Any]]
         if trade.open_time is None:
             continue
         buckets[classify_killzone(trade.open_time)].append(trade)
-    return {k: _bucket_stats(v) if v else _zero_bucket() for k, v in buckets.items()}
+    return {k: bucket_stats(v) if v else zero_bucket() for k, v in buckets.items()}
 
 
 def aggregate_boolean_flags(trades: list[TradeModel]) -> dict[str, dict[str, dict[str, Any]]]:
@@ -121,9 +121,9 @@ def aggregate_boolean_flags(trades: list[TradeModel]) -> dict[str, dict[str, dic
         if trade.ict_cisd_present is not None:
             (cisd_t if trade.ict_cisd_present else cisd_f).append(trade)
     return {
-        "smt_present": {"true": _bucket_stats(smt_t), "false": _bucket_stats(smt_f)},
-        "tdo_aligned":  {"true": _bucket_stats(tdo_t), "false": _bucket_stats(tdo_f)},
-        "cisd_present": {"true": _bucket_stats(cisd_t), "false": _bucket_stats(cisd_f)},
+        "smt_present": {"true": bucket_stats(smt_t), "false": bucket_stats(smt_f)},
+        "tdo_aligned":  {"true": bucket_stats(tdo_t), "false": bucket_stats(tdo_f)},
+        "cisd_present": {"true": bucket_stats(cisd_t), "false": bucket_stats(cisd_f)},
     }
 
 
@@ -139,7 +139,7 @@ def build_combo_matrix(trades: list[TradeModel]) -> list[dict[str, Any]]:
         groups.setdefault(key, []).append(trade)
     rows: list[dict[str, Any]] = []
     for (setup_type, session, htf_bias), group in groups.items():
-        s = _bucket_stats(group)
+        s = bucket_stats(group)
         rows.append({
             "setup_type": setup_type, "mnq_session": session, "htf_bias": htf_bias,
             "total": s["total"], "wins": s["wins"], "losses": s["losses"],
@@ -177,7 +177,7 @@ def aggregate_ifvg_bars_matrix(trades: list[TradeModel]) -> list[dict[str, Any]]
 
     rows: list[dict[str, Any]] = []
     for (bars_label, timeframe), group in groups.items():
-        s = _bucket_stats(group)
+        s = bucket_stats(group)
         rows.append({
             "bars_label": bars_label,
             "timeframe": timeframe,
@@ -194,12 +194,17 @@ def aggregate_ifvg_bars_matrix(trades: list[TradeModel]) -> list[dict[str, Any]]
 # Top-level orchestrator
 # ---------------------------------------------------------------------------
 
+def filter_futures(trades: list[TradeModel]) -> list[TradeModel]:
+    """Keep MNQ/MES futures trades only."""
+    return [t for t in trades if t.instrument_type in ("futures", "futures_mnq", "futures_mes")]
+
+
 def compute_ict_stats(trades: list[TradeModel]) -> dict[str, Any]:
     """Orchestrate all ICT aggregations and return the full IctStatsResponse dict.
 
     Includes both MNQ and MES trades — they share ICT methodology and session times.
     """
-    mnq = [t for t in trades if t.instrument_type in ("futures", "futures_mnq", "futures_mes")]
+    mnq = filter_futures(trades)
     logger.debug("compute_ict_stats: %d MNQ/MES trades", len(mnq))
     closed = [t for t in mnq if t.status in _CLOSED_STATUSES]
     wins = sum(1 for t in closed if t.outcome == "win")

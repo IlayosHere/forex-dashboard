@@ -24,12 +24,12 @@ from api.models import MistakeModel, TradeMistakeModel, TradeModel
 from api.schemas_stats import (
     DailySummaryPoint,
     EquityCurvePoint,
-    IctStatsResponse,
     MistakePeriodBucket,
     MistakeStatResponse,
     RollingExpectancyPoint,
     RollingPfPoint,
 )
+from api.schemas_stats_time import IctStatsWithTimeResponse
 from api.services.trade_filters import StatsFilterParams
 from api.services.trade_helpers import apply_trade_filters
 from api.services.trade_stats_extended import (
@@ -39,6 +39,7 @@ from api.services.trade_stats_extended import (
 from api.services.trade_stats_ict import compute_ict_stats
 from api.services.trade_stats_mistakes import aggregate_mistakes, build_mistake_timeseries
 from api.services.trade_stats_robustness import compute_rolling_pf
+from api.services.trade_stats_time import compute_time_edge
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ def daily_summary(
 
 @router.get(
     "/trades/stats/ict",
-    response_model=IctStatsResponse,
+    response_model=IctStatsWithTimeResponse,
 )
 def ict_stats(
     current_user: Annotated[str, Depends(get_current_user)],
@@ -126,7 +127,7 @@ def ict_stats(
     stmt = apply_trade_filters(stmt, filters)
     trades = list(db.scalars(stmt).all())
     logger.debug("ict_stats: fetched %d MNQ/MES trades for user %s", len(trades), current_user)
-    return compute_ict_stats(trades)
+    return {**compute_ict_stats(trades), "time_edge": compute_time_edge(trades)}
 
 
 @router.get(
